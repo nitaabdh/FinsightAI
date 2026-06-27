@@ -126,7 +126,8 @@ export default function LaporanPage() {
             </div>
             <div className="dashboard__skeleton-block skel" style={{height:"220px"}} />
           </div>
-        ) : (<>
+        ) : (
+        <div className="laporanpage__content">
 
         {/* Filter + Export — hanya di tab Laba Rugi */}
         {activeTab === "labarugi" && (
@@ -370,6 +371,8 @@ export default function LaporanPage() {
           </p>
         </div>
         </>
+        )}
+        </div>
         )}
     </DashboardLayout>
   );
