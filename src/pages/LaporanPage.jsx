@@ -12,14 +12,18 @@ export default function LaporanPage() {
   const [activeTab, setActiveTab] = useState("labarugi"); // "labarugi" | "bep" | "utangpiutang"
   const [transactions, setTransactions] = useState([]);
   const [filterMonth, setFilterMonth]   = useState("semua");
+  const [loading, setLoading]           = useState(true);
 
   useEffect(() => {
-  if (!user) return;
-  const token = localStorage.getItem("finsight_token");
-  fetch(`/api/transactions?mode=umkm`, {
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
-  }).then(r => r.json()).then(r => { if (r.success) setTransactions(r.data); });
-}, [user]);
+    if (!user) return;
+    const token = localStorage.getItem("finsight_token");
+    setLoading(true);
+    fetch(`/api/transactions?mode=umkm`, {
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+    }).then(r => r.json())
+      .then(r => { if (r.success) setTransactions(r.data); })
+      .finally(() => setLoading(false));
+  }, [user]);
 
   const months = [...new Set(transactions.map((t) => (t.date || t.createdAt || "").slice(0, 7)).filter(Boolean))].sort().reverse();
 
@@ -112,6 +116,17 @@ export default function LaporanPage() {
           title="Laporan Keuangan"
           subtitle="Ringkasan lengkap keuangan usahamu"
         />
+
+        {loading ? (
+          <div className="dashboard__skeleton" style={{padding: "0 2rem"}}>
+            <div className="dashboard__skeleton-block skel" style={{height:"44px", marginBottom:"0.5rem"}} />
+            <div className="dashboard__skeleton-block skel" style={{height:"120px"}} />
+            <div className="dashboard__skeleton-metrics">
+              {[1,2,3].map(i => <div key={i} className="dashboard__skeleton-card skel" />)}
+            </div>
+            <div className="dashboard__skeleton-block skel" style={{height:"220px"}} />
+          </div>
+        ) : (<>
 
         {/* Filter + Export — hanya di tab Laba Rugi */}
         {activeTab === "labarugi" && (

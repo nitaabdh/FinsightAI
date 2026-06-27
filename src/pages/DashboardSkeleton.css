@@ -1,0 +1,70 @@
+/* ─── Skeleton Loading — dipakai semua halaman dashboard ─────────────────── */
+
+@keyframes skel-shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+
+.skel {
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 25%,
+    var(--border)       50%,
+    var(--bg-secondary) 75%
+  );
+  background-size: 1200px 100%;
+  animation: skel-shimmer 1.5s infinite linear;
+  border-radius: var(--radius-md);
+}
+
+/* Wrapper skeleton */
+.dashboard__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.75rem 2rem;
+}
+
+/* Grid metric cards */
+.dashboard__skeleton-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.dashboard__skeleton-card {
+  height: 96px;
+  border-radius: var(--radius-lg);
+}
+
+/* Block generik (chart, list, dsb) */
+.dashboard__skeleton-block {
+  width: 100%;
+  border-radius: var(--radius-lg);
+}
+
+/* TargetPage — grid card skeleton */
+.targetpage__skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.targetpage__skeleton-card {
+  height: 200px;
+  border-radius: var(--radius-lg);
+}
+
+@media (max-width: 767px) {
+  .dashboard__skeleton {
+    padding: 1.25rem 1rem;
+  }
+
+  .dashboard__skeleton-metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .targetpage__skeleton-grid {
+    grid-template-columns: 1fr;
+  }
+}

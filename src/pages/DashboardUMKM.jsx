@@ -21,11 +21,18 @@ export default function DashboardUMKM() {
   const { user } = useAuth();
   const [transactions,  setTransactions]  = useState([]);
   const [utangPiutang,  setUtangPiutang]  = useState([]);
+  const [loading,       setLoading]       = useState(true);
 
   useEffect(() => {
     if (!user) return;
-    getTransactions(user.id, "umkm").then(data => setTransactions(data || []));
-    apiFetch(`/api/umkm?table=utang_piutang`).then(r => { if (r.success) setUtangPiutang(r.data); });
+    setLoading(true);
+    Promise.all([
+      getTransactions(user.id, "umkm"),
+      apiFetch(`/api/umkm?table=utang_piutang`),
+    ]).then(([txData, upRes]) => {
+      setTransactions(txData || []);
+      if (upRes.success) setUtangPiutang(upRes.data);
+    }).finally(() => setLoading(false));
   }, [user]);
 
   useEffect(() => {
@@ -91,6 +98,17 @@ export default function DashboardUMKM() {
           title="Dashboard Usaha"
           subtitle="Ringkasan keuangan toko kamu hari ini"
         />
+
+        {loading ? (
+          <div className="dashboard__skeleton">
+            <div className="dashboard__skeleton-metrics">
+              {[1,2,3,4].map(i => <div key={i} className="dashboard__skeleton-card skel" />)}
+            </div>
+            <div className="dashboard__skeleton-block skel" style={{height:"120px"}} />
+            <div className="dashboard__skeleton-block skel" style={{height:"200px"}} />
+            <div className="dashboard__skeleton-block skel" style={{height:"180px"}} />
+          </div>
+        ) : (<>
 
         <div className="dashboard__metrics">
           <MetricCard label="Total Omzet"          value={formatRupiah(summary.pemasukan)}  sub="Total pemasukan tercatat"      icon="📈" accent="umkm" />
@@ -174,6 +192,7 @@ export default function DashboardUMKM() {
             </div>
           )}
         </div>
+      </>)}
       </div>
     </DashboardLayout>
   );

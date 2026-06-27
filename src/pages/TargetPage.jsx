@@ -28,6 +28,7 @@ const QUICK_AMOUNTS = [50000, 100000, 200000, 500000, 1000000];
 export default function TargetPage() {
   const { user } = useAuth();
   const [targets, setTargets]   = useState([]);
+  const [loading, setLoading]   = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [error, setError]       = useState("");
@@ -43,10 +44,13 @@ export default function TargetPage() {
   // State untuk tambah nominal bebas per target
   const [customAmount, setCustomAmount] = useState({});
 
- useEffect(() => {
-  if (!user) return;
-  apiFetch("/api/targets").then((r) => { if (r.success) setTargets(r.data); });
-}, [user]);
+  useEffect(() => {
+    if (!user) return;
+    setLoading(true);
+    apiFetch("/api/targets")
+      .then((r) => { if (r.success) setTargets(r.data); })
+      .finally(() => setLoading(false));
+  }, [user]);
 
   const handleChange = (e) => {
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
@@ -129,8 +133,13 @@ export default function TargetPage() {
           </button>
         </div>
 
-        {/* Target Cards */}
-        {targets.length === 0 ? (
+        {loading ? (
+          <div className="dashboard__skeleton">
+            <div className="targetpage__skeleton-grid">
+              {[1,2,3].map(i => <div key={i} className="targetpage__skeleton-card skel" />)}
+            </div>
+          </div>
+        ) : targets.length === 0 ? (
           <div className="targetpage__empty">
             <p>🎯</p>
             <p>Belum ada target tabungan.</p>

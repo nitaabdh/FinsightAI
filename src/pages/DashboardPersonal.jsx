@@ -64,33 +64,24 @@ export default function DashboardPersonal() {
   const [transactions, setTransactions] = useState([]);
   const [targets, setTargets]           = useState([]);
   const [events, setEvents]             = useState([]);
+  const [loading, setLoading]           = useState(true);
 
   useEffect(() => {
-  if (!user) return;
-  const token = localStorage.getItem("finsight_token");
-  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+    if (!user) return;
+    const token = localStorage.getItem("finsight_token");
+    const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 
-  // Transactions
-  fetch(`/api/transactions?mode=personal`, { headers })
-    .then(r => r.json())
-    .then(r => { if (r.success) setTransactions(r.data); });
-
-  // Targets
-  fetch(`/api/targets`, { headers })
-    .then(r => r.json())
-    .then(r => { if (r.success) setTargets(r.data); });
-
-  // Calendar events
-  fetch(`/api/notes?table=cal_notes&mode=personal`, { headers })
-    .then(r => r.json())
-    .then(r => {
-      if (r.success) setEvents(r.data.map(ev => ({
-        id: ev.id,
-        tanggal: ev.date,
-        judul: ev.title || "Acara",
-      })));
-    });
-}, [user]);
+    setLoading(true);
+    Promise.all([
+      fetch(`/api/transactions?mode=personal`, { headers }).then(r => r.json()),
+      fetch(`/api/targets`, { headers }).then(r => r.json()),
+      fetch(`/api/notes?table=cal_notes&mode=personal`, { headers }).then(r => r.json()),
+    ]).then(([txRes, targetRes, evRes]) => {
+      if (txRes.success)     setTransactions(txRes.data);
+      if (targetRes.success) setTargets(targetRes.data);
+      if (evRes.success)     setEvents(evRes.data.map(ev => ({ id: ev.id, tanggal: ev.date, judul: ev.title || "Acara" })));
+    }).finally(() => setLoading(false));
+  }, [user]);
 
   const summary        = calcSummary(transactions);
   const recentTx       = [...transactions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
@@ -137,6 +128,17 @@ export default function DashboardPersonal() {
           title="Dashboard Pribadi"
           subtitle="Ringkasan keuangan personal kamu"
         />
+
+        {loading ? (
+          <div className="dashboard__skeleton">
+            <div className="dashboard__skeleton-metrics">
+              {[1,2,3].map(i => <div key={i} className="dashboard__skeleton-card skel" />)}
+            </div>
+            <div className="dashboard__skeleton-block skel" style={{height:"90px"}} />
+            <div className="dashboard__skeleton-block skel" style={{height:"180px"}} />
+            <div className="dashboard__skeleton-block skel" style={{height:"200px"}} />
+          </div>
+        ) : (<>
 
         {/* Budget Alert Banner */}
         {budgetStatus !== "safe" && summary.pemasukan > 0 && (
@@ -301,6 +303,7 @@ export default function DashboardPersonal() {
             </div>
           )}
         </div>
+      </>)}
       </div>
     </DashboardLayout>
   );
