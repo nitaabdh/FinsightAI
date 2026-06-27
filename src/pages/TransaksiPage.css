@@ -317,7 +317,7 @@
   .txpage { padding: 1rem; }
   .txpage__summary { gap: 1rem; }
   .txpage__summary-divider { display: none; }
-}
+
 
 /* Edit & Delete actions */
 .txpage__item-actions {
