@@ -9,3 +9,16 @@
   overflow-y: auto;
   min-width: 0;
 }
+
+/* ── Mobile ── */
+@media (max-width: 767px) {
+  /* Sembunyikan sidebar di mobile */
+  .dash-layout > aside.sidebar {
+    display: none;
+  }
+
+  /* Kasih padding bawah supaya konten nggak ketutup bottom nav */
+  .dash-layout__main {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+}

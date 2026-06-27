@@ -1,0 +1,73 @@
+/* BottomNav — hanya muncul di mobile (<768px) */
+.bottom-nav {
+  display: none; /* hidden by default, shown via media query */
+}
+
+@media (max-width: 767px) {
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    padding: 0.4rem 0.25rem;
+    padding-bottom: calc(0.4rem + env(safe-area-inset-bottom)); /* iPhone notch */
+    justify-content: space-around;
+    align-items: stretch;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
+  }
+
+  .bottom-nav__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    flex: 1;
+    padding: 0.35rem 0.25rem;
+    border-radius: var(--radius-md);
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    font-family: var(--font-body);
+    transition: var(--transition);
+    cursor: pointer;
+    min-width: 0;
+  }
+
+  .bottom-nav__item:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+  }
+
+  /* Active — UMKM */
+  .bottom-nav__item--active.bottom-nav__item--umkm {
+    background: var(--accent-umkm-dim);
+    border-color: rgba(245, 158, 11, 0.3);
+    color: var(--accent-umkm);
+  }
+
+  /* Active — Personal */
+  .bottom-nav__item--active.bottom-nav__item--personal {
+    background: var(--accent-personal-dim);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: var(--accent-personal);
+  }
+
+  .bottom-nav__icon {
+    font-size: 1.15rem;
+    line-height: 1;
+  }
+
+  .bottom-nav__label {
+    font-size: 9px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+}
