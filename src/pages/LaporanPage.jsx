@@ -356,7 +356,6 @@ export default function LaporanPage() {
         </div>
         </>
         )}
-      </div>
     </DashboardLayout>
   );
 }
