@@ -498,14 +498,7 @@ const updateOpenNoteMeta = async (field, value) => {
             <button className={`view-btn${notesView==="grid"?" active":""}`} onClick={()=>setNotesView("grid")} title="Grid">▦</button>
             <button className={`view-btn${notesView==="list"?" active":""}`} onClick={()=>setNotesView("list")} title="List">☰</button>
           </div>
-          <button className="notes-add-icon-btn" onClick={async () => {
-            const newNote = { id: genId(), title: "", body: "", color: "yellow", category: "umum" };
-            const r = await apiFetch(`/api/notes?table=notes`, {
-              method: "POST",
-              body: JSON.stringify({ ...newNote, mode }),
-            });
-            if (r.success) { setNotes(p => [r.data, ...p]); openNotePopup(r.data); }
-          }} title="Tambah catatan">＋</button>
+          <button className="notes-add-icon-btn" onClick={() => openNoteModal()} title="Tambah catatan">＋</button>
         </div>
       </div>
 
