@@ -1,0 +1,136 @@
+.txform__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.txform {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 420px;
+}
+
+.txform__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.txform__title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.txform__close {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  width: 28px; height: 28px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  transition: var(--transition);
+}
+
+.txform__close:hover { color: var(--text-primary); border-color: var(--border-light); }
+
+.txform__type-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: 3px;
+  gap: 3px;
+  margin-bottom: 1.25rem;
+}
+
+.txform__type-btn {
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  transition: var(--transition);
+}
+
+.txform__type-btn--active { background: var(--bg-card); color: var(--text-primary); }
+.txform__type-btn--pemasukan.txform__type-btn--active { color: #10b981; box-shadow: 0 0 0 1px #10b981; }
+.txform__type-btn--pengeluaran.txform__type-btn--active { color: #f87171; box-shadow: 0 0 0 1px #ef4444; }
+
+.txform__fields { display: flex; flex-direction: column; gap: 1rem; }
+
+.txform__field { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.txform__label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.txform__input {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.9rem;
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: var(--transition);
+  outline: none;
+  width: 100%;
+}
+
+.txform__input option { background: var(--bg-card); }
+.txform__input::placeholder { color: var(--text-muted); }
+.txform__input--umkm:focus     { border-color: var(--accent-umkm); box-shadow: 0 0 0 3px var(--accent-umkm-dim); }
+.txform__input--personal:focus { border-color: var(--accent-personal); box-shadow: 0 0 0 3px var(--accent-personal-dim); }
+
+.txform__error {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.25);
+  color: #f87171;
+  font-size: 13px;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-sm);
+}
+
+.txform__hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.85rem;
+}
+
+.txform__hint--tight { background: transparent; border: none; padding: 0; margin-top: -0.1rem; }
+
+.txform__submit {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  transition: var(--transition);
+  margin-top: 0.25rem;
+}
+
+.txform__submit--umkm     { background: linear-gradient(135deg, #d97706, #f59e0b); box-shadow: 0 4px 20px var(--accent-umkm-glow); }
+.txform__submit--personal { background: linear-gradient(135deg, #059669, #10b981); box-shadow: 0 4px 20px var(--accent-personal-glow); }
+.txform__submit:hover { transform: translateY(-1px); }

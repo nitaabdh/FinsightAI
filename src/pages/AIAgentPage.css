@@ -1,0 +1,114 @@
+.aipage {
+  padding: 2rem;
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Header */
+.aipage__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.aipage__title {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.aipage__subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 0.2rem; }
+
+.aipage__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.aipage__badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0.35rem 0.9rem;
+  border-radius: 20px;
+}
+
+.aipage__badge--umkm     { background: var(--accent-umkm-dim); color: var(--accent-umkm); border: 1px solid rgba(245,158,11,0.25); }
+.aipage__badge--personal { background: var(--accent-personal-dim); color: var(--accent-personal); border: 1px solid rgba(16,185,129,0.25); }
+
+.aipage__btn-clear,
+.aipage__btn-key {
+  font-size: 12px;
+  padding: 0.35rem 0.8rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  transition: var(--transition);
+}
+
+.aipage__btn-clear:hover { border-color: #ef4444; color: #f87171; }
+.aipage__btn-key:hover   { border-color: var(--border-light); color: var(--text-primary); }
+
+/* Context bar */
+.aipage__context {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 1rem;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.aipage__context-label { color: var(--text-muted); font-weight: 500; }
+
+.aipage__context-item {
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.aipage__context-item--income  { background: rgba(16,185,129,0.1); color: #10b981; }
+.aipage__context-item--expense { background: rgba(239,68,68,0.1); color: #f87171; }
+
+/* Error */
+.aipage__error {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.25);
+  color: #f87171;
+  font-size: 13px;
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+/* Chat wrap */
+.aipage__chat-wrap {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+@media (max-width: 600px) {
+  .aipage { padding: 1rem; height: auto; }
+  .aipage__chat-wrap { min-height: 500px; }
+}

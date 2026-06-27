@@ -1,0 +1,437 @@
+/* ── FloatingCalculator.css ────────────────────────────────────────────── */
+
+.float-calc {
+  position: fixed;
+  z-index: 9000;
+  width: 300px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, 16px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.1);
+  overflow: hidden;
+  animation: floatIn 0.2s ease;
+  max-height: 90vh;
+  overflow-y: auto;
+  user-select: none;
+}
+
+@keyframes floatIn {
+  from { opacity: 0; transform: scale(0.95) translateY(-8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+.float-calc.dragging { cursor: grabbing; box-shadow: 0 28px 80px rgba(0,0,0,0.28); }
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.float-calc__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 8px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  cursor: grab;
+}
+
+.float-calc__header:active { cursor: grabbing; }
+
+.float-calc__title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.float-calc__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.float-calc__drag-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+.float-calc__close {
+  background: var(--bg-hover, #e5e7eb);
+  border: none;
+  border-radius: 6px;
+  width: 24px; height: 24px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.12s;
+}
+
+.float-calc__close:hover { background: #fee2e2; color: #dc2626; }
+
+/* ── Entries ─────────────────────────────────────────────────────────────── */
+.float-calc__entries {
+  padding: 8px 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.float-calc__entry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.float-calc__entry-op {
+  width: 14px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--accent-personal, #059669);
+}
+
+.float-calc__entry-val { font-weight: 600; color: var(--text-primary); }
+
+.float-calc__entry-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  padding: 1px 6px;
+  border-radius: 10px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Display ─────────────────────────────────────────────────────────────── */
+.float-calc__display {
+  padding: 8px 14px 10px;
+  text-align: right;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.float-calc__op-indicator {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-personal, #059669);
+  min-height: 16px;
+}
+
+.float-calc__value {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+
+.float-calc__value.result { color: var(--accent-personal, #059669); }
+
+/* ── Label input ─────────────────────────────────────────────────────────── */
+.float-calc__label-input {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: rgba(5,150,105,0.06);
+  border-bottom: 1px solid var(--border);
+}
+
+.float-calc__label-input input {
+  flex: 1;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 12px;
+  outline: none;
+  font-family: var(--font-body);
+}
+
+.float-calc__label-input input:focus {
+  border-color: var(--accent-personal, #059669);
+}
+
+.float-calc__label-input button {
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  border: none;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.12s;
+}
+
+.float-calc__label-input button:first-of-type {
+  background: var(--accent-personal, #059669);
+  color: #fff;
+}
+
+.float-calc__label-input button:last-of-type {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.float-calc__buttons {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.float-calc__row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.calc-btn {
+  height: 52px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.calc-btn:hover { background: var(--bg-hover, #e5e7eb); transform: translateY(-1px); }
+.calc-btn:active { transform: translateY(0) scale(0.96); }
+
+.calc-btn--op {
+  background: rgba(5,150,105,0.1);
+  color: var(--accent-personal, #059669);
+  border-color: rgba(5,150,105,0.2);
+  font-size: 17px;
+}
+
+.calc-btn--op:hover { background: rgba(5,150,105,0.18); }
+
+.calc-btn--eq {
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: #fff;
+  border-color: transparent;
+  font-size: 17px;
+  box-shadow: 0 2px 8px rgba(5,150,105,0.3);
+}
+
+.calc-btn--eq:hover { box-shadow: 0 4px 14px rgba(5,150,105,0.4); }
+
+.calc-btn--clear {
+  background: rgba(220,38,38,0.1);
+  color: #dc2626;
+  border-color: rgba(220,38,38,0.2);
+}
+
+.calc-btn--clear:hover { background: rgba(220,38,38,0.18); }
+
+.calc-btn--back {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+.calc-btn--label {
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(99,102,241,0.1);
+  color: #6366f1;
+  border-color: rgba(99,102,241,0.2);
+  letter-spacing: -0.02em;
+}
+
+.calc-btn--label:hover { background: rgba(99,102,241,0.18); }
+
+/* ── Save row ─────────────────────────────────────────────────────────────── */
+.float-calc__save-row {
+  padding: 0 10px 10px;
+}
+
+.float-calc__save-btn {
+  width: 100%;
+  padding: 9px;
+  border-radius: 10px;
+  border: none;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.float-calc__save-btn:not(:disabled):hover {
+  background: rgba(5,150,105,0.1);
+  color: var(--accent-personal, #059669);
+  border-color: var(--accent-personal, #059669);
+}
+
+.float-calc__save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── History ─────────────────────────────────────────────────────────────── */
+.float-calc__history {
+  border-top: 1px solid var(--border);
+  padding: 10px;
+}
+
+.float-calc__history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.float-calc__history-header span {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.float-calc__history-header button {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.12s;
+}
+
+.float-calc__history-header button:hover { color: #dc2626; }
+
+.float-calc__history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.float-calc__history-item {
+  padding: 5px 8px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Save Modal ──────────────────────────────────────────────────────────── */
+.float-calc__save-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9100;
+  backdrop-filter: blur(2px);
+}
+
+.float-calc__save-modal {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg, 16px);
+  padding: 20px;
+  width: 280px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.float-calc__save-modal h4 {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.float-calc__save-result {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 12px;
+}
+
+.float-calc__save-result strong {
+  color: var(--accent-personal, #059669);
+  font-size: 15px;
+}
+
+.float-calc__save-input {
+  width: 100%;
+  padding: 8px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  font-family: var(--font-body);
+  box-sizing: border-box;
+  margin-bottom: 12px;
+}
+
+.float-calc__save-input:focus {
+  border-color: var(--accent-personal, #059669);
+  box-shadow: 0 0 0 3px rgba(5,150,105,0.1);
+}
+
+.float-calc__save-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.fc-btn-primary {
+  padding: 7px 16px;
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.fc-btn-primary:hover { box-shadow: 0 4px 12px rgba(5,150,105,0.35); }
+
+.fc-btn-sec {
+  padding: 7px 14px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.fc-btn-sec:hover { background: var(--bg-hover, #e5e7eb); }

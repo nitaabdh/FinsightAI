@@ -1,0 +1,88 @@
+/* ─── Jatuh Tempo (Dashboard UMKM) ───────────────────────────────────────────
+   File CSS tambahan — import ini di DashboardUMKM.jsx SETELAH "./Dashboard.css",
+   atau salin isi blok ini langsung ke dalam Dashboard.css yang sudah ada.
+   Class di sini sengaja menggunakan namespace "dashboard__jatuhtempo-*" supaya
+   tidak bentrok dengan class apa pun yang sudah ada di Dashboard.css.
+*/
+
+.dashboard__jatuhtempo {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.dashboard__jatuhtempo-link {
+  font-size: 12px;
+  color: var(--accent-umkm);
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.dashboard__jatuhtempo-link:hover { opacity: 0.8; }
+
+.dashboard__jatuhtempo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dashboard__jatuhtempo-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+}
+
+.dashboard__jatuhtempo-item:hover { border-color: var(--border-light); }
+
+.dashboard__jatuhtempo-jenis {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.dashboard__jatuhtempo-jenis--piutang { background: rgba(16,185,129,0.12); }
+.dashboard__jatuhtempo-jenis--utang   { background: rgba(239,68,68,0.12); }
+
+.dashboard__jatuhtempo-info { flex: 1; min-width: 0; }
+
+.dashboard__jatuhtempo-nama {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard__jatuhtempo-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 0.1rem;
+}
+
+.dashboard__jatuhtempo-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.dashboard__jatuhtempo-badge--lewat     { background: rgba(239,68,68,0.15); color: #f87171; }
+.dashboard__jatuhtempo-badge--hariIni   { background: rgba(245,158,11,0.18); color: var(--accent-umkm); }
+.dashboard__jatuhtempo-badge--mendekati { background: rgba(245,158,11,0.1); color: var(--accent-umkm); }
+.dashboard__jatuhtempo-badge--aman      { background: var(--bg-secondary); color: var(--text-muted); }

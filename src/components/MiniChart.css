@@ -1,0 +1,76 @@
+.mini-chart {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+
+.mini-chart--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.mini-chart__bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  height: 100px;
+  margin-bottom: 0.5rem;
+}
+
+.mini-chart__group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  height: 100%;
+}
+
+.mini-chart__pair {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  width: 100%;
+}
+
+.mini-chart__bar {
+  flex: 1;
+  border-radius: 3px 3px 0 0;
+  min-height: 3px;
+  transition: height 0.4s ease;
+}
+
+.mini-chart__bar--income.mini-chart__bar--umkm     { background: var(--accent-umkm); opacity: 0.85; }
+.mini-chart__bar--income.mini-chart__bar--personal { background: var(--accent-personal); opacity: 0.85; }
+.mini-chart__bar--expense { background: #ef4444; opacity: 0.6; }
+
+.mini-chart__label {
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.mini-chart__legend {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 0.75rem;
+}
+
+.mini-chart__legend-dot {
+  width: 8px; height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.mini-chart__legend-dot--umkm     { background: var(--accent-umkm); }
+.mini-chart__legend-dot--personal { background: var(--accent-personal); }
+.mini-chart__legend-dot--expense  { background: #ef4444; opacity: 0.7; }

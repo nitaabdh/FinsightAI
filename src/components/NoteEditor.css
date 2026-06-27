@@ -1,0 +1,109 @@
+/* ── NoteEditor.css ─────────────────────────────────────────────────────── */
+
+.ne-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────────────── */
+.ne-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.ne-tool-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 8px;
+  border-right: 1px solid var(--border);
+}
+
+.ne-tool-group:last-child {
+  border-right: none;
+  padding-right: 0;
+}
+
+.ne-tool-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+  font-size: 13px;
+}
+
+.ne-tool-btn:hover { background: var(--bg-hover, #e5e7eb); color: var(--text-primary); }
+.ne-tool-btn.active { background: var(--accent-personal, #059669); color: #fff; }
+
+.ne-icon { font-size: 13px; font-weight: 700; line-height: 1; font-family: var(--font-display); }
+.ne-icon--bold          { font-weight: 900; }
+.ne-icon--italic        { font-style: italic; font-weight: 600; }
+.ne-icon--underline     { text-decoration: underline; }
+.ne-icon--strikethrough { text-decoration: line-through; }
+
+/* ── Editor Content ──────────────────────────────────────────────────────── */
+.ne-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+
+.ne-content .tiptap {
+  outline: none;
+  min-height: 200px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
+.ne-content .tiptap p { margin: 0 0 6px; }
+.ne-content .tiptap p:last-child { margin-bottom: 0; }
+
+.ne-content .tiptap strong { font-weight: 700; color: var(--text-primary); }
+.ne-content .tiptap em     { font-style: italic; }
+.ne-content .tiptap u      { text-decoration: underline; }
+.ne-content .tiptap s      { text-decoration: line-through; color: var(--text-muted); }
+
+.ne-content .tiptap ul,
+.ne-content .tiptap ol {
+  padding-left: 1.4em;
+  margin: 4px 0 8px;
+}
+
+.ne-content .tiptap ul { list-style: disc; }
+.ne-content .tiptap ol { list-style: decimal; }
+
+.ne-content .tiptap li { margin-bottom: 3px; line-height: 1.6; }
+
+.ne-content .tiptap hr {
+  border: none;
+  border-top: 2px solid var(--border);
+  margin: 12px 0;
+}
+
+.ne-content .tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--text-muted);
+  pointer-events: none;
+  float: left;
+  height: 0;
+}

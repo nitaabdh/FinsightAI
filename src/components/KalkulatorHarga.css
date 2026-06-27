@@ -1,0 +1,316 @@
+.kalkharga { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.kalkharga__form {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.kalkharga__form-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.kalkharga__field { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.kalkharga__label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.kalkharga__input {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.85rem;
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: var(--transition);
+  width: 100%;
+}
+
+.kalkharga__input option { background: var(--bg-card); }
+.kalkharga__input::placeholder { color: var(--text-muted); }
+.kalkharga__input:focus { border-color: var(--accent-umkm); box-shadow: 0 0 0 3px var(--accent-umkm-dim); }
+.kalkharga__input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.kalkharga__addbahan {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+}
+
+.kalkharga__hint { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+.kalkharga__addbahan-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+@media (max-width: 700px) {
+  .kalkharga__addbahan-row { grid-template-columns: 1fr 1fr; }
+}
+
+.kalkharga__addbtn {
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-umkm);
+  background: var(--accent-umkm-dim);
+  border: 1px solid rgba(245,158,11,0.3);
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.kalkharga__addbtn:hover { background: rgba(245,158,11,0.18); }
+
+.kalkharga__items { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.kalkharga__item-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  font-size: 13px;
+}
+
+@media (max-width: 700px) {
+  .kalkharga__item-row { grid-template-columns: 1.5fr 1fr 1fr auto; font-size: 12px; }
+}
+
+.kalkharga__item-nama { color: var(--text-primary); font-weight: 500; }
+.kalkharga__item-qty  { color: var(--text-secondary); }
+.kalkharga__item-biaya { color: var(--accent-umkm); font-weight: 600; font-family: var(--font-display); }
+
+.kalkharga__item-remove {
+  background: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 0.2rem 0.4rem;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+.kalkharga__item-remove:hover { color: #f87171; background: rgba(239,68,68,0.1); }
+
+.kalkharga__costs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+}
+
+@media (max-width: 700px) {
+  .kalkharga__costs { grid-template-columns: 1fr; }
+}
+
+.kalkharga__summary {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.kalkharga__sum-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary); }
+
+.kalkharga__sum-row--sub {
+  padding-top: 0.4rem;
+  border-top: 1px dashed var(--border);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.kalkharga__sum-row--final {
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--accent-umkm);
+}
+
+.kalkharga__error {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.25);
+  color: #f87171;
+  font-size: 13px;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-sm);
+}
+
+.kalkharga__form-actions { display: flex; justify-content: flex-end; gap: 0.6rem; }
+
+.kalkharga__btn-primary {
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #d97706, #f59e0b);
+  box-shadow: 0 4px 16px var(--accent-umkm-glow);
+  transition: var(--transition);
+}
+.kalkharga__btn-primary:hover { transform: translateY(-1px); }
+
+.kalkharga__btn-sec {
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  transition: var(--transition);
+}
+.kalkharga__btn-sec:hover { color: var(--text-primary); }
+
+.kalkharga__btn-danger {
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: #f87171;
+  background: rgba(239,68,68,0.15);
+  border: 1px solid rgba(239,68,68,0.3);
+  transition: var(--transition);
+}
+.kalkharga__btn-danger:hover { background: rgba(239,68,68,0.25); }
+
+/* List produk */
+.kalkharga__list {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+
+.kalkharga__list-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.kalkharga__empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 2;
+}
+.kalkharga__empty p:first-child { font-size: 2.5rem; }
+
+.kalkharga__produk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.85rem;
+}
+
+.kalkharga__produk-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: var(--transition);
+}
+.kalkharga__produk-card:hover { border-color: var(--accent-umkm); }
+
+.kalkharga__produk-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.kalkharga__produk-nama { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.kalkharga__produk-actions { display: flex; gap: 0.2rem; flex-shrink: 0; }
+
+.kalkharga__produk-edit, .kalkharga__produk-del {
+  background: none;
+  font-size: 13px;
+  padding: 0.2rem;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  color: var(--text-muted);
+}
+.kalkharga__produk-edit:hover { background: rgba(129,140,248,0.1); color: var(--accent-ai); }
+.kalkharga__produk-del:hover  { background: rgba(239,68,68,0.1); color: #f87171; }
+
+.kalkharga__produk-body { display: flex; flex-direction: column; gap: 0.1rem; }
+.kalkharga__produk-label { font-size: 11px; color: var(--text-muted); }
+.kalkharga__produk-harga {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--accent-umkm);
+}
+
+.kalkharga__produk-detail {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+  border-top: 1px dashed var(--border);
+  padding-top: 0.5rem;
+}
+
+.kalkharga__produk-resep { font-size: 10px; color: var(--text-muted); opacity: 0.8; }
+
+/* Modal */
+.kalkharga__modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.kalkharga__modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  padding: 1.75rem;
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+}
+
+.kalkharga__modal-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.kalkharga__modal-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.6; }
+
+.kalkharga__modal-actions { display: flex; gap: 0.75rem; }
+.kalkharga__modal-actions .kalkharga__btn-sec,
+.kalkharga__modal-actions .kalkharga__btn-danger { flex: 1; }
