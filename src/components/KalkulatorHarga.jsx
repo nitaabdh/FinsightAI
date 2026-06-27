@@ -1,12 +1,20 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import {
-  BAHAN_KEY, PRODUK_KEY, loadData, saveData, genId,
-  formatRupiah, biayaItem, totalBiayaBahan, validUsageUnits,
+  genId, formatRupiah, biayaItem, totalBiayaBahan, validUsageUnits,
 } from "../utils/umkmCalc";
 import "./KalkulatorHarga.css";
 
 const emptyForm = { nama: "", items: [], biayaOperasional: "", targetUntung: "" };
+
+async function apiFetch(url, options = {}) {
+  const token = localStorage.getItem("token");
+  const res = await fetch(url, {
+    ...options,
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(options.headers || {}) },
+  });
+  return res.json();
+}
 
 export default function KalkulatorHarga() {
   const { user } = useAuth();
@@ -16,32 +24,26 @@ export default function KalkulatorHarga() {
   const [editId,  setEditId]  = useState(null);
   const [error,   setError]   = useState("");
   const [delId,   setDelId]   = useState(null);
-
-  // Baris input bahan yang sedang ditambahkan ke resep
   const [selBahan,  setSelBahan]  = useState("");
   const [selJumlah, setSelJumlah] = useState("");
   const [selSatuan, setSelSatuan] = useState("");
 
- useEffect(() => {
-  if (!user) return;
-  apiFetch(`/api/umkm?table=bahan_baku`).then(r => { if (r.success) setBahanList(r.data); });
-  apiFetch(`/api/umkm?table=produk`).then(r => { if (r.success) setProdukList(r.data); });
-}, [user]);
-
-  // Sinkron ulang daftar bahan kalau ada perubahan dari tab Bahan Baku (restock, tambah, dsb)
   useEffect(() => {
-    const refresh = () => { if (user) setBahanList(loadData(BAHAN_KEY(user.id))); };
+    if (!user) return;
+    apiFetch(`/api/umkm?table=bahan_baku`).then(r => { if (r.success) setBahanList(r.data); });
+    apiFetch(`/api/umkm?table=produk`).then(r => { if (r.success) setProdukList(r.data); });
+  }, [user]);
+
+  // Sinkron bahan kalau ada update dari tab Bahan Baku
+  useEffect(() => {
+    const refresh = () => {
+      if (user) apiFetch(`/api/umkm?table=bahan_baku`).then(r => { if (r.success) setBahanList(r.data); });
+    };
     window.addEventListener("bahanBakuUpdated", refresh);
     return () => window.removeEventListener("bahanBakuUpdated", refresh);
   }, [user]);
 
   const bahanMap = Object.fromEntries(bahanList.map(b => [b.id, b]));
-
-  const persistProduk = (updated) => {
-    setProdukList(updated);
-    saveData(PRODUK_KEY(user.id), updated);
-    window.dispatchEvent(new CustomEvent("produkUpdated"));
-  };
 
   const resetForm = () => {
     setForm(emptyForm); setEditId(null); setError("");
@@ -54,7 +56,6 @@ export default function KalkulatorHarga() {
     setSelBahan(""); setSelJumlah(""); setSelSatuan("");
   };
 
-  // ── Tambah bahan ke resep ────────────────────────────────────────────────────
   const handlePilihBahan = (id) => {
     setSelBahan(id);
     const b = bahanMap[id];
@@ -62,7 +63,7 @@ export default function KalkulatorHarga() {
   };
 
   const handleTambahItem = () => {
-    if (!selBahan)                                       return setError("Pilih bahan terlebih dahulu.");
+    if (!selBahan)                                          return setError("Pilih bahan terlebih dahulu.");
     if (!selJumlah || isNaN(selJumlah) || +selJumlah <= 0) return setError("Masukkan jumlah pakai yang valid.");
     setForm(p => ({ ...p, items: [...p.items, { bahanId: selBahan, jumlahPakai: +selJumlah, satuanPakai: selSatuan }] }));
     setSelBahan(""); setSelJumlah(""); setSelSatuan("");
@@ -71,39 +72,58 @@ export default function KalkulatorHarga() {
 
   const handleHapusItem = (idx) => setForm(p => ({ ...p, items: p.items.filter((_, i) => i !== idx) }));
 
-  // ── Kalkulasi live ───────────────────────────────────────────────────────────
-  const biayaBahan       = totalBiayaBahan(form.items, bahanMap);
-  const biayaOpsNum      = +form.biayaOperasional || 0;
-  const targetUntungNum  = +form.targetUntung || 0;
-  const totalBiaya       = biayaBahan + biayaOpsNum;
-  const hargaJual         = totalBiaya + targetUntungNum;
+  const biayaBahan      = totalBiayaBahan(form.items, bahanMap);
+  const biayaOpsNum     = +form.biayaOperasional || 0;
+  const targetUntungNum = +form.targetUntung || 0;
+  const totalBiaya      = biayaBahan + biayaOpsNum;
+  const hargaJual       = totalBiaya + targetUntungNum;
 
-  // ── Simpan produk ────────────────────────────────────────────────────────────
-  // handleSubmit
-const handleSubmit = async () => {
-  // ... validasi sama ...
-  const payload = { id: genId(), nama: form.nama.trim(), items: form.items, biayaOperasional: +form.biayaOperasional, targetUntung: +form.targetUntung, biayaBahan, totalBiaya, hargaJual };
-  if (editId) {
-    const r = await apiFetch(`/api/umkm?table=produk`, { method: "PUT", body: JSON.stringify({ id: editId, ...payload }) });
-    if (r.success) { setProdukList(p => p.map(x => x.id === editId ? r.data : x)); window.dispatchEvent(new CustomEvent("produkUpdated")); }
-  } else {
-    const r = await apiFetch(`/api/umkm?table=produk`, { method: "POST", body: JSON.stringify(payload) });
-    if (r.success) { setProdukList(p => [r.data, ...p]); window.dispatchEvent(new CustomEvent("produkUpdated")); }
-  }
-  resetForm();
-};
+  const handleSubmit = async () => {
+    if (!form.nama.trim())      return setError("Nama produk tidak boleh kosong.");
+    if (form.items.length === 0) return setError("Tambahkan minimal satu bahan ke resep.");
 
-  // handleDel
-const handleDel = async (id) => {
-  await apiFetch(`/api/umkm?table=produk&id=${id}`, { method: "DELETE" });
-  setProdukList(p => p.filter(x => x.id !== id));
-  setDelId(null);
-  if (editId === id) resetForm();
-  window.dispatchEvent(new CustomEvent("produkUpdated"));
-};
+    const payload = {
+      nama: form.nama.trim(),
+      items: form.items,
+      biayaOperasional: biayaOpsNum,
+      targetUntung: targetUntungNum,
+      biayaBahan,
+      totalBiaya,
+      hargaJual,
+    };
+
+    if (editId) {
+      const r = await apiFetch(`/api/umkm?table=produk`, {
+        method: "PUT",
+        body: JSON.stringify({ id: editId, ...payload }),
+      });
+      if (r.success) {
+        setProdukList(p => p.map(x => x.id === editId ? r.data : x));
+        window.dispatchEvent(new CustomEvent("produkUpdated"));
+      }
+    } else {
+      const r = await apiFetch(`/api/umkm?table=produk`, {
+        method: "POST",
+        body: JSON.stringify({ id: genId(), ...payload, createdAt: Date.now() }),
+      });
+      if (r.success) {
+        setProdukList(p => [r.data, ...p]);
+        window.dispatchEvent(new CustomEvent("produkUpdated"));
+      }
+    }
+    resetForm();
+  };
+
+  const handleDel = async (id) => {
+    await apiFetch(`/api/umkm?table=produk&id=${id}`, { method: "DELETE" });
+    setProdukList(p => p.filter(x => x.id !== id));
+    setDelId(null);
+    if (editId === id) resetForm();
+    window.dispatchEvent(new CustomEvent("produkUpdated"));
+  };
+
   return (
     <div className="kalkharga">
-      {/* Form bikin/edit produk */}
       <div className="kalkharga__form">
         <h3 className="kalkharga__form-title">{editId ? "✏️ Edit Produk" : "+ Hitung Harga Jual Produk"}</h3>
 
@@ -113,7 +133,6 @@ const handleDel = async (id) => {
             value={form.nama} onChange={e => { setForm(p => ({ ...p, nama: e.target.value })); setError(""); }} />
         </div>
 
-        {/* Tambah bahan */}
         <div className="kalkharga__addbahan">
           <label className="kalkharga__label">Tambah Bahan dari Master Data</label>
           {bahanList.length === 0 ? (
@@ -135,7 +154,6 @@ const handleDel = async (id) => {
           )}
         </div>
 
-        {/* Daftar bahan dalam resep */}
         {form.items.length > 0 && (
           <div className="kalkharga__items">
             {form.items.map((it, idx) => {
@@ -153,7 +171,6 @@ const handleDel = async (id) => {
           </div>
         )}
 
-        {/* Biaya operasional & target untung */}
         <div className="kalkharga__costs">
           <div className="kalkharga__field">
             <label className="kalkharga__label">Biaya Operasional (Rp)</label>
@@ -167,7 +184,6 @@ const handleDel = async (id) => {
           </div>
         </div>
 
-        {/* Ringkasan */}
         <div className="kalkharga__summary">
           <div className="kalkharga__sum-row"><span>Biaya Bahan</span><span>{formatRupiah(biayaBahan)}</span></div>
           <div className="kalkharga__sum-row"><span>Biaya Operasional</span><span>{formatRupiah(biayaOpsNum)}</span></div>
@@ -186,7 +202,6 @@ const handleDel = async (id) => {
         </div>
       </div>
 
-      {/* Daftar produk */}
       <div className="kalkharga__list">
         <h3 className="kalkharga__list-title">Daftar Produk</h3>
         {produkList.length === 0 ? (
@@ -214,16 +229,13 @@ const handleDel = async (id) => {
                   <span>Modal: {formatRupiah(p.totalBiaya)}</span>
                   <span>Untung: {formatRupiah(p.targetUntung)}</span>
                 </div>
-                <div className="kalkharga__produk-resep">
-                  {p.items.length} bahan dalam resep
-                </div>
+                <div className="kalkharga__produk-resep">{p.items.length} bahan dalam resep</div>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* Konfirmasi hapus */}
       {delId && (
         <div className="kalkharga__modal-overlay" onClick={() => setDelId(null)}>
           <div className="kalkharga__modal" onClick={e => e.stopPropagation()}>
