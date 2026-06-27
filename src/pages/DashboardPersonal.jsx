@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
+import PageHeader from "../components/PageHeader";
 import MetricCard from "../components/MetricCard";
 import MiniChart from "../components/MiniChart";
 import { getTransactions, calcSummary, formatRupiah, groupByCategory } from "../utils/storage";
@@ -132,14 +133,10 @@ export default function DashboardPersonal() {
   return (
     <DashboardLayout>
       <div className="dashboard">
-        {/* Header */}
-        <div className="dashboard__header">
-          <div>
-            <h1 className="dashboard__title">Dashboard Pribadi</h1>
-            <p className="dashboard__subtitle">Ringkasan keuangan personal kamu</p>
-          </div>
-          <div className="dashboard__badge dashboard__badge--personal">👤 Mode Pribadi</div>
-        </div>
+        <PageHeader
+          title="Dashboard Pribadi"
+          subtitle="Ringkasan keuangan personal kamu"
+        />
 
         {/* Budget Alert Banner */}
         {budgetStatus !== "safe" && summary.pemasukan > 0 && (

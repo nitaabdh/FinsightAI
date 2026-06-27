@@ -265,7 +265,55 @@
 
 .txpage__confirm-ok:hover { background: rgba(239,68,68,0.25); }
 
-@media (max-width: 600px) {
+/* Skeleton loading */
+@keyframes skel-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+.skel {
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 25%,
+    var(--border)       50%,
+    var(--bg-secondary) 75%
+  );
+  background-size: 800px 100%;
+  animation: skel-shimmer 1.4s infinite linear;
+  border-radius: var(--radius-sm);
+}
+
+.txpage__skeleton-wrap { display: flex; flex-direction: column; }
+
+.txpage__skeleton-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.txpage__skeleton-item:last-child { border-bottom: none; }
+
+.txpage__skeleton-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.txpage__skeleton-info { flex: 1; }
+
+.txpage__skeleton-line {
+  height: 13px;
+  border-radius: var(--radius-sm);
+}
+
+.txpage__skeleton-amount {
+  width: 80px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
   .txpage { padding: 1rem; }
   .txpage__summary { gap: 1rem; }
   .txpage__summary-divider { display: none; }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
+import PageHeader from "../components/PageHeader";
 import { getTransactions, calcSummary, formatRupiah, groupByMonth, groupByCategory, monthLabel } from "../utils/storage";
 import BreakEvenPoint from "../components/BreakEvenPoint";
 import UtangPiutang from "../components/UtangPiutang";
@@ -107,14 +108,14 @@ export default function LaporanPage() {
   return (
     <DashboardLayout>
       <div className="laporanpage">
-        {/* Header */}
-        <div className="laporanpage__header">
-          <div>
-            <h1 className="laporanpage__title">Laporan Keuangan</h1>
-            <p className="laporanpage__subtitle">Ringkasan lengkap keuangan usahamu</p>
-          </div>
-          {activeTab === "labarugi" && (
-            <div className="laporanpage__header-actions">
+        <PageHeader
+          title="Laporan Keuangan"
+          subtitle="Ringkasan lengkap keuangan usahamu"
+        />
+
+        {/* Filter + Export — hanya di tab Laba Rugi */}
+        {activeTab === "labarugi" && (
+          <div className="laporanpage__header-actions">
             <select
               className="laporanpage__select"
               value={filterMonth}
@@ -127,7 +128,7 @@ export default function LaporanPage() {
               ⬇ Export CSV
             </button>
           </div>
-          )}
+        )}
         </div>
 
         {/* Tab switcher */}

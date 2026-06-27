@@ -1,5 +1,6 @@
 import { useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";
+import PageHeader from "../components/PageHeader";
 import BahanBaku from "../components/BahanBaku";
 import KalkulatorHarga from "../components/KalkulatorHarga";
 import AsetUsaha from "../components/AsetUsaha";
@@ -17,14 +18,10 @@ export default function ProduksiPage() {
   return (
     <DashboardLayout>
       <div className="produksipage">
-        {/* Header */}
-        <div className="produksipage__header">
-          <div>
-            <h1 className="produksipage__title">Produksi & Stok</h1>
-            <p className="produksipage__subtitle">Kelola bahan baku, harga jual, dan aset usahamu</p>
-          </div>
-          <div className="produksipage__badge">🏭 Mode UMKM</div>
-        </div>
+        <PageHeader
+          title="Produksi & Stok"
+          subtitle="Kelola bahan baku, harga jual, dan aset usahamu"
+        />
 
         {/* Tab switcher */}
         <div className="produksipage__tabs">

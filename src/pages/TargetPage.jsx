@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
+import PageHeader from "../components/PageHeader";
 import { formatRupiah } from "../utils/storage";
 import "./TargetPage.css";
 
@@ -118,12 +119,11 @@ export default function TargetPage() {
   return (
     <DashboardLayout>
       <div className="targetpage">
-        {/* Header */}
-        <div className="targetpage__header">
-          <div>
-            <h1 className="targetpage__title">Target Tabungan</h1>
-            <p className="targetpage__subtitle">{targets.length} target aktif</p>
-          </div>
+        <PageHeader
+          title="Target Tabungan"
+          subtitle={`${targets.length} target aktif`}
+        />
+        <div className="targetpage__toolbar">
           <button className="targetpage__add-btn" onClick={() => setShowForm(true)}>
             + Tambah Target
           </button>

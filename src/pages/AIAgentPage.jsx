@@ -1,5 +1,6 @@
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
+import PageHeader from "../components/PageHeader";
 import ChatUI from "../components/ChatUI";
 import ApiKeySetup from "../components/ApiKeySetup";
 import { useAIAgent } from "../hooks/useAIAgent";
@@ -45,25 +46,18 @@ export default function AIAgentPage() {
   return (
     <DashboardLayout>
       <div className="aipage">
-        <div className="aipage__header">
-          <div>
-            <h1 className="aipage__title">AI Agent</h1>
-            <p className="aipage__subtitle">
-              {mode === "umkm" ? "Konsultan bisnis cerdas untuk usahamu" : "Penasihat keuangan pribadi cerdasmu"}
-            </p>
-          </div>
+        <PageHeader
+          title="AI Agent"
+          subtitle={mode === "umkm" ? "Konsultan bisnis cerdas untuk usahamu" : "Penasihat keuangan pribadi cerdasmu"}
+        />
+
+        {/* Aksi chat — clear & ganti key */}
+        {apiKey && (
           <div className="aipage__header-actions">
-            {apiKey && (
-              <>
-                <button className="aipage__btn-clear" onClick={clearChat}>🗑 Bersihkan Chat</button>
-                <button className="aipage__btn-key" onClick={clearApiKey}>🔑 Ganti Key</button>
-              </>
-            )}
-            <div className={"aipage__badge aipage__badge--" + accent}>
-              🤖 {mode === "umkm" ? "Konsultan UMKM" : "Penasihat Pribadi"}
-            </div>
+            <button className="aipage__btn-clear" onClick={clearChat}>🗑 Bersihkan Chat</button>
+            <button className="aipage__btn-key" onClick={clearApiKey}>🔑 Ganti Key</button>
           </div>
-        </div>
+        )}
 
         <div className="aipage__context">
           <span className="aipage__context-label">📊 Data yang diketahui AI:</span>

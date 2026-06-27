@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
+import PageHeader from "../components/PageHeader";
 import MetricCard from "../components/MetricCard";
 import MiniChart from "../components/MiniChart";
 import { getTransactions, calcSummary, formatRupiah, groupByCategory } from "../utils/storage";
@@ -86,13 +87,10 @@ export default function DashboardUMKM() {
   return (
     <DashboardLayout>
       <div className="dashboard">
-        <div className="dashboard__header">
-          <div>
-            <h1 className="dashboard__title">Dashboard Usaha</h1>
-            <p className="dashboard__subtitle">Ringkasan keuangan toko kamu hari ini</p>
-          </div>
-          <div className="dashboard__badge dashboard__badge--umkm">🏪 Mode UMKM</div>
-        </div>
+        <PageHeader
+          title="Dashboard Usaha"
+          subtitle="Ringkasan keuangan toko kamu hari ini"
+        />
 
         <div className="dashboard__metrics">
           <MetricCard label="Total Omzet"          value={formatRupiah(summary.pemasukan)}  sub="Total pemasukan tercatat"      icon="📈" accent="umkm" />

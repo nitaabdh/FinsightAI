@@ -21,6 +21,7 @@ export default function TransaksiPage() {
   const accent = mode === "umkm" ? "umkm" : "personal";
 
   const [transactions,   setTransactions]   = useState([]);
+  const [loading,        setLoading]        = useState(true);
   const [showForm,       setShowForm]       = useState(false);
   const [editData,       setEditData]       = useState(null);
   const [filterType,     setFilterType]     = useState("semua");
@@ -29,11 +30,15 @@ export default function TransaksiPage() {
   const [search,         setSearch]         = useState("");
   const [deleteConfirm,  setDeleteConfirm]  = useState(null);
 
-  const load = async () => {
-    if (user) setTransactions(await getTransactions(user.id, mode));
+  const load = async (showSkeleton = false) => {
+    if (!user) return;
+    if (showSkeleton) setLoading(true);
+    const data = await getTransactions(user.id, mode);
+    setTransactions(data);
+    setLoading(false);
   };
 
-  useEffect(() => { load(); }, [user]);
+  useEffect(() => { load(true); }, [user]);
 
   // ── Stok: kurangi/kembalikan berdasarkan resep produk yang di-snapshot di transaksi ──
   const applyStokUntukTransaksi = async (tx, arah) => {
@@ -57,14 +62,14 @@ export default function TransaksiPage() {
   const handleAdd = async (data) => {
     await addTransaction(user.id, mode, data);
     if (data.items?.length) await applyStokUntukTransaksi(data, -1);
-    load();
+    load(false);
   };
 
   const handleEdit = async (updatedTx) => {
     if (editData?.items?.length) await applyStokUntukTransaksi(editData, +1);
     await editTransaction(user.id, mode, updatedTx);
     if (updatedTx.items?.length) await applyStokUntukTransaksi(updatedTx, -1);
-    load();
+    load(false);
   };
 
   const handleDelete = async (id) => {
@@ -72,7 +77,7 @@ export default function TransaksiPage() {
     if (tx?.items?.length) await applyStokUntukTransaksi(tx, +1);
     await deleteTransaction(user.id, mode, id);
     setDeleteConfirm(null);
-    load();
+    load(false);
   };
 
   const openEdit = (tx) => { setEditData(tx); setShowForm(true); };
@@ -152,7 +157,20 @@ export default function TransaksiPage() {
         </div>
 
         <div className="txpage__list">
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="txpage__skeleton-wrap">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="txpage__skeleton-item">
+                  <div className="txpage__skeleton-dot skel" />
+                  <div className="txpage__skeleton-info">
+                    <div className="txpage__skeleton-line skel" style={{ width: `${55 + (i % 3) * 15}%` }} />
+                    <div className="txpage__skeleton-line skel" style={{ width: "35%", marginTop: "6px", height: "10px" }} />
+                  </div>
+                  <div className="txpage__skeleton-amount skel" />
+                </div>
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="txpage__empty">
               <p>📭</p>
               <p>Tidak ada transaksi ditemukan.</p>

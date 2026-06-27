@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
+import PageHeader from "../components/PageHeader";
 import "./CatatanPage.css";
 import NoteEditor from "../components/NoteEditor";
 
@@ -828,12 +829,10 @@ const updateOpenNoteMeta = async (field, value) => {
   return (
     <DashboardLayout>
       <div className="catatanpage">
-        <div className="catatanpage__header">
-          <div>
-            <h1 className="catatanpage__title">{mode==="umkm" ? "📋 Catatan Usaha" : "📋 Catatan Pribadi"}</h1>
-            <p className="catatanpage__subtitle">{mode==="umkm" ? "Jadwal, reminder, dan catatan penting usahamu" : "Kalender personal dan catatan harianmu"}</p>
-          </div>
-        </div>
+        <PageHeader
+          title={mode === "umkm" ? "📋 Catatan Usaha" : "📋 Catatan Pribadi"}
+          subtitle={mode === "umkm" ? "Jadwal, reminder, dan catatan penting usahamu" : "Kalender personal dan catatan harianmu"}
+        />
 
         <div className="tab-toggle">
           <button className={`tab-btn${activeTab==="kalender"?" active":""}`} onClick={()=>setActiveTab("kalender")}>📅 Kalender</button>

@@ -1,0 +1,216 @@
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.75rem 2rem 0;
+  flex-wrap: wrap;
+}
+
+/* Kiri */
+.page-header__title {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.page-header__subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 0.2rem;
+}
+
+/* Kanan */
+.page-header__right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* Mode badge */
+.page-header__badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.page-header__badge--umkm     { background: var(--accent-umkm-dim);     color: var(--accent-umkm); }
+.page-header__badge--personal { background: var(--accent-personal-dim); color: var(--accent-personal); }
+
+/* Avatar button */
+.page-header__avatar-wrap { position: relative; }
+
+.page-header__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: var(--transition);
+  position: relative;
+  overflow: visible;
+  flex-shrink: 0;
+}
+
+.page-header__avatar--umkm {
+  background: var(--accent-umkm-dim);
+  color: var(--accent-umkm);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.page-header__avatar--personal {
+  background: var(--accent-personal-dim);
+  color: var(--accent-personal);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.page-header__avatar:hover {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+.page-header__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* Dot indicator */
+.page-header__avatar-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--bg-primary);
+}
+
+.page-header__avatar-dot--umkm     { background: var(--accent-umkm); }
+.page-header__avatar-dot--personal { background: var(--accent-personal); }
+
+/* Dropdown */
+.page-header__dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 220px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  z-index: 300;
+  overflow: hidden;
+  animation: dropdown-in 0.15s ease;
+}
+
+@keyframes dropdown-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* User info di atas dropdown */
+.page-header__dropdown-user {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+}
+
+.page-header__dropdown-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.page-header__dropdown-avatar--umkm     { background: var(--accent-umkm-dim);     color: var(--accent-umkm); }
+.page-header__dropdown-avatar--personal { background: var(--accent-personal-dim); color: var(--accent-personal); }
+
+.page-header__dropdown-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.page-header__dropdown-email {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.page-header__dropdown-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0;
+}
+
+/* Item */
+.page-header__dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.page-header__dropdown-item:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.page-header__dropdown-item--danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+}
+
+/* ── Mobile ── */
+@media (max-width: 767px) {
+  .page-header {
+    padding: 1.25rem 1rem 0;
+  }
+
+  .page-header__title {
+    font-size: 1.3rem;
+  }
+
+  /* Sembunyikan badge mode di mobile (sudah ada di bottom nav warnanya) */
+  .page-header__badge {
+    display: none;
+  }
+}
