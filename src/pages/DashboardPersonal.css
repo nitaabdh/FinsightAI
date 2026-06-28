@@ -220,8 +220,158 @@
 }
 
 /* ============================
-   Emoji kategori (transaksi terbaru & list kategori)
+   Income Tracker
    ============================ */
+.dp-income {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dp-income__delta {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+}
+
+.dp-income__delta--up {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.dp-income__delta--down {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+}
+
+.dp-income__summary {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.1rem;
+}
+
+.dp-income__summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+}
+
+.dp-income__summary-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+}
+
+.dp-income__summary-value {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-secondary);
+}
+
+.dp-income__summary-value--current {
+  color: var(--accent-personal);
+}
+
+.dp-income__summary-divider {
+  width: 1px;
+  height: 36px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.dp-income__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.dp-income__row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.dp-income__row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.dp-income__cat {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dp-income__row-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dp-income__cat-delta {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+}
+
+.dp-income__cat-delta--up {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.dp-income__cat-delta--down {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+}
+
+.dp-income__amount {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--accent-personal);
+}
+
+.dp-income__bar {
+  height: 5px;
+  background: var(--bg-secondary);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.dp-income__bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #059669, #10b981);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.dp-income__row-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+}
+
 .dashboard__tx-emoji {
   font-size: 16px;
   flex-shrink: 0;

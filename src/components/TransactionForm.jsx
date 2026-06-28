@@ -1,10 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { CATEGORIES } from "../utils/storage";
 import { formatRupiah } from "../utils/umkmCalc";
 import "./TransactionForm.css";
 
 const KATEGORI_PRODUK = "Penjualan Produk";
+
+const CATEGORY_EMOJI = {
+  "makan": "🍔", "makanan": "🍔", "transportasi": "🚗", "transport": "🚗",
+  "belanja": "🛍️", "hiburan": "🎮", "kesehatan": "💊", "pendidikan": "📚",
+  "tagihan": "🧾", "listrik": "💡", "air": "🚰", "internet": "🌐",
+  "pulsa": "📱", "gaji": "💰", "freelance": "💼", "investasi": "📈",
+  "tabungan": "🏦", "hadiah": "🎁", "lainnya": "🗂️",
+  "penjualan produk": "🛒",
+};
+function getCategoryEmoji(cat) {
+  if (!cat) return "🗂️";
+  return CATEGORY_EMOJI[cat.toLowerCase().trim()] || "🗂️";
+}
 
 async function apiFetch(url, options = {}) {
   const token = localStorage.getItem("token");
@@ -19,6 +32,8 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
   const { user } = useAuth();
   const accent = mode === "umkm" ? "umkm" : "personal";
   const isEdit = !!editData;
+  const catInputRef = useRef(null);
+  const catDropdownRef = useRef(null);
 
   const [form, setForm] = useState({
     type:        editData?.type        || "pemasukan",
@@ -29,12 +44,43 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
   });
   const [error, setError] = useState("");
 
+  // Smart category state
+  const [catQuery,      setCatQuery]      = useState(editData?.category || "");
+  const [catOpen,       setCatOpen]       = useState(false);
+  const [usedCategories, setUsedCategories] = useState([]);
+
   const [produkList,  setProdukList]  = useState([]);
   const [selProdukId, setSelProdukId] = useState(editData?.produkId || "");
   const [jumlahUnit,  setJumlahUnit]  = useState(editData?.jumlahUnit ? String(editData.jumlahUnit) : "1");
   const [selItems,    setSelItems]    = useState(editData?.items || null);
 
   const showProdukPicker = mode === "umkm" && form.type === "pemasukan";
+
+  useEffect(() => {
+    if (user) {
+      const token = localStorage.getItem("token");
+      fetch(`/api/transactions?mode=${mode}`, {
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      }).then(r => r.json()).then(r => {
+        if (r.success) {
+          const cats = [...new Set(r.data.map(tx => tx.category).filter(Boolean))];
+          setUsedCategories(cats);
+        }
+      });
+    }
+  }, [user, mode]);
+
+  // Tutup dropdown kalau klik di luar
+  useEffect(() => {
+    const handler = (e) => {
+      if (catDropdownRef.current && !catDropdownRef.current.contains(e.target) &&
+          catInputRef.current && !catInputRef.current.contains(e.target)) {
+        setCatOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   useEffect(() => {
     if (user && mode === "umkm") {
@@ -55,16 +101,41 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
 
   const categories = (() => {
     const base = CATEGORIES[mode]?.[form.type] || [];
-    if (showProdukPicker && !base.includes(KATEGORI_PRODUK)) return [...base, KATEGORI_PRODUK];
-    return base;
+    const combined = [...new Set([...base, ...usedCategories])];
+    if (showProdukPicker && !combined.includes(KATEGORI_PRODUK)) return [...combined, KATEGORI_PRODUK];
+    return combined;
   })();
+
+  // Filtered suggestions berdasarkan query
+  const catSuggestions = catQuery.trim() === ""
+    ? categories
+    : categories.filter(c => c.toLowerCase().includes(catQuery.toLowerCase()));
+  const isExistingCat = categories.some(c => c.toLowerCase() === catQuery.toLowerCase().trim());
+  const isCustomInput = catQuery.trim() !== "" && !isExistingCat;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value, ...(name === "type" ? { category: "" } : {}) }));
+    if (name === "type") { setCatQuery(""); setCatOpen(false); }
     setError("");
     if (name === "type" && value !== "pemasukan") { setSelProdukId(""); setSelItems(null); setJumlahUnit("1"); }
     if (["amount", "category", "description"].includes(name)) { setSelProdukId(""); setSelItems(null); }
+  };
+
+  const handleCatSelect = (cat) => {
+    setForm(prev => ({ ...prev, category: cat }));
+    setCatQuery(cat);
+    setCatOpen(false);
+    setError("");
+  };
+
+  const handleCatInput = (e) => {
+    const val = e.target.value;
+    setCatQuery(val);
+    setForm(prev => ({ ...prev, category: val }));
+    setCatOpen(true);
+    setError("");
+    setSelProdukId(""); setSelItems(null);
   };
 
   const handleSelectProduk = (produkId) => {
@@ -75,6 +146,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
     const qty = parseInt(jumlahUnit, 10) || 1;
     setSelItems(produk.items);
     setForm(prev => ({ ...prev, amount: String(produk.hargaJual * qty), category: KATEGORI_PRODUK, description: produk.nama }));
+    setCatQuery(KATEGORI_PRODUK);
     setError("");
   };
 
@@ -155,10 +227,51 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
 
           <div className="txform__field">
             <label className="txform__label">Kategori</label>
-            <select className={"txform__input txform__input--" + accent} name="category" value={form.category} onChange={handleChange}>
-              <option value="">-- Pilih kategori --</option>
-              {categories.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <div className="txform__cat-wrap" style={{ position: "relative" }}>
+              <input
+                ref={catInputRef}
+                className={"txform__input txform__input--" + accent + (isCustomInput ? " txform__input--custom-cat" : "")}
+                type="text"
+                placeholder="Ketik atau pilih kategori..."
+                value={catQuery}
+                onChange={handleCatInput}
+                onFocus={() => setCatOpen(true)}
+                autoComplete="off"
+              />
+              {catQuery && (
+                <button className="txform__cat-clear" onClick={() => { setCatQuery(""); setForm(p => ({ ...p, category: "" })); setCatOpen(true); }}>✕</button>
+              )}
+              {isCustomInput && (
+                <span className="txform__cat-badge txform__cat-badge--new">Baru</span>
+              )}
+              {isExistingCat && catQuery.trim() !== "" && (
+                <span className="txform__cat-badge txform__cat-badge--exists">✓ Ada</span>
+              )}
+              {catOpen && catSuggestions.length > 0 && (
+                <div ref={catDropdownRef} className="txform__cat-dropdown">
+                  {isCustomInput && (
+                    <div
+                      className="txform__cat-option txform__cat-option--create"
+                      onMouseDown={() => handleCatSelect(catQuery.trim())}
+                    >
+                      <span>➕</span> Buat "<strong>{catQuery.trim()}</strong>"
+                    </div>
+                  )}
+                  {catSuggestions.map(c => (
+                    <div
+                      key={c}
+                      className={"txform__cat-option " + (c === form.category ? "txform__cat-option--active" : "")}
+                      onMouseDown={() => handleCatSelect(c)}
+                    >
+                      <span>{getCategoryEmoji ? getCategoryEmoji(c) : "🗂️"}</span> {c}
+                      {usedCategories.includes(c) && !CATEGORIES[mode]?.[form.type]?.includes(c) && (
+                        <span className="txform__cat-used">Pernah dipakai</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="txform__field">

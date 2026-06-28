@@ -1,0 +1,97 @@
+/* ============================
+   Smart Category Input
+   ============================ */
+.txform__cat-wrap {
+  position: relative;
+}
+
+.txform__cat-clear {
+  position: absolute;
+  right: 2.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0.2rem;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.txform__cat-clear:hover { color: var(--text-primary); }
+
+.txform__cat-badge {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.txform__cat-badge--new {
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.txform__cat-badge--exists {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.txform__input--custom-cat {
+  border-color: rgba(245, 158, 11, 0.5) !important;
+}
+
+.txform__cat-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 999;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.txform__cat-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  font-size: 13px;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.txform__cat-option:hover,
+.txform__cat-option--active {
+  background: var(--bg-secondary);
+}
+
+.txform__cat-option--create {
+  color: var(--accent-personal);
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+
+.txform__cat-used {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
