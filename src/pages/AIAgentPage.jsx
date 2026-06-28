@@ -28,16 +28,19 @@ export default function AIAgentPage() {
   const mode   = user?.mode;
   const accent = mode === "umkm" ? "umkm" : "personal";
   const [summary, setSummary] = useState({ pemasukan: 0, pengeluaran: 0, saldo: 0 });
+  const [loadingSummary, setLoadingSummary] = useState(true);
 
   useEffect(() => {
-  if (!user) return;
-  const token = localStorage.getItem("finsight_token");
-  fetch(`/api/transactions?mode=${mode}`, {
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
-  })
-    .then(r => r.json())
-    .then(r => { if (r.success) setSummary(calcSummary(r.data)); });
-}, [user, mode]);
+    if (!user) return;
+    const token = localStorage.getItem("finsight_token");
+    setLoadingSummary(true);
+    fetch(`/api/transactions?mode=${mode}`, {
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(r => { if (r.success) setSummary(calcSummary(r.data)); })
+      .finally(() => setLoadingSummary(false));
+  }, [user, mode]);
 
   // Kirim userId agar history tersimpan per user
   const { messages, loading, error, apiKey, saveApiKey, clearApiKey, sendMessage, clearChat } =
@@ -59,19 +62,27 @@ export default function AIAgentPage() {
           </div>
         )}
 
-        <div className="aipage__context">
-          <span className="aipage__context-label">📊 Data yang diketahui AI:</span>
-          <span className="aipage__context-item aipage__context-item--income">Pemasukan Rp {summary.pemasukan.toLocaleString("id-ID")}</span>
-          <span className="aipage__context-item aipage__context-item--expense">Pengeluaran Rp {summary.pengeluaran.toLocaleString("id-ID")}</span>
-          <span className={"aipage__context-item " + (summary.saldo >= 0 ? "aipage__context-item--income" : "aipage__context-item--expense")}>
-            Saldo Rp {summary.saldo.toLocaleString("id-ID")}
-          </span>
-          {messages.length > 0 && (
-            <span className="aipage__context-item aipage__context-item--history">
-              💬 {messages.filter(m => m.role === "user").length} pesan tersimpan
+        {loadingSummary ? (
+          <div className="aipage__context-skeleton">
+            <div className="skel" style={{width:"120px", height:"22px", borderRadius:"6px"}} />
+            <div className="skel" style={{width:"160px", height:"22px", borderRadius:"6px"}} />
+            <div className="skel" style={{width:"140px", height:"22px", borderRadius:"6px"}} />
+          </div>
+        ) : (
+          <div className="aipage__context">
+            <span className="aipage__context-label">📊 Data yang diketahui AI:</span>
+            <span className="aipage__context-item aipage__context-item--income">Pemasukan Rp {summary.pemasukan.toLocaleString("id-ID")}</span>
+            <span className="aipage__context-item aipage__context-item--expense">Pengeluaran Rp {summary.pengeluaran.toLocaleString("id-ID")}</span>
+            <span className={"aipage__context-item " + (summary.saldo >= 0 ? "aipage__context-item--income" : "aipage__context-item--expense")}>
+              Saldo Rp {summary.saldo.toLocaleString("id-ID")}
             </span>
-          )}
-        </div>
+            {messages.length > 0 && (
+              <span className="aipage__context-item aipage__context-item--history">
+                💬 {messages.filter(m => m.role === "user").length} pesan tersimpan
+              </span>
+            )}
+          </div>
+        )}
 
         {error && <div className="aipage__error">⚠️ {error}</div>}
 

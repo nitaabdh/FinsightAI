@@ -66,7 +66,8 @@
   transition: all 0.12s;
 }
 
-.float-calc__close:hover { background: #fee2e2; color: #dc2626; }
+@media (hover: hover) { .float-calc__close:hover { background: #fee2e2; color: #dc2626; } }
+.float-calc__close { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 
 /* ── Entries ─────────────────────────────────────────────────────────────── */
 .float-calc__entries {
@@ -207,12 +208,23 @@
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.12s;
+  transition: background 0.12s, transform 0.1s, box-shadow 0.12s;
   display: flex; align-items: center; justify-content: center;
+  outline: none;        /* hapus focus ring bawaan browser */
+  -webkit-tap-highlight-color: transparent; /* hapus highlight biru di mobile */
+  touch-action: manipulation; /* kurangi delay 300ms di mobile */
 }
 
-.calc-btn:hover { background: var(--bg-hover, #e5e7eb); transform: translateY(-1px); }
-.calc-btn:active { transform: translateY(0) scale(0.96); }
+/* Desktop hover */
+@media (hover: hover) {
+  .calc-btn:hover { background: var(--bg-hover, #e5e7eb); transform: translateY(-1px); }
+}
+
+/* Active/press — langsung balik, tidak nyangkut */
+.calc-btn:active { transform: scale(0.94); transition: transform 0.08s; }
+
+/* Focus hanya untuk keyboard (bukan touch) */
+.calc-btn:focus-visible { outline: 2px solid var(--accent-personal, #059669); outline-offset: 2px; }
 
 .calc-btn--op {
   background: rgba(5,150,105,0.1);
@@ -221,7 +233,7 @@
   font-size: 17px;
 }
 
-.calc-btn--op:hover { background: rgba(5,150,105,0.18); }
+@media (hover: hover) { .calc-btn--op:hover { background: rgba(5,150,105,0.18); } }
 
 .calc-btn--eq {
   background: linear-gradient(135deg, #059669, #10b981);
@@ -231,7 +243,7 @@
   box-shadow: 0 2px 8px rgba(5,150,105,0.3);
 }
 
-.calc-btn--eq:hover { box-shadow: 0 4px 14px rgba(5,150,105,0.4); }
+@media (hover: hover) { .calc-btn--eq:hover { box-shadow: 0 4px 14px rgba(5,150,105,0.4); } }
 
 .calc-btn--clear {
   background: rgba(220,38,38,0.1);
@@ -239,7 +251,7 @@
   border-color: rgba(220,38,38,0.2);
 }
 
-.calc-btn--clear:hover { background: rgba(220,38,38,0.18); }
+@media (hover: hover) { .calc-btn--clear:hover { background: rgba(220,38,38,0.18); } }
 
 .calc-btn--back {
   background: var(--bg-secondary);
@@ -256,7 +268,7 @@
   letter-spacing: -0.02em;
 }
 
-.calc-btn--label:hover { background: rgba(99,102,241,0.18); }
+@media (hover: hover) { .calc-btn--label:hover { background: rgba(99,102,241,0.18); } }
 
 /* ── Save row ─────────────────────────────────────────────────────────────── */
 .float-calc__save-row {

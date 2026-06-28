@@ -73,6 +73,7 @@ export default function CatatanPage() {
   const [curYear,    setCurYear]    = useState(TODAY.getFullYear());
   const [curMonth,   setCurMonth]   = useState(TODAY.getMonth());
   const [calNotes,   setCalNotes]   = useState([]);
+  const [loading,    setLoading]    = useState(true);
   const [filterDate, setFilterDate] = useState(null); // null = tampil semua
 
   // Popup kalender
@@ -105,14 +106,19 @@ export default function CatatanPage() {
   const [calcHistory, setCalcHistory] = useState([]);
 
   // ── Load data ────────────────────────────────────────────────────────────────
- useEffect(() => {
-  if (!user) return;
-  apiFetch(`/api/notes?table=cal_notes&mode=${mode}`).then(r => { if (r.success) setCalNotes(r.data); });
-  apiFetch(`/api/notes?table=notes&mode=${mode}`).then(r => { if (r.success) setNotes(r.data); });
-  // savedCalcs & calcHistory tetap localStorage
-  setSavedCalcs(loadData(`finsight_calcSaved_${userId}`));
-  setCalcHistory(loadData(`finsight_calcHistory_${userId}`));
-}, [user, mode]);
+  useEffect(() => {
+    if (!user) return;
+    setLoading(true);
+    Promise.all([
+      apiFetch(`/api/notes?table=cal_notes&mode=${mode}`),
+      apiFetch(`/api/notes?table=notes&mode=${mode}`),
+    ]).then(([calRes, noteRes]) => {
+      if (calRes.success)  setCalNotes(calRes.data);
+      if (noteRes.success) setNotes(noteRes.data);
+      setSavedCalcs(loadData(`finsight_calcSaved_${userId}`));
+      setCalcHistory(loadData(`finsight_calcHistory_${userId}`));
+    }).finally(() => setLoading(false));
+  }, [user, mode]);
 
   // Listen event dari FloatingCalculator saat simpan
   useEffect(() => {
@@ -836,9 +842,18 @@ const updateOpenNoteMeta = async (field, value) => {
         </div>
 
         <div className="tab-content">
-          {activeTab==="kalender"   && renderKalender()}
-          {activeTab==="notes"      && renderNotes()}
-          {activeTab==="kalkulator" && renderKalkulator()}
+          {loading ? (
+            <div className="dashboard__skeleton" style={{padding:"1rem"}}>
+              <div className="dashboard__skeleton-block skel" style={{height:"280px"}} />
+              <div className="dashboard__skeleton-block skel" style={{height:"120px", marginTop:"1rem"}} />
+            </div>
+          ) : (
+            <>
+              {activeTab==="kalender"   && renderKalender()}
+              {activeTab==="notes"      && renderNotes()}
+              {activeTab==="kalkulator" && renderKalkulator()}
+            </>
+          )}
         </div>
 
         {popupDate        && renderPopup()}
