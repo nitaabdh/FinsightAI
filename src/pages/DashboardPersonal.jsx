@@ -209,6 +209,64 @@ export default function DashboardPersonal() {
           </p>
         </div>
 
+        {/* Income Tracker */}
+        <div className="dp-income">
+          <div className="dashboard__section-header">
+            <div className="dashboard__section-title">💰 Income Tracker Bulan Ini</div>
+            {incomeDelta !== null && (
+              <span className={"dp-income__delta " + (incomeDelta >= 0 ? "dp-income__delta--up" : "dp-income__delta--down")}>
+                {incomeDelta >= 0 ? "▲" : "▼"} {Math.abs(incomeDelta).toFixed(0)}% vs bulan lalu
+              </span>
+            )}
+          </div>
+          <div className="dp-income__summary">
+            <div className="dp-income__summary-item">
+              <span className="dp-income__summary-label">Bulan Ini</span>
+              <span className="dp-income__summary-value dp-income__summary-value--current">{formatRupiah(totalPemasukanIni)}</span>
+            </div>
+            <div className="dp-income__summary-divider" />
+            <div className="dp-income__summary-item">
+              <span className="dp-income__summary-label">Bulan Lalu</span>
+              <span className="dp-income__summary-value">{totalPemasukanLalu > 0 ? formatRupiah(totalPemasukanLalu) : "—"}</span>
+            </div>
+          </div>
+          {incomeSorted.length === 0 ? (
+            <div className="dashboard__empty">Belum ada pemasukan bulan ini</div>
+          ) : (
+            <div className="dp-income__list">
+              {incomeSorted.map(([cat, amount]) => {
+                const persen = totalPemasukanIni > 0 ? (amount / totalPemasukanIni) * 100 : 0;
+                const lastAmt = incomeLastMonth[cat] || 0;
+                const catDelta = lastAmt > 0 ? ((amount - lastAmt) / lastAmt) * 100 : null;
+                return (
+                  <div key={cat} className="dp-income__row">
+                    <div className="dp-income__row-top">
+                      <span className="dp-income__cat">
+                        <span>{getCategoryEmoji(cat)}</span> {cat}
+                      </span>
+                      <div className="dp-income__row-right">
+                        {catDelta !== null && (
+                          <span className={"dp-income__cat-delta " + (catDelta >= 0 ? "dp-income__cat-delta--up" : "dp-income__cat-delta--down")}>
+                            {catDelta >= 0 ? "▲" : "▼"}{Math.abs(catDelta).toFixed(0)}%
+                          </span>
+                        )}
+                        <span className="dp-income__amount">{formatRupiah(amount)}</span>
+                      </div>
+                    </div>
+                    <div className="dp-income__bar">
+                      <div className="dp-income__bar-fill" style={{ width: persen + "%" }} />
+                    </div>
+                    <div className="dp-income__row-meta">
+                      <span>{persen.toFixed(0)}% dari total pemasukan</span>
+                      {lastAmt > 0 && <span>Lalu: {formatRupiah(lastAmt)}</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         {/* Countdown Acara H-7 */}
         {upcomingEvents.length > 0 && (
           <div className="dp-events">
@@ -330,61 +388,6 @@ export default function DashboardPersonal() {
             </div>
           )}
         </div>
-        {/* Income Tracker */}
-        {incomeSorted.length > 0 && (
-          <div className="dp-income">
-            <div className="dashboard__section-header">
-              <div className="dashboard__section-title">💰 Income Tracker Bulan Ini</div>
-              {incomeDelta !== null && (
-                <span className={"dp-income__delta " + (incomeDelta >= 0 ? "dp-income__delta--up" : "dp-income__delta--down")}>
-                  {incomeDelta >= 0 ? "▲" : "▼"} {Math.abs(incomeDelta).toFixed(0)}% vs bulan lalu
-                </span>
-              )}
-            </div>
-            <div className="dp-income__summary">
-              <div className="dp-income__summary-item">
-                <span className="dp-income__summary-label">Bulan Ini</span>
-                <span className="dp-income__summary-value dp-income__summary-value--current">{formatRupiah(totalPemasukanIni)}</span>
-              </div>
-              <div className="dp-income__summary-divider" />
-              <div className="dp-income__summary-item">
-                <span className="dp-income__summary-label">Bulan Lalu</span>
-                <span className="dp-income__summary-value">{totalPemasukanLalu > 0 ? formatRupiah(totalPemasukanLalu) : "—"}</span>
-              </div>
-            </div>
-            <div className="dp-income__list">
-              {incomeSorted.map(([cat, amount]) => {
-                const persen = totalPemasukanIni > 0 ? (amount / totalPemasukanIni) * 100 : 0;
-                const lastAmt = incomeLastMonth[cat] || 0;
-                const catDelta = lastAmt > 0 ? ((amount - lastAmt) / lastAmt) * 100 : null;
-                return (
-                  <div key={cat} className="dp-income__row">
-                    <div className="dp-income__row-top">
-                      <span className="dp-income__cat">
-                        <span>{getCategoryEmoji(cat)}</span> {cat}
-                      </span>
-                      <div className="dp-income__row-right">
-                        {catDelta !== null && (
-                          <span className={"dp-income__cat-delta " + (catDelta >= 0 ? "dp-income__cat-delta--up" : "dp-income__cat-delta--down")}>
-                            {catDelta >= 0 ? "▲" : "▼"}{Math.abs(catDelta).toFixed(0)}%
-                          </span>
-                        )}
-                        <span className="dp-income__amount">{formatRupiah(amount)}</span>
-                      </div>
-                    </div>
-                    <div className="dp-income__bar">
-                      <div className="dp-income__bar-fill" style={{ width: persen + "%" }} />
-                    </div>
-                    <div className="dp-income__row-meta">
-                      <span>{persen.toFixed(0)}% dari total pemasukan</span>
-                      {lastAmt > 0 && <span>Lalu: {formatRupiah(lastAmt)}</span>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
       </>)}
       </div>
