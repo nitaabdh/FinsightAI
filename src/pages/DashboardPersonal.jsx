@@ -100,7 +100,7 @@ export default function DashboardPersonal() {
   // Insight otomatis: kategori pengeluaran terbesar BULAN INI
   const now = new Date();
   const txBulanIni = transactions.filter((tx) => {
-    const d = new Date(tx.createdAt);
+    const d = new Date(tx.date || tx.createdAt);
     return tx.type === "pengeluaran" && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
   const totalPengeluaranBulanIni = txBulanIni.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
@@ -117,11 +117,11 @@ export default function DashboardPersonal() {
   // Income Tracker: pemasukan per kategori, bulan ini vs bulan lalu
   const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const txPemasukanIni = transactions.filter((tx) => {
-    const d = new Date(tx.createdAt);
+    const d = new Date(tx.date || tx.createdAt);
     return tx.type === "pemasukan" && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
   const txPemasukanLalu = transactions.filter((tx) => {
-    const d = new Date(tx.createdAt);
+    const d = new Date(tx.date || tx.createdAt);
     return tx.type === "pemasukan" && d.getMonth() === prevMonth.getMonth() && d.getFullYear() === prevMonth.getFullYear();
   });
   const incomeByCategory = {};
