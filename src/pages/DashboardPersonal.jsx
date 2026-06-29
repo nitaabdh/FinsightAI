@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
-import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, Tooltip, CartesianGrid, XAxis, YAxis } from "recharts";
 import { calcSummary, formatRupiah, groupByCategory } from "../utils/storage";
 import "./Dashboard.css";
 import "./DashboardPersonal.css";
@@ -304,86 +304,89 @@ export default function DashboardPersonal() {
           </div>
         </div>
 
-        {/* ── INCOME TRACKER ── */}
-        <div className="dp2__income">
-          <div className="dp2__section-header">
-            <span className="dp2__section-title">💰 Income Tracker Bulan Ini</span>
-            {incomeDelta !== null && (
-              <span className={"dp2__delta " + (incomeDelta >= 0 ? "dp2__delta--up" : "dp2__delta--down")}>
-                {incomeDelta >= 0 ? "▲" : "▼"} {Math.abs(incomeDelta).toFixed(0)}% vs bulan lalu
-              </span>
-            )}
-          </div>
-          <div className="dp2__income-summary">
-            <div className="dp2__income-summary-item">
-              <span className="dp2__income-summary-label">Bulan Ini</span>
-              <span className="dp2__income-summary-value dp2__income-summary-value--current">{formatRupiah(totalPemasukanIni)}</span>
+        {/* ── INCOME TRACKER + ACARA MENDATANG sebelahan ── */}
+        <div className="dp2__row2 dp2__row2--stretch">
+          {/* Income Tracker */}
+          <div className="dp2__income">
+            <div className="dp2__section-header">
+              <span className="dp2__section-title">💰 Income Tracker Bulan Ini</span>
+              {incomeDelta !== null && (
+                <span className={"dp2__delta " + (incomeDelta >= 0 ? "dp2__delta--up" : "dp2__delta--down")}>
+                  {incomeDelta >= 0 ? "▲" : "▼"} {Math.abs(incomeDelta).toFixed(0)}% vs bulan lalu
+                </span>
+              )}
             </div>
-            <div className="dp2__income-summary-div" />
-            <div className="dp2__income-summary-item">
-              <span className="dp2__income-summary-label">Bulan Lalu</span>
-              <span className="dp2__income-summary-value">{totalPemasukanLalu > 0 ? formatRupiah(totalPemasukanLalu) : "—"}</span>
+            <div className="dp2__income-summary">
+              <div className="dp2__income-summary-item">
+                <span className="dp2__income-summary-label">Bulan Ini</span>
+                <span className="dp2__income-summary-value dp2__income-summary-value--current">{formatRupiah(totalPemasukanIni)}</span>
+              </div>
+              <div className="dp2__income-summary-div" />
+              <div className="dp2__income-summary-item">
+                <span className="dp2__income-summary-label">Bulan Lalu</span>
+                <span className="dp2__income-summary-value">{totalPemasukanLalu > 0 ? formatRupiah(totalPemasukanLalu) : "—"}</span>
+              </div>
             </div>
-          </div>
-          {incomeSorted.length === 0 ? (
-            <p className="dp2__empty">Belum ada pemasukan bulan ini</p>
-          ) : (
-            <div className="dp2__income-list">
-              {incomeSorted.map(([cat, amount]) => {
-                const persen  = totalPemasukanIni > 0 ? (amount / totalPemasukanIni) * 100 : 0;
-                const lastAmt = incomeLastMonth[cat] || 0;
-                const delta   = lastAmt > 0 ? ((amount - lastAmt) / lastAmt) * 100 : null;
-                return (
-                  <div key={cat} className="dp2__income-row">
-                    <div className="dp2__income-row-top">
-                      <span className="dp2__income-cat">{getCategoryEmoji(cat)} {cat}</span>
-                      <div style={{ display:"flex", alignItems:"center", gap:"0.4rem" }}>
-                        {delta !== null && (
-                          <span className={"dp2__delta " + (delta >= 0 ? "dp2__delta--up" : "dp2__delta--down")}>
-                            {delta >= 0 ? "▲" : "▼"}{Math.abs(delta).toFixed(0)}%
-                          </span>
-                        )}
-                        <span className="dp2__income-amount">{formatRupiah(amount)}</span>
+            {incomeSorted.length === 0 ? (
+              <p className="dp2__empty">Belum ada pemasukan bulan ini</p>
+            ) : (
+              <div className="dp2__income-list">
+                {incomeSorted.map(([cat, amount]) => {
+                  const persen  = totalPemasukanIni > 0 ? (amount / totalPemasukanIni) * 100 : 0;
+                  const lastAmt = incomeLastMonth[cat] || 0;
+                  const delta   = lastAmt > 0 ? ((amount - lastAmt) / lastAmt) * 100 : null;
+                  return (
+                    <div key={cat} className="dp2__income-row">
+                      <div className="dp2__income-row-top">
+                        <span className="dp2__income-cat">{getCategoryEmoji(cat)} {cat}</span>
+                        <div style={{ display:"flex", alignItems:"center", gap:"0.4rem" }}>
+                          {delta !== null && (
+                            <span className={"dp2__delta " + (delta >= 0 ? "dp2__delta--up" : "dp2__delta--down")}>
+                              {delta >= 0 ? "▲" : "▼"}{Math.abs(delta).toFixed(0)}%
+                            </span>
+                          )}
+                          <span className="dp2__income-amount">{formatRupiah(amount)}</span>
+                        </div>
+                      </div>
+                      <div className="dp2__income-bar"><div className="dp2__income-bar-fill" style={{ width: persen+"%" }} /></div>
+                      <div className="dp2__income-meta">
+                        <span>{persen.toFixed(0)}% dari total</span>
+                        {lastAmt > 0 && <span>Lalu: {formatRupiah(lastAmt)}</span>}
                       </div>
                     </div>
-                    <div className="dp2__income-bar"><div className="dp2__income-bar-fill" style={{ width: persen+"%" }} /></div>
-                    <div className="dp2__income-meta">
-                      <span>{persen.toFixed(0)}% dari total</span>
-                      {lastAmt > 0 && <span>Lalu: {formatRupiah(lastAmt)}</span>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* ── ACARA MENDATANG ── */}
-        <div className="dp2__card-section">
-          <div className="dp2__section-header">
-            <span className="dp2__section-title">📅 Acara Mendatang (7 Hari)</span>
-          </div>
-          <div className="dp2__acara-grid">
-            {upcomingEvents.length === 0 ? (
-              <p className="dp2__empty">Tidak ada acara mendatang</p>
-            ) : (
-              upcomingEvents.map(ev => (
-                <div key={ev.id} className="dp2__event-item">
-                  <div className="dp2__event-date">
-                    <span className="dp2__event-day">{new Date(ev.tanggal).getDate()}</span>
-                    <span className="dp2__event-month">{new Date(ev.tanggal).toLocaleDateString("id-ID",{month:"short"})}</span>
-                  </div>
-                  <div className="dp2__event-info">
-                    <p className="dp2__event-title">{ev.judul}</p>
-                    <span className={"dp2__event-countdown " + (ev.diff===0?"dp2__event-countdown--today":"")}>{countdownLabel(ev.diff)}</span>
-                  </div>
-                </div>
-              ))
+                  );
+                })}
+              </div>
             )}
           </div>
-          <button className="dp2__see-all" onClick={() => navigate("/dashboard/personal/catatan")}>
-            Lihat semua acara →
-          </button>
+
+          {/* Acara Mendatang */}
+          <div className="dp2__card-section">
+            <div className="dp2__section-header">
+              <span className="dp2__section-title">📅 Acara Mendatang (7 Hari)</span>
+            </div>
+            <div className="dp2__acara-grid">
+              {upcomingEvents.length === 0 ? (
+                <p className="dp2__empty">Tidak ada acara mendatang</p>
+              ) : (
+                upcomingEvents.map(ev => (
+                  <div key={ev.id} className="dp2__event-item">
+                    <div className="dp2__event-date">
+                      <span className="dp2__event-day">{new Date(ev.tanggal).getDate()}</span>
+                      <span className="dp2__event-month">{new Date(ev.tanggal).toLocaleDateString("id-ID",{month:"short"})}</span>
+                    </div>
+                    <div className="dp2__event-info">
+                      <p className="dp2__event-title">{ev.judul}</p>
+                      <span className={"dp2__event-countdown " + (ev.diff===0?"dp2__event-countdown--today":"")}>{countdownLabel(ev.diff)}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <button className="dp2__see-all" onClick={() => navigate("/dashboard/personal/catatan")}>
+              Lihat semua acara →
+            </button>
+          </div>
         </div>
 
         {/* ── TREN 6 BULAN ── */}
@@ -395,98 +398,85 @@ export default function DashboardPersonal() {
               <span><span style={{color:"#ef4444"}}>■</span> Pengeluaran</span>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={tren6Bulan} barSize={14} barGap={3}>
-              <Tooltip
-                formatter={(val) => formatRupiah(val)}
-                contentStyle={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"8px", fontSize:"12px" }}
-                labelStyle={{ color:"var(--text-muted)" }}
-              />
-              <Bar dataKey="pemasukan"   fill="#10b981" radius={[3,3,0,0]} name="Pemasukan" />
-              <Bar dataKey="pengeluaran" fill="#ef4444" radius={[3,3,0,0]} name="Pengeluaran" />
-            </BarChart>
-          </ResponsiveContainer>
-          {insightText && (
-            <div className="dp2__insight">
-              <span className="dp2__insight-icon">✨</span>
-              <span>{insightText}</span>
+
+          {tren6Bulan.every(d => d.pemasukan === 0 && d.pengeluaran === 0) ? (
+            <div className="dp2__tren-empty">
+              <span className="dp2__tren-empty-icon">📊</span>
+              <p>Belum ada data transaksi untuk ditampilkan.</p>
+              <p>Mulai catat transaksi agar tren keuanganmu terlihat di sini.</p>
             </div>
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={tren6Bulan} barSize={14} barGap={3} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                  <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.05)" />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 11, fill: "var(--text-muted)", fontFamily: "var(--font-body)" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tickFormatter={(v) => v >= 1000000 ? `${(v/1000000).toFixed(1)}jt` : v >= 1000 ? `${(v/1000).toFixed(0)}rb` : v}
+                    tick={{ fontSize: 10, fill: "var(--text-muted)", fontFamily: "var(--font-body)" }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={36}
+                  />
+                  <Tooltip
+                    formatter={(val, name) => [formatRupiah(val), name === "pemasukan" ? "Pemasukan" : "Pengeluaran"]}
+                    contentStyle={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"8px", fontSize:"12px" }}
+                    labelStyle={{ color:"var(--text-muted)", marginBottom:"4px" }}
+                    cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                  />
+                  <Bar dataKey="pemasukan"   fill="#10b981" radius={[3,3,0,0]} name="pemasukan" />
+                  <Bar dataKey="pengeluaran" fill="#ef4444" radius={[3,3,0,0]} name="pengeluaran" />
+                </BarChart>
+              </ResponsiveContainer>
+              {insightText && (
+                <div className="dp2__insight">
+                  <span className="dp2__insight-icon">✨</span>
+                  <span>{insightText}</span>
+                </div>
+              )}
+            </>
           )}
         </div>
 
-        {/* ── KATEGORI + TRANSAKSI TERBARU ── */}
-        <div className="dp2__row2">
-          {/* Donut chart kategori */}
-          <div className="dp2__card-section">
-            <div className="dp2__section-header">
-              <span className="dp2__section-title">Pengeluaran per Kategori</span>
-              <button className="dp2__see-all-sm" onClick={() => navigate("/dashboard/personal/transaksi")}>Lihat semua →</button>
-            </div>
-            {pieData.length === 0 ? (
-              <p className="dp2__empty">Belum ada data pengeluaran</p>
-            ) : (
-              <div className="dp2__pie-wrap">
-                <div className="dp2__pie-chart">
-                  <ResponsiveContainer width={130} height={130}>
-                    <PieChart>
-                      <Pie data={pieData} cx="50%" cy="50%" innerRadius={38} outerRadius={60} dataKey="value" paddingAngle={2}>
-                        {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="dp2__pie-center">
-                    <span className="dp2__pie-total-label">Total</span>
-                    <span className="dp2__pie-total">{formatRupiah(summary.pengeluaran)}</span>
-                  </div>
-                </div>
-                <div className="dp2__pie-legend">
-                  {topCategories.map(([cat, amount], i) => {
-                    const pct = summary.pengeluaran > 0 ? ((amount/summary.pengeluaran)*100).toFixed(0) : 0;
-                    return (
-                      <div key={cat} className="dp2__pie-legend-item">
-                        <span className="dp2__pie-dot" style={{ background: PIE_COLORS[i%PIE_COLORS.length] }} />
-                        <span className="dp2__pie-legend-cat">{getCategoryEmoji(cat)} {cat}</span>
-                        <span className="dp2__pie-legend-pct">{pct}%</span>
-                        <span className="dp2__pie-legend-amt">{formatRupiah(amount)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+        {/* ── TRANSAKSI TERBARU ── */}
+        <div className="dp2__card-section">
+          <div className="dp2__section-header">
+            <span className="dp2__section-title">Transaksi Terbaru</span>
+            <button className="dp2__see-all-sm" onClick={() => navigate("/dashboard/personal/transaksi")}>Lihat semua →</button>
           </div>
-
-          {/* Transaksi Terbaru */}
-          <div className="dp2__card-section">
-            <div className="dp2__section-header">
-              <span className="dp2__section-title">Transaksi Terbaru</span>
-              <button className="dp2__see-all-sm" onClick={() => navigate("/dashboard/personal/transaksi")}>Lihat semua →</button>
+          {recentTx.length === 0 ? (
+            <div className="dp2__empty-state">
+              <p>💳</p><p>Belum ada transaksi.</p>
+              <p style={{fontSize:"12px"}}>Mulai catat dari menu <strong>Transaksi</strong>.</p>
             </div>
-            {recentTx.length === 0 ? (
-              <div className="dp2__empty-state">
-                <p>💳</p><p>Belum ada transaksi.</p>
-              </div>
-            ) : (
-              <div className="dp2__tx-list">
-                {recentTx.map(tx => (
-                  <div key={tx.id} className="dp2__tx-item">
-                    <div className={"dp2__tx-icon " + (tx.type==="pemasukan" ? "dp2__tx-icon--income" : "dp2__tx-icon--expense")}>
-                      {getCategoryEmoji(tx.category)}
-                    </div>
-                    <div className="dp2__tx-info">
-                      <p className="dp2__tx-desc">{tx.description || tx.category || "-"}</p>
-                      <p className="dp2__tx-date">
-                        {new Date(tx.date||tx.createdAt).toLocaleDateString("id-ID", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })}
-                      </p>
-                    </div>
+          ) : (
+            <div className="dp2__tx-list">
+              {recentTx.map(tx => (
+                <div key={tx.id} className="dp2__tx-item">
+                  <div className={"dp2__tx-icon " + (tx.type==="pemasukan" ? "dp2__tx-icon--income" : "dp2__tx-icon--expense")}>
+                    {getCategoryEmoji(tx.category)}
+                  </div>
+                  <div className="dp2__tx-info">
+                    <p className="dp2__tx-desc">{tx.description || tx.category || "-"}</p>
+                    <p className="dp2__tx-date">
+                      {new Date(tx.date||tx.createdAt).toLocaleDateString("id-ID", { day:"2-digit", month:"short", year:"numeric" })}
+                    </p>
+                  </div>
+                  <div style={{ textAlign:"right", flexShrink:0 }}>
                     <span className={"dp2__tx-amount " + (tx.type==="pemasukan" ? "dp2__tx-amount--income" : "dp2__tx-amount--expense")}>
                       {tx.type==="pemasukan" ? "+" : "-"}{formatRupiah(tx.amount)}
                     </span>
+                    <p className="dp2__tx-cat">{tx.category || "-"}</p>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
       </div>
