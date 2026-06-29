@@ -68,10 +68,10 @@ export default function DashboardPersonal() {
     const h = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
     setLoading(true);
     Promise.all([
-      fetch(`/api/transactions?mode=personal`, { headers: h }).then(r => r.json()),
-      fetch(`/api/targets`, { headers: h }).then(r => r.json()),
-      fetch(`/api/notes?table=cal_notes&mode=personal`, { headers: h }).then(r => r.json()),
-      fetch(`/api/profile`, { headers: h }).then(r => r.json()),
+      fetch(`/api/transactions?mode=personal`, { headers: h }).then(r => r.json()).catch(() => ({ success: false, data: [] })),
+      fetch(`/api/targets`, { headers: h }).then(r => r.json()).catch(() => ({ success: false, data: [] })),
+      fetch(`/api/notes?table=cal_notes&mode=personal`, { headers: h }).then(r => r.json()).catch(() => ({ success: false, data: [] })),
+      fetch(`/api/profile`, { headers: h }).then(r => r.json()).catch(() => ({ success: false, data: null })),
     ]).then(([txRes, targetRes, evRes, profRes]) => {
       if (txRes.success)     setTransactions(txRes.data);
       if (targetRes.success) setTargets(targetRes.data);
@@ -81,7 +81,7 @@ export default function DashboardPersonal() {
   }, [user]);
 
   const summary           = calcSummary(transactions);
-  const topCategories     = groupByCategory(transactions).slice(0, 5);
+  const topCategories     = groupByCategory(transactions.filter(tx => tx.type === "pengeluaran")).slice(0, 5);
   const recentTx          = [...transactions].sort((a,b) => new Date(b.date||b.createdAt) - new Date(a.date||a.createdAt)).slice(0, 5);
   const budgetPersen      = summary.pemasukan > 0 ? Math.min((summary.pengeluaran / summary.pemasukan) * 100, 100) : 0;
   const budgetPersenLabel = budgetPersen.toFixed(0);
