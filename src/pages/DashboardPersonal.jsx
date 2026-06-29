@@ -225,7 +225,7 @@ export default function DashboardPersonal() {
           </div>
         </div>
 
-        {/* ── 3 METRIC CARDS ── */}
+        {/* ── 2 METRIC CARDS ── */}
         <div className="dp2__metrics">
           {/* Pemasukan */}
           <div className="dp2__metric dp2__metric--income">
@@ -256,30 +256,31 @@ export default function DashboardPersonal() {
               </ResponsiveContainer>
             </div>
           </div>
-
-          {/* Target Tabungan */}
-          <div className="dp2__metric dp2__metric--target">
-            <div className="dp2__metric-icon dp2__metric-icon--target">🎯</div>
-            <p className="dp2__metric-label">Target Tabungan</p>
-            <p className="dp2__metric-value">{formatRupiah(totalTarget)}</p>
-            <p className="dp2__metric-sub">{targetPersen.toFixed(0)}% tercapai</p>
-            <div className="dp2__target-mini-bar">
-              <div className="dp2__target-mini-fill" style={{ width: targetPersen + "%" }} />
-            </div>
-            <p className="dp2__target-mini-pct">{targetPersen.toFixed(0)}%</p>
-          </div>
         </div>
 
-        {/* ── BUDGET BAR ── */}
-        <div className="dp2__budget">
-          <div className="dp2__budget-header">
-            <span className="dp2__section-title">Penggunaan Budget Bulan Ini</span>
-            <span className={"dp2__budget-badge dp2__budget-badge--" + budgetStatus}>{budgetPersenLabel}%</span>
+        {/* ── BUDGET BAR + TARGET TABUNGAN sebelahan ── */}
+        <div className="dp2__row2">
+          <div className="dp2__budget">
+            <div className="dp2__budget-header">
+              <span className="dp2__section-title">Penggunaan Budget</span>
+              <span className={"dp2__budget-badge dp2__budget-badge--" + budgetStatus}>{budgetPersenLabel}%</span>
+            </div>
+            <div className="dp2__budget-bar">
+              <div className={"dp2__budget-fill dp2__budget-fill--" + budgetStatus} style={{ width: budgetPersenLabel + "%" }} />
+            </div>
+            <p className="dp2__budget-label">{formatRupiah(summary.pengeluaran)} dari {formatRupiah(summary.pemasukan)}</p>
           </div>
-          <div className="dp2__budget-bar">
-            <div className={"dp2__budget-fill dp2__budget-fill--" + budgetStatus} style={{ width: budgetPersenLabel + "%" }} />
+
+          <div className="dp2__budget dp2__budget--target">
+            <div className="dp2__budget-header">
+              <span className="dp2__section-title">🎯 Target Tabungan</span>
+              <span className="dp2__budget-badge dp2__budget-badge--target">{targetPersen.toFixed(0)}%</span>
+            </div>
+            <div className="dp2__budget-bar">
+              <div className="dp2__budget-fill dp2__budget-fill--target" style={{ width: targetPersen + "%" }} />
+            </div>
+            <p className="dp2__budget-label">{formatRupiah(totalTerkumpul)} dari {formatRupiah(totalTarget)}</p>
           </div>
-          <p className="dp2__budget-label">{formatRupiah(summary.pengeluaran)} dari {formatRupiah(summary.pemasukan)}</p>
         </div>
 
         {/* ── INCOME TRACKER ── */}
