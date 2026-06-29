@@ -225,8 +225,8 @@ export default function DashboardPersonal() {
           </div>
         </div>
 
-        {/* ── 2 METRIC CARDS (tanpa mini chart) ── */}
-        <div className="dp2__metrics">
+        {/* ── 3 CARDS: Pemasukan | Pengeluaran | Budget ── */}
+        <div className="dp2__metrics dp2__metrics--3col">
           <div className="dp2__metric dp2__metric--income">
             <div className="dp2__metric-icon dp2__metric-icon--income">💰</div>
             <p className="dp2__metric-label">Total Pemasukan</p>
@@ -239,18 +239,15 @@ export default function DashboardPersonal() {
             <p className="dp2__metric-value">{formatRupiah(summary.pengeluaran)}</p>
             <p className="dp2__metric-sub">{budgetPersenLabel}% dari pemasukan</p>
           </div>
-        </div>
-
-        {/* ── BUDGET BAR (full width, baris ke-3) ── */}
-        <div className="dp2__budget">
-          <div className="dp2__budget-header">
-            <span className="dp2__section-title">Penggunaan Budget Bulan Ini</span>
-            <span className={"dp2__budget-badge dp2__budget-badge--" + budgetStatus}>{budgetPersenLabel}%</span>
+          <div className={"dp2__metric dp2__metric--budget dp2__metric--budget-" + budgetStatus}>
+            <div className={"dp2__metric-icon dp2__metric-icon--budget-" + budgetStatus}>📊</div>
+            <p className="dp2__metric-label">Budget Bulan Ini</p>
+            <p className="dp2__metric-value dp2__metric-value--budget">{budgetPersenLabel}%</p>
+            <div className="dp2__budget-bar dp2__budget-bar--mini">
+              <div className={"dp2__budget-fill dp2__budget-fill--" + budgetStatus} style={{ width: budgetPersenLabel + "%" }} />
+            </div>
+            <p className="dp2__metric-sub">{formatRupiah(summary.pengeluaran)} dari {formatRupiah(summary.pemasukan)}</p>
           </div>
-          <div className="dp2__budget-bar">
-            <div className={"dp2__budget-fill dp2__budget-fill--" + budgetStatus} style={{ width: budgetPersenLabel + "%" }} />
-          </div>
-          <p className="dp2__budget-label">{formatRupiah(summary.pengeluaran)} dari {formatRupiah(summary.pemasukan)}</p>
         </div>
 
         {/* ── INCOME TRACKER + TARGET TABUNGAN AKTIF sebelahan ── */}
@@ -432,27 +429,42 @@ export default function DashboardPersonal() {
           {topCategories.length === 0 ? (
             <p className="dp2__empty">Belum ada data pengeluaran</p>
           ) : (
-            <div className="dp2__cat-list">
-              {topCategories.map(([cat, amount], i) => {
-                const pct = summary.pengeluaran > 0 ? (amount / summary.pengeluaran) * 100 : 0;
-                return (
-                  <div key={cat} className="dp2__cat-item">
-                    <div className="dp2__cat-item-top">
-                      <span className="dp2__cat-name">
-                        <span className="dp2__cat-dot" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                        {getCategoryEmoji(cat)} {cat}
-                      </span>
-                      <div className="dp2__cat-right">
-                        <span className="dp2__cat-pct">{pct.toFixed(0)}%</span>
-                        <span className="dp2__cat-amt">{formatRupiah(amount)}</span>
+            <div className="dp2__pie-wrap">
+              <div className="dp2__pie-chart">
+                <ResponsiveContainer width={130} height={130}>
+                  <PieChart>
+                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={38} outerRadius={60} dataKey="value" paddingAngle={2}>
+                      {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="dp2__pie-center">
+                  <span className="dp2__pie-total-label">Total</span>
+                  <span className="dp2__pie-total">{formatRupiah(summary.pengeluaran)}</span>
+                </div>
+              </div>
+              <div className="dp2__cat-list" style={{ flex: 1, minWidth: 0 }}>
+                {topCategories.map(([cat, amount], i) => {
+                  const pct = summary.pengeluaran > 0 ? (amount / summary.pengeluaran) * 100 : 0;
+                  return (
+                    <div key={cat} className="dp2__cat-item">
+                      <div className="dp2__cat-item-top">
+                        <span className="dp2__cat-name">
+                          <span className="dp2__cat-dot" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                          {getCategoryEmoji(cat)} {cat}
+                        </span>
+                        <div className="dp2__cat-right">
+                          <span className="dp2__cat-pct">{pct.toFixed(0)}%</span>
+                          <span className="dp2__cat-amt">{formatRupiah(amount)}</span>
+                        </div>
+                      </div>
+                      <div className="dp2__cat-bar">
+                        <div className="dp2__cat-bar-fill" style={{ width: pct + "%", background: PIE_COLORS[i % PIE_COLORS.length] }} />
                       </div>
                     </div>
-                    <div className="dp2__cat-bar">
-                      <div className="dp2__cat-bar-fill" style={{ width: pct + "%", background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

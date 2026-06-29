@@ -238,6 +238,25 @@
   letter-spacing: 0.05em;
 }
 
+.dp2__metrics--3col { grid-template-columns: repeat(3, 1fr); }
+
+.dp2__metric-icon--budget-safe    { background: rgba(16,185,129,0.12); }
+.dp2__metric-icon--budget-warning { background: rgba(245,158,11,0.12); }
+.dp2__metric-icon--budget-danger  { background: rgba(239,68,68,0.12); }
+
+.dp2__metric-value--budget { color: var(--text-primary); }
+.dp2__metric--budget-safe    .dp2__metric-value--budget { color: #10b981; }
+.dp2__metric--budget-warning .dp2__metric-value--budget { color: #f59e0b; }
+.dp2__metric--budget-danger  .dp2__metric-value--budget { color: #ef4444; }
+
+.dp2__budget-bar--mini {
+  height: 5px;
+  background: var(--bg-secondary);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 0.3rem 0 0.2rem;
+}
+
 /* ── 2 Metric Cards ── */
 .dp2__metrics {
   display: grid;
@@ -668,6 +687,7 @@
   .dp2__card-brand { font-size: 8px; }
   .dp2__card-number { font-size: 7px; }
   .dp2__metrics { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .dp2__metrics--3col .dp2__metric--budget { grid-column: span 2; }
   .dp2__metric { padding: 0.8rem 0.85rem; }
   .dp2__metric-value { font-size: 14px; }
   .dp2__row2 { grid-template-columns: 1fr; gap: 0.75rem; }
