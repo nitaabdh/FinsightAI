@@ -258,7 +258,7 @@ export default function DashboardPersonal() {
           </div>
         </div>
 
-        {/* ── BUDGET BAR + TARGET TABUNGAN sebelahan ── */}
+        {/* ── BUDGET BAR + TARGET TABUNGAN AKTIF sebelahan ── */}
         <div className="dp2__row2">
           <div className="dp2__budget">
             <div className="dp2__budget-header">
@@ -271,15 +271,36 @@ export default function DashboardPersonal() {
             <p className="dp2__budget-label">{formatRupiah(summary.pengeluaran)} dari {formatRupiah(summary.pemasukan)}</p>
           </div>
 
-          <div className="dp2__budget dp2__budget--target">
-            <div className="dp2__budget-header">
-              <span className="dp2__section-title">🎯 Target Tabungan</span>
-              <span className="dp2__budget-badge dp2__budget-badge--target">{targetPersen.toFixed(0)}%</span>
+          <div className="dp2__card-section">
+            <div className="dp2__section-header">
+              <span className="dp2__section-title">🎯 Target Tabungan Aktif</span>
             </div>
-            <div className="dp2__budget-bar">
-              <div className="dp2__budget-fill dp2__budget-fill--target" style={{ width: targetPersen + "%" }} />
-            </div>
-            <p className="dp2__budget-label">{formatRupiah(totalTerkumpul)} dari {formatRupiah(totalTarget)}</p>
+            {activeTargets.length === 0 ? (
+              <p className="dp2__empty">Belum ada target aktif</p>
+            ) : (
+              activeTargets.map(t => {
+                const persen = Math.min((t.terkumpul / t.target) * 100, 100);
+                return (
+                  <div key={t.id} className="dp2__target-item">
+                    <div className="dp2__target-top">
+                      <div>
+                        <p className="dp2__target-nama">{t.nama}</p>
+                        {t.penempatan && <p className="dp2__target-penempatan">🏦 {t.penempatan}</p>}
+                      </div>
+                      <span className="dp2__target-pct">{persen.toFixed(0)}%</span>
+                    </div>
+                    <div className="dp2__target-bar"><div className="dp2__target-fill" style={{ width: persen+"%" }} /></div>
+                    <div className="dp2__target-info">
+                      <span>{formatRupiah(t.terkumpul)}</span>
+                      <span>dari {formatRupiah(t.target)}</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <button className="dp2__see-all" onClick={() => navigate("/dashboard/personal/target")}>
+              Lihat semua target →
+            </button>
           </div>
         </div>
 
@@ -337,13 +358,12 @@ export default function DashboardPersonal() {
           )}
         </div>
 
-        {/* ── ACARA & TARGET side-by-side ── */}
-        <div className="dp2__row2">
-          {/* Acara */}
-          <div className="dp2__card-section">
-            <div className="dp2__section-header">
-              <span className="dp2__section-title">📅 Acara Mendatang (7 Hari)</span>
-            </div>
+        {/* ── ACARA MENDATANG ── */}
+        <div className="dp2__card-section">
+          <div className="dp2__section-header">
+            <span className="dp2__section-title">📅 Acara Mendatang (7 Hari)</span>
+          </div>
+          <div className="dp2__acara-grid">
             {upcomingEvents.length === 0 ? (
               <p className="dp2__empty">Tidak ada acara mendatang</p>
             ) : (
@@ -360,43 +380,10 @@ export default function DashboardPersonal() {
                 </div>
               ))
             )}
-            <button className="dp2__see-all" onClick={() => navigate("/dashboard/personal/catatan")}>
-              Lihat semua acara →
-            </button>
           </div>
-
-          {/* Target */}
-          <div className="dp2__card-section">
-            <div className="dp2__section-header">
-              <span className="dp2__section-title">🎯 Target Tabungan Aktif</span>
-            </div>
-            {activeTargets.length === 0 ? (
-              <p className="dp2__empty">Belum ada target aktif</p>
-            ) : (
-              activeTargets.map(t => {
-                const persen = Math.min((t.terkumpul / t.target) * 100, 100);
-                return (
-                  <div key={t.id} className="dp2__target-item">
-                    <div className="dp2__target-top">
-                      <div>
-                        <p className="dp2__target-nama">{t.nama}</p>
-                        {t.penempatan && <p className="dp2__target-penempatan">🏦 {t.penempatan}</p>}
-                      </div>
-                      <span className="dp2__target-pct">{persen.toFixed(0)}%</span>
-                    </div>
-                    <div className="dp2__target-bar"><div className="dp2__target-fill" style={{ width: persen+"%" }} /></div>
-                    <div className="dp2__target-info">
-                      <span>{formatRupiah(t.terkumpul)}</span>
-                      <span>dari {formatRupiah(t.target)}</span>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-            <button className="dp2__see-all" onClick={() => navigate("/dashboard/personal/target")}>
-              Lihat semua target →
-            </button>
-          </div>
+          <button className="dp2__see-all" onClick={() => navigate("/dashboard/personal/catatan")}>
+            Lihat semua acara →
+          </button>
         </div>
 
         {/* ── TREN 6 BULAN ── */}
