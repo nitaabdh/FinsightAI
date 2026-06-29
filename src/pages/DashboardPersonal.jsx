@@ -2,55 +2,28 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
-import PageHeader from "../components/PageHeader";
-import MetricCard from "../components/MetricCard";
-import MiniChart from "../components/MiniChart";
-import { getTransactions, calcSummary, formatRupiah, groupByCategory } from "../utils/storage";
+import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { calcSummary, formatRupiah, groupByCategory } from "../utils/storage";
 import "./Dashboard.css";
 import "./DashboardPersonal.css";
 
-const TARGET_KEY  = (userId) => `finsight_targets_${userId}`;
-const CALNOTE_KEY = (userId) => `finsight_calNotes_personal_${userId}`;
-
-// Mapping emoji per kategori. Key dicocokkan case-insensitive,
-// fallback ke "Lainnya" kalau kategori tidak dikenal.
 const CATEGORY_EMOJI = {
-  "makan": "🍔",
-  "makanan": "🍔",
-  "transportasi": "🚗",
-  "transport": "🚗",
-  "belanja": "🛍️",
-  "hiburan": "🎮",
-  "kesehatan": "💊",
-  "pendidikan": "📚",
-  "tagihan": "🧾",
-  "listrik": "💡",
-  "air": "🚰",
-  "internet": "🌐",
-  "pulsa": "📱",
-  "gaji": "💰",
-  "freelance": "💼",
-  "investasi": "📈",
-  "tabungan": "🏦",
-  "hadiah": "🎁",
-  "lainnya": "🗂️",
+  "makan": "🍔", "makanan": "🍔", "transportasi": "🚗", "transport": "🚗",
+  "belanja": "🛍️", "hiburan": "🎮", "kesehatan": "💊", "pendidikan": "📚",
+  "tagihan": "🧾", "listrik": "💡", "air": "🚰", "internet": "🌐",
+  "pulsa": "📱", "gaji": "💰", "freelance": "💼", "investasi": "📈",
+  "tabungan": "🏦", "hadiah": "🎁", "lainnya": "🗂️",
 };
-
-function getCategoryEmoji(category) {
-  if (!category) return "🗂️";
-  const key = String(category).toLowerCase().trim();
-  return CATEGORY_EMOJI[key] || "🗂️";
+function getCategoryEmoji(cat) {
+  if (!cat) return "🗂️";
+  return CATEGORY_EMOJI[String(cat).toLowerCase().trim()] || "🗂️";
 }
 
-// Hitung selisih hari (acara - hari ini), dibulatkan ke hari kalender.
 function daysUntil(dateStr) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const target = new Date(dateStr);
-  target.setHours(0, 0, 0, 0);
-  return Math.round((target - today) / (1000 * 60 * 60 * 24));
+  const today = new Date(); today.setHours(0,0,0,0);
+  const t = new Date(dateStr); t.setHours(0,0,0,0);
+  return Math.round((t - today) / 86400000);
 }
-
 function countdownLabel(diff) {
   if (diff === 0) return "Hari ini";
   if (diff === 1) return "Besok";
@@ -58,206 +31,302 @@ function countdownLabel(diff) {
   return `${Math.abs(diff)} hari lalu`;
 }
 
+// Warna donut chart per index
+const PIE_COLORS = ["#10b981","#3b82f6","#f59e0b","#ef4444","#8b5cf6","#06b6d4"];
+
+// Mini sparkbar dari transaksi 7 hari terakhir
+function buildSparkData(transactions, type) {
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i); d.setHours(0,0,0,0);
+    const label = d.toLocaleDateString("id-ID", { weekday: "short" });
+    const total = transactions
+      .filter(tx => {
+        const td = new Date(tx.date || tx.createdAt); td.setHours(0,0,0,0);
+        return tx.type === type && td.getTime() === d.getTime();
+      })
+      .reduce((s, tx) => s + Number(tx.amount || 0), 0);
+    days.push({ label, total });
+  }
+  return days;
+}
+
 export default function DashboardPersonal() {
   const { user } = useAuth();
   const navigate = useNavigate();
+
   const [transactions, setTransactions] = useState([]);
-  const [targets, setTargets]           = useState([]);
-  const [events, setEvents]             = useState([]);
-  const [loading, setLoading]           = useState(true);
+  const [targets,      setTargets]      = useState([]);
+  const [events,       setEvents]       = useState([]);
+  const [profile,      setProfile]      = useState(null);
+  const [loading,      setLoading]      = useState(true);
+  const [showSaldo,    setShowSaldo]    = useState(true);
 
   useEffect(() => {
     if (!user) return;
     const token = localStorage.getItem("finsight_token");
-    const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
-
+    const h = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
     setLoading(true);
     Promise.all([
-      fetch(`/api/transactions?mode=personal`, { headers }).then(r => r.json()),
-      fetch(`/api/targets`, { headers }).then(r => r.json()),
-      fetch(`/api/notes?table=cal_notes&mode=personal`, { headers }).then(r => r.json()),
-    ]).then(([txRes, targetRes, evRes]) => {
+      fetch(`/api/transactions?mode=personal`, { headers: h }).then(r => r.json()),
+      fetch(`/api/targets`, { headers: h }).then(r => r.json()),
+      fetch(`/api/notes?table=cal_notes&mode=personal`, { headers: h }).then(r => r.json()),
+      fetch(`/api/profile`, { headers: h }).then(r => r.json()),
+    ]).then(([txRes, targetRes, evRes, profRes]) => {
       if (txRes.success)     setTransactions(txRes.data);
       if (targetRes.success) setTargets(targetRes.data);
       if (evRes.success)     setEvents(evRes.data.map(ev => ({ id: ev.id, tanggal: ev.date, judul: ev.title || "Acara" })));
+      if (profRes.success)   setProfile(profRes.data);
     }).finally(() => setLoading(false));
   }, [user]);
 
-  const summary        = calcSummary(transactions);
-  const recentTx       = [...transactions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
-  const topCategories  = groupByCategory(transactions).slice(0, 4);
-  const budgetPersen   = summary.pemasukan > 0
-    ? Math.min((summary.pengeluaran / summary.pemasukan) * 100, 100)
-    : 0;
+  const summary           = calcSummary(transactions);
+  const topCategories     = groupByCategory(transactions).slice(0, 5);
+  const recentTx          = [...transactions].sort((a,b) => new Date(b.date||b.createdAt) - new Date(a.date||a.createdAt)).slice(0, 5);
+  const budgetPersen      = summary.pemasukan > 0 ? Math.min((summary.pengeluaran / summary.pemasukan) * 100, 100) : 0;
   const budgetPersenLabel = budgetPersen.toFixed(0);
+  const budgetStatus      = budgetPersen >= 100 ? "danger" : budgetPersen >= 80 ? "warning" : "safe";
+  const activeTargets     = targets.filter(t => t.terkumpul < t.target).slice(0, 2);
+  const totalTarget       = targets.reduce((s, t) => s + Number(t.target || 0), 0);
+  const totalTerkumpul    = targets.reduce((s, t) => s + Number(t.terkumpul || 0), 0);
+  const targetPersen      = totalTarget > 0 ? Math.min((totalTerkumpul / totalTarget) * 100, 100) : 0;
 
-  // Status alert budget: aman | warning (>=80%) | danger (>=100%)
-  const budgetStatus = budgetPersen >= 100 ? "danger" : budgetPersen >= 80 ? "warning" : "safe";
+  // Spark data
+  const sparkPemasukan   = buildSparkData(transactions, "pemasukan");
+  const sparkPengeluaran = buildSparkData(transactions, "pengeluaran");
 
-  // Hanya tampilkan target yang belum selesai, maks 3
-  const activeTargets = targets.filter((t) => t.terkumpul < t.target).slice(0, 3);
-
-  // Insight otomatis: kategori pengeluaran terbesar BULAN INI
+  // Income tracker
   const now = new Date();
-  const txBulanIni = transactions.filter((tx) => {
-    const d = new Date(tx.date || tx.createdAt);
-    return tx.type === "pengeluaran" && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  });
-  const totalPengeluaranBulanIni = txBulanIni.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
-  const catBulanIni = {};
-  txBulanIni.forEach((tx) => {
-    const cat = tx.category || "Lainnya";
-    catBulanIni[cat] = (catBulanIni[cat] || 0) + Number(tx.amount || 0);
-  });
-  const topCatBulanIni = Object.entries(catBulanIni).sort((a, b) => b[1] - a[1])[0];
-  const insightText = topCatBulanIni && totalPengeluaranBulanIni > 0
-    ? `${getCategoryEmoji(topCatBulanIni[0])} Bulan ini paling banyak keluar buat ${topCatBulanIni[0]} (${((topCatBulanIni[1] / totalPengeluaranBulanIni) * 100).toFixed(0)}%)`
-    : null;
-
-  // Income Tracker: pemasukan per kategori, bulan ini vs bulan lalu
   const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const txPemasukanIni = transactions.filter((tx) => {
+  const txPemasukanIni = transactions.filter(tx => {
     const d = new Date(tx.date || tx.createdAt);
     return tx.type === "pemasukan" && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
-  const txPemasukanLalu = transactions.filter((tx) => {
+  const txPemasukanLalu = transactions.filter(tx => {
     const d = new Date(tx.date || tx.createdAt);
     return tx.type === "pemasukan" && d.getMonth() === prevMonth.getMonth() && d.getFullYear() === prevMonth.getFullYear();
   });
   const incomeByCategory = {};
-  txPemasukanIni.forEach((tx) => {
-    const cat = tx.category || "Lainnya";
-    incomeByCategory[cat] = (incomeByCategory[cat] || 0) + Number(tx.amount || 0);
+  txPemasukanIni.forEach(tx => { const c = tx.category||"Lainnya"; incomeByCategory[c] = (incomeByCategory[c]||0) + Number(tx.amount||0); });
+  const incomeLastMonth  = {};
+  txPemasukanLalu.forEach(tx => { const c = tx.category||"Lainnya"; incomeLastMonth[c] = (incomeLastMonth[c]||0) + Number(tx.amount||0); });
+  const incomeSorted        = Object.entries(incomeByCategory).sort((a,b) => b[1]-a[1]);
+  const totalPemasukanIni   = txPemasukanIni.reduce((s,tx) => s + Number(tx.amount||0), 0);
+  const totalPemasukanLalu  = txPemasukanLalu.reduce((s,tx) => s + Number(tx.amount||0), 0);
+  const incomeDelta         = totalPemasukanLalu > 0 ? ((totalPemasukanIni - totalPemasukanLalu) / totalPemasukanLalu) * 100 : null;
+
+  // Insight
+  const txBulanIni = transactions.filter(tx => {
+    const d = new Date(tx.date || tx.createdAt);
+    return tx.type === "pengeluaran" && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
-  const incomeLastMonth = {};
-  txPemasukanLalu.forEach((tx) => {
-    const cat = tx.category || "Lainnya";
-    incomeLastMonth[cat] = (incomeLastMonth[cat] || 0) + Number(tx.amount || 0);
-  });
-  const incomeSorted = Object.entries(incomeByCategory).sort((a, b) => b[1] - a[1]);
-  const totalPemasukanIni  = txPemasukanIni.reduce((s, tx) => s + Number(tx.amount || 0), 0);
-  const totalPemasukanLalu = txPemasukanLalu.reduce((s, tx) => s + Number(tx.amount || 0), 0);
-  const incomeDelta = totalPemasukanLalu > 0
-    ? ((totalPemasukanIni - totalPemasukanLalu) / totalPemasukanLalu) * 100
+  const totalPengeluaranBulanIni = txBulanIni.reduce((s,tx) => s + Number(tx.amount||0), 0);
+  const catBulanIni = {};
+  txBulanIni.forEach(tx => { const c = tx.category||"Lainnya"; catBulanIni[c] = (catBulanIni[c]||0) + Number(tx.amount||0); });
+  const topCatBulanIni = Object.entries(catBulanIni).sort((a,b) => b[1]-a[1])[0];
+  const insightText = topCatBulanIni && totalPengeluaranBulanIni > 0
+    ? `${getCategoryEmoji(topCatBulanIni[0])} Pengeluaran terbesar bulan ini: ${topCatBulanIni[0]} (${((topCatBulanIni[1]/totalPengeluaranBulanIni)*100).toFixed(0)}%)`
     : null;
 
-  // Acara H-7: tanggal dari hari ini s.d. 7 hari ke depan, urut terdekat
+  // Acara H-7
   const upcomingEvents = events
-    .map((ev) => ({ ...ev, diff: daysUntil(ev.tanggal) }))
-    .filter((ev) => ev.diff >= 0 && ev.diff <= 7)
-    .sort((a, b) => a.diff - b.diff)
-    .slice(0, 4);
+    .map(ev => ({ ...ev, diff: daysUntil(ev.tanggal) }))
+    .filter(ev => ev.diff >= 0 && ev.diff <= 7)
+    .sort((a,b) => a.diff - b.diff)
+    .slice(0, 2);
+
+  // Avatar
+  const avatarUrl = profile?.avatar_url || null;
+  const namaUser  = profile?.name || user?.name || user?.email?.split("@")[0] || "Kamu";
+  const inisial   = namaUser.charAt(0).toUpperCase();
+
+  // Pie chart data
+  const pieData = topCategories.map(([cat, amount]) => ({ name: cat, value: amount }));
+
+  // Tren 6 bulan
+  const tren6Bulan = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const label = d.toLocaleDateString("id-ID", { month: "short", year: "2-digit" });
+    const pemasukan   = transactions.filter(tx => { const td = new Date(tx.date||tx.createdAt); return tx.type==="pemasukan"   && td.getMonth()===d.getMonth() && td.getFullYear()===d.getFullYear(); }).reduce((s,tx)=>s+Number(tx.amount||0),0);
+    const pengeluaran = transactions.filter(tx => { const td = new Date(tx.date||tx.createdAt); return tx.type==="pengeluaran" && td.getMonth()===d.getMonth() && td.getFullYear()===d.getFullYear(); }).reduce((s,tx)=>s+Number(tx.amount||0),0);
+    tren6Bulan.push({ label, pemasukan, pengeluaran });
+  }
+
+  if (loading) return (
+    <DashboardLayout>
+      <div className="dp2__skeleton">
+        {[1,2,3,4,5].map(i => <div key={i} className="dp2__skel-block skel" />)}
+      </div>
+    </DashboardLayout>
+  );
 
   return (
     <DashboardLayout>
-      <div className="dashboard">
-        <PageHeader
-          title="Dashboard Pribadi"
-          subtitle="Ringkasan keuangan personal kamu"
-        />
+      <div className="dp2">
 
-        {loading ? (
-          <div className="dashboard__skeleton">
-            <div className="dashboard__skeleton-metrics">
-              {[1,2,3].map(i => <div key={i} className="dashboard__skeleton-card skel" />)}
+        {/* ── HEADER ── */}
+        <div className="dp2__header">
+          <div>
+            <h1 className="dp2__greeting">Halo, {namaUser}! 👋</h1>
+            <p className="dp2__greeting-sub">Kelola keuanganmu dengan mudah</p>
+          </div>
+          <div className="dp2__header-right">
+            {budgetStatus !== "safe" && (
+              <span className={"dp2__alert-dot dp2__alert-dot--" + budgetStatus} title={budgetStatus === "danger" ? "Pengeluaran melebihi pemasukan!" : "Pengeluaran hampir melebihi pemasukan"} />
+            )}
+            <div className="dp2__avatar" onClick={() => navigate("/dashboard/personal/profil")}>
+              {avatarUrl
+                ? <img src={avatarUrl} alt="avatar" className="dp2__avatar-img" />
+                : <span className="dp2__avatar-initials">{inisial}</span>
+              }
+              <span className="dp2__avatar-online" />
             </div>
-            <div className="dashboard__skeleton-block skel" style={{height:"90px"}} />
-            <div className="dashboard__skeleton-block skel" style={{height:"180px"}} />
-            <div className="dashboard__skeleton-block skel" style={{height:"200px"}} />
           </div>
-        ) : (<>
-
-        {/* Budget Alert Banner */}
-        {budgetStatus !== "safe" && summary.pemasukan > 0 && (
-          <div className={"dp-alert dp-alert--" + budgetStatus}>
-            <span className="dp-alert__icon">{budgetStatus === "danger" ? "🚨" : "⚠️"}</span>
-            <span className="dp-alert__text">
-              {budgetStatus === "danger"
-                ? `Pengeluaran sudah melebihi pemasukan bulan ini (${budgetPersenLabel}%)`
-                : `Pengeluaran sudah mencapai ${budgetPersenLabel}% dari pemasukan bulan ini`}
-            </span>
-          </div>
-        )}
-
-        {/* Insight otomatis */}
-        {insightText && (
-          <div className="dp-insight">
-            {insightText}
-          </div>
-        )}
-
-        {/* Metric Cards */}
-        <div className="dashboard__metrics">
-          <MetricCard label="Saldo Saat Ini"    value={formatRupiah(summary.saldo)}        sub="Pemasukan - Pengeluaran"          icon="💳" accent="personal" />
-          <MetricCard label="Total Pemasukan"   value={formatRupiah(summary.pemasukan)}    sub="Gaji, freelance, dll"             icon="📈" accent="positive" />
-          <MetricCard label="Total Pengeluaran" value={formatRupiah(summary.pengeluaran)}  sub={`${budgetPersenLabel}% dari pemasukan`} icon="🛒" accent="negative" />
         </div>
 
-        {/* Budget bar */}
-        <div className="dashboard__budget-wrap">
-          <div className="dashboard__section-title" style={{ marginBottom: "0.6rem" }}>
-            Penggunaan Budget Bulan Ini
+        {/* ── HERO CARD SALDO ── */}
+        <div className="dp2__hero">
+          <div className="dp2__hero-left">
+            <p className="dp2__hero-label">Saldo Saat Ini</p>
+            <div className="dp2__hero-saldo-row">
+              <h2 className="dp2__hero-saldo">
+                {showSaldo ? formatRupiah(summary.saldo) : "Rp ••••••"}
+              </h2>
+              <button className="dp2__hero-toggle" onClick={() => setShowSaldo(p => !p)}>
+                {showSaldo ? "👁️" : "🙈"}
+              </button>
+            </div>
+            <div className="dp2__hero-meta">
+              <span className="dp2__hero-type">Debet</span>
+              <span className="dp2__hero-type">Digital Card</span>
+            </div>
+            <label className="dp2__hero-nominal-toggle">
+              <span>Tampilkan Nominal</span>
+              <div className={"dp2__toggle " + (showSaldo ? "dp2__toggle--on" : "")} onClick={() => setShowSaldo(p => !p)}>
+                <div className="dp2__toggle-knob" />
+              </div>
+            </label>
           </div>
-          <div className="dashboard__budget-bar">
-            <div
-              className={"dashboard__budget-fill " + (Number(budgetPersenLabel) > 80 ? "dashboard__budget-fill--danger" : "dashboard__budget-fill--safe")}
-              style={{ width: budgetPersenLabel + "%" }}
-            />
+          <div className="dp2__card-visual">
+            <div className="dp2__card">
+              <div className="dp2__card-top">
+                <span className="dp2__card-brand">FINSIGHT</span>
+                <span className="dp2__card-logo">✦</span>
+              </div>
+              <div className="dp2__card-chip">
+                <div className="dp2__chip" />
+              </div>
+              <div className="dp2__card-bottom">
+                <span className="dp2__card-number">•••• •••• •••• 5678</span>
+                <span className="dp2__card-visa">VISA</span>
+              </div>
+            </div>
           </div>
-          <p className="dashboard__budget-label">
-            {formatRupiah(summary.pengeluaran)} dari {formatRupiah(summary.pemasukan)} ({budgetPersenLabel}%)
-          </p>
         </div>
 
-        {/* Income Tracker */}
-        <div className="dp-income">
-          <div className="dashboard__section-header">
-            <div className="dashboard__section-title">💰 Income Tracker Bulan Ini</div>
+        {/* ── 3 METRIC CARDS ── */}
+        <div className="dp2__metrics">
+          {/* Pemasukan */}
+          <div className="dp2__metric dp2__metric--income">
+            <div className="dp2__metric-icon dp2__metric-icon--income">💰</div>
+            <p className="dp2__metric-label">Total Pemasukan</p>
+            <p className="dp2__metric-value">{formatRupiah(summary.pemasukan)}</p>
+            <p className="dp2__metric-sub">Gaji, freelance, dll</p>
+            <div className="dp2__metric-chart">
+              <ResponsiveContainer width="100%" height={36}>
+                <BarChart data={sparkPemasukan} barSize={4}>
+                  <Bar dataKey="total" fill="#10b981" radius={[2,2,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Pengeluaran */}
+          <div className="dp2__metric dp2__metric--expense">
+            <div className="dp2__metric-icon dp2__metric-icon--expense">🛒</div>
+            <p className="dp2__metric-label">Total Pengeluaran</p>
+            <p className="dp2__metric-value">{formatRupiah(summary.pengeluaran)}</p>
+            <p className="dp2__metric-sub">{budgetPersenLabel}% dari pemasukan</p>
+            <div className="dp2__metric-chart">
+              <ResponsiveContainer width="100%" height={36}>
+                <BarChart data={sparkPengeluaran} barSize={4}>
+                  <Bar dataKey="total" fill="#ef4444" radius={[2,2,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Target Tabungan */}
+          <div className="dp2__metric dp2__metric--target">
+            <div className="dp2__metric-icon dp2__metric-icon--target">🎯</div>
+            <p className="dp2__metric-label">Target Tabungan</p>
+            <p className="dp2__metric-value">{formatRupiah(totalTarget)}</p>
+            <p className="dp2__metric-sub">{targetPersen.toFixed(0)}% tercapai</p>
+            <div className="dp2__target-mini-bar">
+              <div className="dp2__target-mini-fill" style={{ width: targetPersen + "%" }} />
+            </div>
+            <p className="dp2__target-mini-pct">{targetPersen.toFixed(0)}%</p>
+          </div>
+        </div>
+
+        {/* ── BUDGET BAR ── */}
+        <div className="dp2__budget">
+          <div className="dp2__budget-header">
+            <span className="dp2__section-title">Penggunaan Budget Bulan Ini</span>
+            <span className={"dp2__budget-badge dp2__budget-badge--" + budgetStatus}>{budgetPersenLabel}%</span>
+          </div>
+          <div className="dp2__budget-bar">
+            <div className={"dp2__budget-fill dp2__budget-fill--" + budgetStatus} style={{ width: budgetPersenLabel + "%" }} />
+          </div>
+          <p className="dp2__budget-label">{formatRupiah(summary.pengeluaran)} dari {formatRupiah(summary.pemasukan)}</p>
+        </div>
+
+        {/* ── INCOME TRACKER ── */}
+        <div className="dp2__income">
+          <div className="dp2__section-header">
+            <span className="dp2__section-title">💰 Income Tracker Bulan Ini</span>
             {incomeDelta !== null && (
-              <span className={"dp-income__delta " + (incomeDelta >= 0 ? "dp-income__delta--up" : "dp-income__delta--down")}>
+              <span className={"dp2__delta " + (incomeDelta >= 0 ? "dp2__delta--up" : "dp2__delta--down")}>
                 {incomeDelta >= 0 ? "▲" : "▼"} {Math.abs(incomeDelta).toFixed(0)}% vs bulan lalu
               </span>
             )}
           </div>
-          <div className="dp-income__summary">
-            <div className="dp-income__summary-item">
-              <span className="dp-income__summary-label">Bulan Ini</span>
-              <span className="dp-income__summary-value dp-income__summary-value--current">{formatRupiah(totalPemasukanIni)}</span>
+          <div className="dp2__income-summary">
+            <div className="dp2__income-summary-item">
+              <span className="dp2__income-summary-label">Bulan Ini</span>
+              <span className="dp2__income-summary-value dp2__income-summary-value--current">{formatRupiah(totalPemasukanIni)}</span>
             </div>
-            <div className="dp-income__summary-divider" />
-            <div className="dp-income__summary-item">
-              <span className="dp-income__summary-label">Bulan Lalu</span>
-              <span className="dp-income__summary-value">{totalPemasukanLalu > 0 ? formatRupiah(totalPemasukanLalu) : "—"}</span>
+            <div className="dp2__income-summary-div" />
+            <div className="dp2__income-summary-item">
+              <span className="dp2__income-summary-label">Bulan Lalu</span>
+              <span className="dp2__income-summary-value">{totalPemasukanLalu > 0 ? formatRupiah(totalPemasukanLalu) : "—"}</span>
             </div>
           </div>
           {incomeSorted.length === 0 ? (
-            <div className="dashboard__empty">Belum ada pemasukan bulan ini</div>
+            <p className="dp2__empty">Belum ada pemasukan bulan ini</p>
           ) : (
-            <div className="dp-income__list">
+            <div className="dp2__income-list">
               {incomeSorted.map(([cat, amount]) => {
-                const persen = totalPemasukanIni > 0 ? (amount / totalPemasukanIni) * 100 : 0;
+                const persen  = totalPemasukanIni > 0 ? (amount / totalPemasukanIni) * 100 : 0;
                 const lastAmt = incomeLastMonth[cat] || 0;
-                const catDelta = lastAmt > 0 ? ((amount - lastAmt) / lastAmt) * 100 : null;
+                const delta   = lastAmt > 0 ? ((amount - lastAmt) / lastAmt) * 100 : null;
                 return (
-                  <div key={cat} className="dp-income__row">
-                    <div className="dp-income__row-top">
-                      <span className="dp-income__cat">
-                        <span>{getCategoryEmoji(cat)}</span> {cat}
-                      </span>
-                      <div className="dp-income__row-right">
-                        {catDelta !== null && (
-                          <span className={"dp-income__cat-delta " + (catDelta >= 0 ? "dp-income__cat-delta--up" : "dp-income__cat-delta--down")}>
-                            {catDelta >= 0 ? "▲" : "▼"}{Math.abs(catDelta).toFixed(0)}%
+                  <div key={cat} className="dp2__income-row">
+                    <div className="dp2__income-row-top">
+                      <span className="dp2__income-cat">{getCategoryEmoji(cat)} {cat}</span>
+                      <div style={{ display:"flex", alignItems:"center", gap:"0.4rem" }}>
+                        {delta !== null && (
+                          <span className={"dp2__delta " + (delta >= 0 ? "dp2__delta--up" : "dp2__delta--down")}>
+                            {delta >= 0 ? "▲" : "▼"}{Math.abs(delta).toFixed(0)}%
                           </span>
                         )}
-                        <span className="dp-income__amount">{formatRupiah(amount)}</span>
+                        <span className="dp2__income-amount">{formatRupiah(amount)}</span>
                       </div>
                     </div>
-                    <div className="dp-income__bar">
-                      <div className="dp-income__bar-fill" style={{ width: persen + "%" }} />
-                    </div>
-                    <div className="dp-income__row-meta">
-                      <span>{persen.toFixed(0)}% dari total pemasukan</span>
+                    <div className="dp2__income-bar"><div className="dp2__income-bar-fill" style={{ width: persen+"%" }} /></div>
+                    <div className="dp2__income-meta">
+                      <span>{persen.toFixed(0)}% dari total</span>
                       {lastAmt > 0 && <span>Lalu: {formatRupiah(lastAmt)}</span>}
                     </div>
                   </div>
@@ -267,88 +336,164 @@ export default function DashboardPersonal() {
           )}
         </div>
 
-        {/* Countdown Acara H-7 */}
-        {upcomingEvents.length > 0 && (
-          <div className="dp-events">
-            <div className="dashboard__section-header">
-              <div className="dashboard__section-title">📅 Acara Mendatang (7 Hari)</div>
-              <button className="dashboard__see-all" onClick={() => navigate("/dashboard/personal/catatan")}>
-                Lihat semua →
-              </button>
+        {/* ── ACARA & TARGET side-by-side ── */}
+        <div className="dp2__row2">
+          {/* Acara */}
+          <div className="dp2__card-section">
+            <div className="dp2__section-header">
+              <span className="dp2__section-title">📅 Acara Mendatang (7 Hari)</span>
             </div>
-            <div className="dp-events__list">
-              {upcomingEvents.map((ev) => (
-                <div key={ev.id} className="dp-event-card">
-                  <div className="dp-event-card__date">
-                    {new Date(ev.tanggal).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })}
+            {upcomingEvents.length === 0 ? (
+              <p className="dp2__empty">Tidak ada acara mendatang</p>
+            ) : (
+              upcomingEvents.map(ev => (
+                <div key={ev.id} className="dp2__event-item">
+                  <div className="dp2__event-date">
+                    <span className="dp2__event-day">{new Date(ev.tanggal).getDate()}</span>
+                    <span className="dp2__event-month">{new Date(ev.tanggal).toLocaleDateString("id-ID",{month:"short"})}</span>
                   </div>
-                  <div className="dp-event-card__info">
-                    <p className="dp-event-card__judul">{ev.judul}</p>
-                    <span className={"dp-event-card__countdown " + (ev.diff === 0 ? "dp-event-card__countdown--today" : "")}>
-                      {countdownLabel(ev.diff)}
-                    </span>
+                  <div className="dp2__event-info">
+                    <p className="dp2__event-title">{ev.judul}</p>
+                    <span className={"dp2__event-countdown " + (ev.diff===0?"dp2__event-countdown--today":"")}>{countdownLabel(ev.diff)}</span>
                   </div>
                 </div>
-              ))}
-            </div>
+              ))
+            )}
+            <button className="dp2__see-all" onClick={() => navigate("/dashboard/personal/catatan")}>
+              Lihat semua acara →
+            </button>
           </div>
-        )}
 
-        {/* Target Cards */}
-        {activeTargets.length > 0 && (
-          <div className="dashboard__targets">
-            <div className="dashboard__section-header">
-              <div className="dashboard__section-title">🎯 Target Tabungan Aktif</div>
-              <button className="dashboard__see-all" onClick={() => navigate("/dashboard/personal/target")}>
-                Lihat semua →
-              </button>
+          {/* Target */}
+          <div className="dp2__card-section">
+            <div className="dp2__section-header">
+              <span className="dp2__section-title">🎯 Target Tabungan Aktif</span>
             </div>
-            <div className="dashboard__target-grid">
-              {activeTargets.map((t) => {
+            {activeTargets.length === 0 ? (
+              <p className="dp2__empty">Belum ada target aktif</p>
+            ) : (
+              activeTargets.map(t => {
                 const persen = Math.min((t.terkumpul / t.target) * 100, 100);
                 return (
-                  <div key={t.id} className="dashboard__target-card">
-                    <div className="dashboard__target-top">
+                  <div key={t.id} className="dp2__target-item">
+                    <div className="dp2__target-top">
                       <div>
-                        <p className="dashboard__target-nama">{t.nama}</p>
-                        {t.penempatan && (
-                          <p className="dashboard__target-penempatan">🏦 {t.penempatan}</p>
-                        )}
+                        <p className="dp2__target-nama">{t.nama}</p>
+                        {t.penempatan && <p className="dp2__target-penempatan">🏦 {t.penempatan}</p>}
                       </div>
-                      <span className="dashboard__target-persen">{persen.toFixed(0)}%</span>
+                      <span className="dp2__target-pct">{persen.toFixed(0)}%</span>
                     </div>
-                    <div className="dashboard__target-bar">
-                      <div className="dashboard__target-fill" style={{ width: persen + "%" }} />
-                    </div>
-                    <div className="dashboard__target-info">
+                    <div className="dp2__target-bar"><div className="dp2__target-fill" style={{ width: persen+"%" }} /></div>
+                    <div className="dp2__target-info">
                       <span>{formatRupiah(t.terkumpul)}</span>
                       <span>dari {formatRupiah(t.target)}</span>
                     </div>
                   </div>
                 );
-              })}
+              })
+            )}
+            <button className="dp2__see-all" onClick={() => navigate("/dashboard/personal/target")}>
+              Lihat semua target →
+            </button>
+          </div>
+        </div>
+
+        {/* ── TREN 6 BULAN ── */}
+        <div className="dp2__tren">
+          <div className="dp2__section-header">
+            <span className="dp2__section-title">Tren Keuangan (6 Bulan)</span>
+            <div style={{ display:"flex", gap:"0.75rem", fontSize:"11px", color:"var(--text-muted)" }}>
+              <span><span style={{color:"#10b981"}}>■</span> Pemasukan</span>
+              <span><span style={{color:"#ef4444"}}>■</span> Pengeluaran</span>
             </div>
           </div>
-        )}
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={tren6Bulan} barSize={14} barGap={3}>
+              <Tooltip
+                formatter={(val) => formatRupiah(val)}
+                contentStyle={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"8px", fontSize:"12px" }}
+                labelStyle={{ color:"var(--text-muted)" }}
+              />
+              <Bar dataKey="pemasukan"   fill="#10b981" radius={[3,3,0,0]} name="Pemasukan" />
+              <Bar dataKey="pengeluaran" fill="#ef4444" radius={[3,3,0,0]} name="Pengeluaran" />
+            </BarChart>
+          </ResponsiveContainer>
+          {insightText && (
+            <div className="dp2__insight">
+              <span className="dp2__insight-icon">✨</span>
+              <span>{insightText}</span>
+            </div>
+          )}
+        </div>
 
-        {/* Chart + Categories */}
-        <div className="dashboard__row">
-          <div className="dashboard__chart-wrap">
-            <div className="dashboard__section-title">Tren Keuangan (6 Bulan)</div>
-            <MiniChart transactions={transactions} accent="personal" />
-          </div>
-          <div className="dashboard__categories">
-            <div className="dashboard__section-title">Pengeluaran per Kategori</div>
-            {topCategories.length === 0 ? (
-              <div className="dashboard__empty">Belum ada data pengeluaran</div>
+        {/* ── KATEGORI + TRANSAKSI TERBARU ── */}
+        <div className="dp2__row2">
+          {/* Donut chart kategori */}
+          <div className="dp2__card-section">
+            <div className="dp2__section-header">
+              <span className="dp2__section-title">Pengeluaran per Kategori</span>
+              <button className="dp2__see-all-sm" onClick={() => navigate("/dashboard/personal/transaksi")}>Lihat semua →</button>
+            </div>
+            {pieData.length === 0 ? (
+              <p className="dp2__empty">Belum ada data pengeluaran</p>
             ) : (
-              <div className="dashboard__cat-list">
-                {topCategories.map(([cat, amount]) => (
-                  <div key={cat} className="dashboard__cat-item">
-                    <span className="dashboard__cat-name">
-                      <span className="dashboard__cat-emoji">{getCategoryEmoji(cat)}</span> {cat}
+              <div className="dp2__pie-wrap">
+                <div className="dp2__pie-chart">
+                  <ResponsiveContainer width={130} height={130}>
+                    <PieChart>
+                      <Pie data={pieData} cx="50%" cy="50%" innerRadius={38} outerRadius={60} dataKey="value" paddingAngle={2}>
+                        {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="dp2__pie-center">
+                    <span className="dp2__pie-total-label">Total</span>
+                    <span className="dp2__pie-total">{formatRupiah(summary.pengeluaran)}</span>
+                  </div>
+                </div>
+                <div className="dp2__pie-legend">
+                  {topCategories.map(([cat, amount], i) => {
+                    const pct = summary.pengeluaran > 0 ? ((amount/summary.pengeluaran)*100).toFixed(0) : 0;
+                    return (
+                      <div key={cat} className="dp2__pie-legend-item">
+                        <span className="dp2__pie-dot" style={{ background: PIE_COLORS[i%PIE_COLORS.length] }} />
+                        <span className="dp2__pie-legend-cat">{getCategoryEmoji(cat)} {cat}</span>
+                        <span className="dp2__pie-legend-pct">{pct}%</span>
+                        <span className="dp2__pie-legend-amt">{formatRupiah(amount)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Transaksi Terbaru */}
+          <div className="dp2__card-section">
+            <div className="dp2__section-header">
+              <span className="dp2__section-title">Transaksi Terbaru</span>
+              <button className="dp2__see-all-sm" onClick={() => navigate("/dashboard/personal/transaksi")}>Lihat semua →</button>
+            </div>
+            {recentTx.length === 0 ? (
+              <div className="dp2__empty-state">
+                <p>💳</p><p>Belum ada transaksi.</p>
+              </div>
+            ) : (
+              <div className="dp2__tx-list">
+                {recentTx.map(tx => (
+                  <div key={tx.id} className="dp2__tx-item">
+                    <div className={"dp2__tx-icon " + (tx.type==="pemasukan" ? "dp2__tx-icon--income" : "dp2__tx-icon--expense")}>
+                      {getCategoryEmoji(tx.category)}
+                    </div>
+                    <div className="dp2__tx-info">
+                      <p className="dp2__tx-desc">{tx.description || tx.category || "-"}</p>
+                      <p className="dp2__tx-date">
+                        {new Date(tx.date||tx.createdAt).toLocaleDateString("id-ID", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })}
+                      </p>
+                    </div>
+                    <span className={"dp2__tx-amount " + (tx.type==="pemasukan" ? "dp2__tx-amount--income" : "dp2__tx-amount--expense")}>
+                      {tx.type==="pemasukan" ? "+" : "-"}{formatRupiah(tx.amount)}
                     </span>
-                    <span className="dashboard__cat-amount">{formatRupiah(amount)}</span>
                   </div>
                 ))}
               </div>
@@ -356,40 +501,6 @@ export default function DashboardPersonal() {
           </div>
         </div>
 
-        {/* Recent Transactions */}
-        <div className="dashboard__recent">
-          <div className="dashboard__section-header">
-            <div className="dashboard__section-title">Transaksi Terbaru</div>
-            <button className="dashboard__see-all" onClick={() => navigate("/dashboard/personal/transaksi")}>
-              Lihat semua →
-            </button>
-          </div>
-          {recentTx.length === 0 ? (
-            <div className="dashboard__empty-state">
-              <p>💳</p>
-              <p>Belum ada transaksi.</p>
-              <p>Mulai catat dari menu <strong>Transaksi</strong>.</p>
-            </div>
-          ) : (
-            <div className="dashboard__tx-list">
-              {recentTx.map((tx) => (
-                <div key={tx.id} className="dashboard__tx-item">
-                  <div className={"dashboard__tx-dot dashboard__tx-dot--" + (tx.type === "pemasukan" ? "income" : "expense")} />
-                  <span className="dashboard__tx-emoji">{getCategoryEmoji(tx.category)}</span>
-                  <div className="dashboard__tx-info">
-                    <p className="dashboard__tx-desc">{tx.description || tx.category || "-"}</p>
-                    <p className="dashboard__tx-date">{new Date(tx.createdAt).toLocaleDateString("id-ID")}</p>
-                  </div>
-                  <span className={"dashboard__tx-amount " + (tx.type === "pemasukan" ? "dashboard__tx-amount--income" : "dashboard__tx-amount--expense")}>
-                    {tx.type === "pemasukan" ? "+" : "-"}{formatRupiah(tx.amount)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-      </>)}
       </div>
     </DashboardLayout>
   );
