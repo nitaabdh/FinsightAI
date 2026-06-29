@@ -238,33 +238,33 @@
   letter-spacing: 0.05em;
 }
 
-/* ── 3 Metric Cards ── */
+/* ── 2 Metric Cards ── */
 .dp2__metrics {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
 }
 .dp2__metric {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 0.9rem 1rem;
+  padding: 1rem 1.1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.2rem;
   transition: var(--transition);
 }
-.dp2__metric:hover { transform: translateY(-2px); border-color: rgba(16,185,129,0.25); }
+.dp2__metric:hover { transform: translateY(-2px); border-color: rgba(16,185,129,0.2); }
 .dp2__metric-icon {
-  font-size: 20px;
-  width: 36px; height: 36px;
+  font-size: 18px;
+  width: 34px; height: 34px;
   border-radius: var(--radius-md);
   display: flex; align-items: center; justify-content: center;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.3rem;
+  flex-shrink: 0;
 }
 .dp2__metric-icon--income  { background: rgba(16,185,129,0.12); }
 .dp2__metric-icon--expense { background: rgba(239,68,68,0.12); }
-.dp2__metric-icon--target  { background: rgba(59,130,246,0.12); }
 .dp2__metric-label {
   font-size: 11px;
   color: var(--text-muted);
@@ -272,40 +272,16 @@
 }
 .dp2__metric-value {
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 800;
-  color: var(--text-primary);
   margin: 0.1rem 0;
 }
 .dp2__metric--income  .dp2__metric-value { color: #10b981; }
 .dp2__metric--expense .dp2__metric-value { color: #ef4444; }
-.dp2__metric--target  .dp2__metric-value { color: #3b82f6; }
 .dp2__metric-sub {
   font-size: 10px;
   color: var(--text-muted);
   font-family: var(--font-body);
-  margin-bottom: 0.3rem;
-}
-.dp2__metric-chart { margin-top: auto; }
-.dp2__target-mini-bar {
-  height: 4px;
-  background: var(--bg-secondary);
-  border-radius: 2px;
-  overflow: hidden;
-  margin-top: 0.3rem;
-}
-.dp2__target-mini-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #60a5fa);
-  border-radius: 2px;
-  transition: width 0.5s ease;
-}
-.dp2__target-mini-pct {
-  font-size: 10px;
-  color: #3b82f6;
-  font-weight: 700;
-  text-align: right;
-  margin-top: 0.15rem;
 }
 
 /* ── Budget Bar ── */
@@ -519,7 +495,67 @@
 }
 .dp2__insight-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
 
-/* ── Donut chart ── */
+/* ── Pengeluaran per Kategori (list rapi) ── */
+.dp2__cat-list { display: flex; flex-direction: column; gap: 0.65rem; }
+.dp2__cat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.dp2__cat-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.dp2__cat-name {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+.dp2__cat-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dp2__cat-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.dp2__cat-pct {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-weight: 600;
+  min-width: 28px;
+  text-align: right;
+}
+.dp2__cat-amt {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.dp2__cat-bar {
+  height: 4px;
+  background: var(--bg-secondary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.dp2__cat-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+/* ── Donut chart (tetap ada tapi tidak dipakai sekarang) ── */
 .dp2__pie-wrap {
   display: flex;
   align-items: center;
@@ -624,9 +660,24 @@
 }
 
 @media (max-width: 640px) {
-  .dp2__metrics { grid-template-columns: 1fr 1fr; }
-  .dp2__row2 { grid-template-columns: 1fr; }
-  .dp2__hero-saldo { font-size: 22px; }
-  .dp2__card { width: 130px; height: 82px; }
+  .dp2 { gap: 0.85rem; }
   .dp2__greeting { font-size: 18px; }
+  .dp2__hero { padding: 1.1rem 1.1rem; gap: 0.75rem; }
+  .dp2__hero-saldo { font-size: 20px; }
+  .dp2__card { width: 120px; height: 76px; }
+  .dp2__card-brand { font-size: 8px; }
+  .dp2__card-number { font-size: 7px; }
+  .dp2__metrics { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .dp2__metric { padding: 0.8rem 0.85rem; }
+  .dp2__metric-value { font-size: 14px; }
+  .dp2__row2 { grid-template-columns: 1fr; gap: 0.75rem; }
+  .dp2__row2--stretch > * { height: auto; }
+  .dp2__income-summary { flex-direction: column; gap: 0.5rem; }
+  .dp2__income-summary-div { width: 100%; height: 1px; }
+  .dp2__budget { padding: 0.85rem 1rem; }
+  .dp2__tren { padding: 0.9rem 0.85rem; }
+  .dp2__card-section { padding: 0.85rem 0.9rem; }
+  .dp2__acara-grid { grid-template-columns: 1fr; }
+  .dp2__pie-wrap { flex-direction: column; align-items: center; }
+  .dp2__pie-legend { width: 100%; }
 }
