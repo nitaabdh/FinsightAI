@@ -1,0 +1,17 @@
+/* FIX: .sidebar__logo sekarang <button>, browser kasih background putih default.
+   Tambahkan/override block ini di Sidebar.css agar transparan & sesuai tema. */
+.sidebar__logo {
+  background: none;
+  border: none;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  padding: 0.5rem 0.25rem;
+  text-align: left;
+  transition: opacity 0.15s;
+}
+.sidebar__logo:hover {
+  opacity: 0.85;
+}
