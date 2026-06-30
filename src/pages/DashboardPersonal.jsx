@@ -180,7 +180,6 @@ export default function DashboardPersonal() {
                 ? <img src={avatarUrl} alt="avatar" className="dp2__avatar-img" />
                 : <span className="dp2__avatar-initials">{inisial}</span>
               }
-              <span className="dp2__avatar-online" />
             </div>
           </div>
         </div>

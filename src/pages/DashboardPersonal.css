@@ -70,13 +70,6 @@
   color: var(--accent-personal);
   background: rgba(16,185,129,0.12);
 }
-.dp2__avatar-online {
-  position: absolute; bottom: 2px; right: 2px;
-  width: 9px; height: 9px;
-  border-radius: 50%;
-  background: #10b981;
-  border: 1.5px solid var(--bg-card);
-}
 
 /* ── Hero Card ── */
 .dp2__hero {
