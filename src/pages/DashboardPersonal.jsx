@@ -175,7 +175,7 @@ export default function DashboardPersonal() {
             {budgetStatus !== "safe" && (
               <span className={"dp2__alert-dot dp2__alert-dot--" + budgetStatus} title={budgetStatus === "danger" ? "Pengeluaran melebihi pemasukan!" : "Pengeluaran hampir melebihi pemasukan"} />
             )}
-            <div className="dp2__avatar" onClick={() => navigate("/dashboard/personal/profil")}>
+            <div className="dp2__avatar dp2__avatar--mobile-only" onClick={() => navigate(`/dashboard/${user?.mode}/profile`)}>
               {avatarUrl
                 ? <img src={avatarUrl} alt="avatar" className="dp2__avatar-img" />
                 : <span className="dp2__avatar-initials">{inisial}</span>
