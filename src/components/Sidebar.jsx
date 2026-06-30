@@ -1,6 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getProfile, getPhoto } from "../utils/profile";
 import { useEffect, useState } from "react";
 import "./Sidebar.css";
 
@@ -37,10 +36,27 @@ export default function Sidebar({ collapsed, onToggle }) {
 
   useEffect(() => {
     if (!user) return;
-    const profile = getProfile(user.id);
-    setHasProfile(!!profile);
-    setDisplayName(profile?.displayName || user.name || "");
-    setPhoto(getPhoto(user.id));
+    const token = localStorage.getItem("finsight_token");
+    fetch("/api/profile", {
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(r => {
+        if (r.success && r.data) {
+          setHasProfile(true);
+          setDisplayName(r.data.display_name || user.name || "");
+          setPhoto(r.data.avatar_url || null);
+        } else {
+          setHasProfile(false);
+          setDisplayName(user.name || "");
+          setPhoto(null);
+        }
+      })
+      .catch(() => {
+        setHasProfile(false);
+        setDisplayName(user.name || "");
+        setPhoto(null);
+      });
   }, [user, location.pathname]); // re-load saat navigasi (misal balik dari profil)
 
   const handleLogout = () => { logout(); navigate("/", { replace: true }); };
@@ -48,18 +64,15 @@ export default function Sidebar({ collapsed, onToggle }) {
 
   return (
     <aside className={`sidebar sidebar--${accent} ${collapsed ? "sidebar--collapsed" : ""}`}>
-      {/* Logo */}
-      <div className="sidebar__logo">
+      {/* Logo — klik untuk toggle collapse/expand sidebar */}
+      <button className="sidebar__logo" onClick={onToggle} title={collapsed ? "Buka sidebar" : "Tutup sidebar"}>
         <span className="sidebar__logo-icon">◈</span>
         {!collapsed && (
           <span className="sidebar__logo-text">
             FinSight <span className="sidebar__logo-ai">AI</span>
           </span>
         )}
-        <button className="sidebar__toggle" onClick={onToggle}>
-          {collapsed ? "→" : "←"}
-        </button>
-      </div>
+      </button>
 
       {/* Mode Badge */}
       {!collapsed && (
@@ -93,13 +106,11 @@ export default function Sidebar({ collapsed, onToggle }) {
           onClick={() => navigate(profPath)}
           title={collapsed ? (displayName || "Profil") : ""}
         >
-          {/* Avatar: foto atau inisial */}
           <div className={`sidebar__avatar sidebar__avatar--${accent}`}>
             {photo
               ? <img src={photo} alt="profil" className="sidebar__avatar-img" />
               : initial
             }
-            {hasProfile && <span className={`sidebar__profile-dot sidebar__profile-dot--${accent}`} />}
           </div>
 
           {!collapsed && (
