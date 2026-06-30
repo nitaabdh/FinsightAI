@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import PageHeader from "../components/PageHeader";
@@ -30,6 +31,7 @@ async function apiFetch(url, options = {}) {
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const mode   = user?.mode;
   const accent = mode === "umkm" ? "umkm" : "personal";
 
@@ -161,6 +163,10 @@ export default function ProfilePage() {
   return (
     <DashboardLayout>
       <div className="profilepage">
+        <button className="profilepage__back" onClick={() => navigate(-1)}>
+          ← Kembali
+        </button>
+
         <PageHeader
           title="Profil Saya"
           subtitle="Kelola informasi & preferensi akunmu"
