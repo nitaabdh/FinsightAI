@@ -1419,3 +1419,80 @@
 
 /* List card cursor */
 .list-card { cursor: pointer; }
+
+
+/* ════════════════════════════════════════════════════
+   OVERRIDE: Kalender lebih pendek & kecil di mobile
+   Tempel block ini di BAWAH semua CSS yang sudah ada
+   di CatatanPage.css (atau replace section
+   @media (max-width: 640px) yang sudah ada)
+═══════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  /* Header bulan & navigasi — lebih ringkas */
+  .cal-header {
+    padding: 0.7rem 0.9rem;
+  }
+  .cal-nav-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.95rem;
+  }
+  .cal-title {
+    font-size: 0.9rem;
+  }
+
+  /* Label hari (Min, Sen, Sel, dst) — lebih kecil */
+  .cal-day-label {
+    padding: 6px 2px;
+    font-size: 9px;
+  }
+
+  /* Sel tanggal — diperpendek & diperkecil */
+  .cal-cell {
+    min-height: 36px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .cal-day-num {
+    font-size: 11px;
+  }
+  .cal-cell.today .cal-day-num {
+    width: 18px;
+    height: 18px;
+    font-size: 11px;
+  }
+
+  /* Titik kategori acara di tiap sel — lebih kecil */
+  .cal-dots {
+    gap: 1px;
+  }
+  .cal-dot {
+    font-size: 8px;
+  }
+
+  /* Footer kalender (jumlah acara + hint) — lebih ringkas */
+  .cal-footer {
+    padding: 0.5rem 0.9rem;
+    font-size: 10px;
+  }
+  .cal-hint {
+    display: none; /* sembunyikan hint di mobile biar tidak penuh */
+  }
+}
+
+/* Layar sangat kecil (HP kecil < 380px) — perkecil lagi sedikit */
+@media (max-width: 380px) {
+  .cal-cell {
+    min-height: 30px;
+    padding: 2px;
+  }
+  .cal-day-num {
+    font-size: 10px;
+  }
+  .cal-day-label {
+    font-size: 8px;
+    padding: 5px 1px;
+  }
+}
+
