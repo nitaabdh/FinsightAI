@@ -9,6 +9,28 @@
   padding-bottom: 2rem;
 }
 
+.profilepage__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.profilepage__back:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-personal);
+  background: var(--bg-secondary);
+}
+
 .profilepage__skeleton {
   display: flex;
   flex-direction: column;
