@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getProfile, getPhoto } from "../utils/profile";
 import "./PageHeader.css";
 
 export default function PageHeader({ title, subtitle }) {
@@ -15,16 +14,33 @@ export default function PageHeader({ title, subtitle }) {
   const [open, setOpen]               = useState(false);
   const dropdownRef                   = useRef(null);
 
-  const isUMKM  = user?.mode === "umkm";
-  const accent  = isUMKM ? "umkm" : "personal";
+  const isUMKM   = user?.mode === "umkm";
+  const accent   = isUMKM ? "umkm" : "personal";
   const profPath = `/dashboard/${user?.mode}/profile`;
 
   useEffect(() => {
     if (!user) return;
-    const profile = getProfile(user.id);
-    setHasProfile(!!profile);
-    setDisplayName(profile?.displayName || user.name || "");
-    setPhoto(getPhoto(user.id));
+    const token = localStorage.getItem("finsight_token");
+    fetch("/api/profile", {
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(r => {
+        if (r.success && r.data) {
+          setHasProfile(true);
+          setDisplayName(r.data.display_name || user.name || "");
+          setPhoto(r.data.avatar_url || null);
+        } else {
+          setHasProfile(false);
+          setDisplayName(user.name || "");
+          setPhoto(null);
+        }
+      })
+      .catch(() => {
+        setHasProfile(false);
+        setDisplayName(user.name || "");
+        setPhoto(null);
+      });
   }, [user, location.pathname]);
 
   // Tutup dropdown kalau klik di luar
@@ -61,12 +77,10 @@ export default function PageHeader({ title, subtitle }) {
 
       {/* Kanan: mode badge (desktop) + avatar dropdown */}
       <div className="page-header__right">
-        {/* Badge mode — disembunyikan di mobile */}
         <div className={`page-header__badge page-header__badge--${accent}`}>
           {isUMKM ? "🏪 Mode UMKM" : "👤 Mode Pribadi"}
         </div>
 
-        {/* Avatar + Dropdown */}
         <div className="page-header__avatar-wrap" ref={dropdownRef}>
           <button
             className={`page-header__avatar page-header__avatar--${accent}`}
@@ -77,14 +91,10 @@ export default function PageHeader({ title, subtitle }) {
               ? <img src={photo} alt="profil" className="page-header__avatar-img" />
               : initial
             }
-            {hasProfile && (
-              <span className={`page-header__avatar-dot page-header__avatar-dot--${accent}`} />
-            )}
           </button>
 
           {open && (
             <div className="page-header__dropdown">
-              {/* Info user */}
               <div className="page-header__dropdown-user">
                 <div className={`page-header__dropdown-avatar page-header__dropdown-avatar--${accent}`}>
                   {photo
@@ -100,13 +110,11 @@ export default function PageHeader({ title, subtitle }) {
 
               <div className="page-header__dropdown-divider" />
 
-              {/* Profil */}
               <button className="page-header__dropdown-item" onClick={handleProfile}>
                 <span>✏️</span>
                 <span>{hasProfile ? "Edit Profil" : "Isi Profil"}</span>
               </button>
 
-              {/* Keluar */}
               <button className="page-header__dropdown-item page-header__dropdown-item--danger" onClick={handleLogout}>
                 <span>🚪</span>
                 <span>Keluar</span>
