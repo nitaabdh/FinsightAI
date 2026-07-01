@@ -7,6 +7,7 @@ const menuUMKM = [
   { path: "/dashboard/umkm/transaksi", icon: "🧾", label: "Transaksi" },
   { path: "/dashboard/umkm/produksi",  icon: "🏭", label: "Produksi" },
   { path: "/dashboard/umkm/laporan",   icon: "📈", label: "Laporan" },
+  { path: "/dashboard/umkm/catatan",   icon: "📋", label: "Catatan" },
   { path: "/dashboard/umkm/ai",        icon: "🤖", label: "AI" },
 ];
 
@@ -16,6 +17,7 @@ const menuPersonal = [
   { path: "/dashboard/personal/target",    icon: "🎯", label: "Target" },
   { path: "/dashboard/personal/catatan",   icon: "📋", label: "Catatan" },
   { path: "/dashboard/personal/ai",        icon: "🤖", label: "AI" },
+  { path: "/dashboard/personal/profile",   icon: "👤", label: "Profil" },
 ];
 
 export default function BottomNav() {

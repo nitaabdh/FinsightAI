@@ -11,7 +11,7 @@ import "./BahanBaku.css";
 const emptyForm = { nama: "", hargaBeli: "", jumlahBeli: "", satuanBeli: "kg", stokAwal: "0" };
 
 async function apiFetch(url, options = {}) {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("finsight_token");
   const res = await fetch(url, {
     ...options,
     headers: {
