@@ -11,52 +11,98 @@ export const genId    = () => `${Date.now()}_${Math.random().toString(36).slice(
 // Base internal: gram (berat), ml (volume), pcs (satuan).
 // `stok` bahan SELALU disimpan dalam base unit supaya konversi konsisten.
 export const UNIT_GROUPS = {
-  berat:  { base: "gram", units: ["kg", "gram"] },
-  volume: { base: "ml",   units: ["liter", "ml"] },
-  pcs:    { base: "pcs",  units: ["pcs"] },
+  berat:   { base: "gram", units: ["kg", "gram"] },
+  volume:  { base: "ml",   units: ["liter", "ml"] },
+  pcs:     { base: "pcs",  units: ["pcs"] },
+  // Satuan kemasan: 1 pack/dus/karton/box/lusin bisa berisi N unit terkecil
+  // isiPerPack disimpan di data bahan, bukan di sini
+  pack:    { base: "pcs",  units: ["pcs", "pack"] },
+  lembar:  { base: "lembar", units: ["lembar", "rim", "pack"] },
+  botol:   { base: "botol",  units: ["botol", "karton", "dus", "krat"] },
+  sachet:  { base: "sachet", units: ["sachet", "box", "dus"] },
+  buah:    { base: "buah",   units: ["buah", "lusin", "kodi", "gross", "karton"] },
 };
 
 export const unitGroupOf = (unit) => {
-  if (unit === "kg" || unit === "gram")   return "berat";
-  if (unit === "liter" || unit === "ml")  return "volume";
+  if (unit === "kg" || unit === "gram")                          return "berat";
+  if (unit === "liter" || unit === "ml")                         return "volume";
+  if (unit === "lembar" || unit === "rim")                       return "lembar";
+  if (unit === "botol" || unit === "krat")                       return "botol";
+  if (unit === "sachet")                                         return "sachet";
+  if (unit === "buah" || unit === "lusin" || unit === "kodi" || unit === "gross") return "buah";
+  if (unit === "pack" || unit === "box" || unit === "dus" || unit === "karton") return "pack";
   return "pcs";
 };
 
 // Satuan yang valid untuk dipakai di resep, sesuai grup bahan
-export const validUsageUnits = (satuanBeli) => UNIT_GROUPS[unitGroupOf(satuanBeli)].units;
+export const validUsageUnits = (satuanBeli, satuanUnit) => {
+  // Kalau bahan pakai sistem pack (ada satuanUnit), unit resep = satuanUnit itu
+  if (satuanUnit) return [satuanUnit];
+  const g = unitGroupOf(satuanBeli);
+  return UNIT_GROUPS[g]?.units || ["pcs"];
+};
 
-// Konversi angka ke base unit (gram / ml / pcs)
-export const toBase = (value, unit) => {
+// Konversi angka ke base unit (gram / ml / pcs / unit-terkecil)
+// Untuk satuan kemasan (pack/dus/karton/dll), base = satuanUnit (pcs/lembar/botol/dll)
+export const toBase = (value, unit, isiPerPack = 1) => {
   const v = parseFloat(value) || 0;
   if (unit === "kg" || unit === "liter") return v * 1000;
+  // Satuan kemasan → kalikan isi per kemasan
+  if (["pack", "box", "dus", "karton", "rim", "krat", "lusin", "kodi", "gross"].includes(unit)) {
+    return v * (parseFloat(isiPerPack) || 1);
+  }
   return v;
 };
 
 // Konversi dari base unit kembali ke satuan display (untuk tampil di UI)
-export const fromBase = (valueBase, unit) => {
+export const fromBase = (valueBase, unit, isiPerPack = 1) => {
   if (unit === "kg" || unit === "liter") return valueBase / 1000;
+  if (["pack", "box", "dus", "karton", "rim", "krat", "lusin", "kodi", "gross"].includes(unit)) {
+    return valueBase / (parseFloat(isiPerPack) || 1);
+  }
   return valueBase;
 };
 
 // Label display satuan base per grup
-export const baseUnitLabel = (satuanBeli) => {
-  const g = unitGroupOf(satuanBeli);
+export const baseUnitLabel = (bahan) => {
+  if (typeof bahan === "string") {
+    // backward compat: dipanggil dengan satuanBeli string saja
+    const g = unitGroupOf(bahan);
+    if (g === "berat")  return "gram";
+    if (g === "volume") return "ml";
+    return "pcs";
+  }
+  if (bahan.satuanUnit) return bahan.satuanUnit;
+  const g = unitGroupOf(bahan.satuanBeli);
   if (g === "berat")  return "gram";
   if (g === "volume") return "ml";
-  return "pcs";
+  return bahan.satuanBeli || "pcs";
 };
 
-// ── Harga ─────────────────────────────────────────────────────────────────────
-// Harga beli per base unit (Rp/gram, Rp/ml, Rp/pcs)
+// Display stok dalam satuan terkecil (lebih natural untuk user)
+export const stokDisplay = (bahan) => {
+  const base = parseFloat(bahan.stok) || 0;
+  if (bahan.satuanUnit) {
+    // Kemasan: stok sudah dalam unit terkecil
+    return `${parseFloat(base.toFixed(4))} ${bahan.satuanUnit}`;
+  }
+  const display   = fromBase(base, bahan.satuanBeli, parseFloat(bahan.isiPerPack) || 1);
+  const formatted = parseFloat(display.toFixed(4)).toString();
+  return `${formatted} ${bahan.satuanBeli}`;
+};
+// Harga beli per base unit (Rp/gram, Rp/ml, Rp/pcs, Rp/lembar, dll)
+// Untuk kemasan: hargaBeli / (jumlahBeli × isiPerPack)
 export const hargaPerBase = (bahan) => {
-  const base = toBase(bahan.jumlahBeli, bahan.satuanBeli);
+  const isi  = parseFloat(bahan.isiPerPack) || 1;
+  const base = toBase(bahan.jumlahBeli, bahan.satuanBeli, isi);
   if (base <= 0) return 0;
   return (parseFloat(bahan.hargaBeli) || 0) / base;
 };
 
 // Biaya pemakaian satu baris resep (bahan + jumlah pakai) → Rupiah
 export const biayaItem = (bahan, jumlahPakai, satuanPakai) => {
-  return hargaPerBase(bahan) * toBase(jumlahPakai, satuanPakai);
+  // Untuk bahan kemasan, satuanPakai = satuanUnit (unit terkecil), toBase = 1×jumlahPakai
+  return hargaPerBase(bahan) * toBase(jumlahPakai, satuanPakai, parseFloat(bahan.isiPerPack) || 1);
 };
 
 // Total biaya bahan resep produk

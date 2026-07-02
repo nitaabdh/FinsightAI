@@ -8,7 +8,7 @@ import {
 } from "../utils/umkmCalc";
 import "./BahanBaku.css";
 
-const emptyForm = { nama: "", hargaBeli: "", jumlahBeli: "", satuanBeli: "kg", stokAwal: "0" };
+const emptyForm = { nama: "", hargaBeli: "", jumlahBeli: "", satuanBeli: "kg", isiPerPack: "", satuanUnit: "", stokAwal: "0" };
 
 async function apiFetch(url, options = {}) {
   const token = localStorage.getItem("finsight_token");
@@ -51,29 +51,36 @@ export default function BahanBaku() {
   };
 
   const handleSubmit = async () => {
-    const { nama, hargaBeli, jumlahBeli, satuanBeli, stokAwal } = form;
+    const { nama, hargaBeli, jumlahBeli, satuanBeli, isiPerPack, satuanUnit, stokAwal } = form;
 
-    if (!nama.trim())          return setError("Nama bahan tidak boleh kosong.");
-    if (!hargaBeli || +hargaBeli <= 0) return setError("Harga beli harus lebih dari 0.");
-    if (!jumlahBeli || +jumlahBeli <= 0) return setError("Jumlah beli harus lebih dari 0.");
+    if (!nama.trim())                      return setError("Nama bahan tidak boleh kosong.");
+    if (!hargaBeli || +hargaBeli <= 0)     return setError("Harga beli harus lebih dari 0.");
+    if (!jumlahBeli || +jumlahBeli <= 0)   return setError("Jumlah beli harus lebih dari 0.");
+    // Kalau pakai satuan kemasan, wajib isi isiPerPack dan satuanUnit
+    const isKemasan = ["pack","box","dus","karton","rim","krat","lusin","kodi","gross"].includes(satuanBeli);
+    if (isKemasan && (!isiPerPack || +isiPerPack <= 0)) return setError("Isi per kemasan harus diisi.");
+    if (isKemasan && !satuanUnit.trim())   return setError("Satuan unit terkecil harus diisi (misal: lembar, botol, pcs).");
 
     const payload = {
       nama:       nama.trim(),
       hargaBeli:  +hargaBeli,
       jumlahBeli: +jumlahBeli,
       satuanBeli,
+      isiPerPack: isKemasan ? +isiPerPack : null,
+      satuanUnit: isKemasan ? satuanUnit.trim() : null,
     };
 
     if (editId) {
-      // Edit: tidak overwrite stok yang sudah ada
       const r = await apiFetch(`/api/umkm?table=bahan_baku`, {
         method: "PUT",
         body: JSON.stringify({ id: editId, ...payload }),
       });
       if (r.success) setList(p => p.map(b => b.id === editId ? r.data : b));
     } else {
-      // Tambah baru: pakai stokAwal
-      const stokBase = toBase(+stokAwal, satuanBeli);
+      // Stok awal: kalau kemasan, simpan dalam unit terkecil (stokAwal × isiPerPack)
+      const stokBase = isKemasan
+        ? toBase(+stokAwal, satuanBeli, +isiPerPack)
+        : toBase(+stokAwal, satuanBeli);
       const r = await apiFetch(`/api/umkm?table=bahan_baku`, {
         method: "POST",
         body: JSON.stringify({ id: genId(), ...payload, stok: stokBase, createdAt: Date.now() }),
@@ -86,7 +93,15 @@ export default function BahanBaku() {
   };
 
   const openEdit = (b) => {
-    setForm({ nama: b.nama, hargaBeli: String(b.hargaBeli), jumlahBeli: String(b.jumlahBeli), satuanBeli: b.satuanBeli, stokAwal: "0" });
+    setForm({
+      nama: b.nama,
+      hargaBeli:  String(b.hargaBeli),
+      jumlahBeli: String(b.jumlahBeli),
+      satuanBeli: b.satuanBeli,
+      isiPerPack: b.isiPerPack ? String(b.isiPerPack) : "",
+      satuanUnit: b.satuanUnit || "",
+      stokAwal: "0",
+    });
     setEditId(b.id);
     setError("");
   };
@@ -103,7 +118,7 @@ export default function BahanBaku() {
   const openRestok = (b) => {
     setRestokId(b.id);
     setRestokJml("");
-    setRestokSat(validUsageUnits(b.satuanBeli)[0]);
+    setRestokSat(validUsageUnits(b.satuanBeli, b.satuanUnit)[0]);
     setRestokErr("");
   };
 
@@ -157,29 +172,84 @@ export default function BahanBaku() {
               placeholder="Contoh: 1" value={form.jumlahBeli} onChange={handleChange} min="0" />
           </div>
           <div className="bahanbaku__field">
-            <label className="bahanbaku__label">Satuan</label>
+            <label className="bahanbaku__label">Satuan Beli</label>
             <select className="bahanbaku__input" name="satuanBeli" value={form.satuanBeli} onChange={handleChange}>
-              <option value="kg">kg</option>
-              <option value="gram">gram</option>
-              <option value="liter">liter</option>
-              <option value="ml">ml</option>
-              <option value="pcs">pcs</option>
+              <optgroup label="Berat">
+                <option value="kg">kg</option>
+                <option value="gram">gram</option>
+              </optgroup>
+              <optgroup label="Volume">
+                <option value="liter">liter</option>
+                <option value="ml">ml</option>
+              </optgroup>
+              <optgroup label="Satuan">
+                <option value="pcs">pcs</option>
+                <option value="lembar">lembar</option>
+                <option value="botol">botol</option>
+                <option value="sachet">sachet</option>
+                <option value="buah">buah</option>
+              </optgroup>
+              <optgroup label="Kemasan (isi beberapa unit)">
+                <option value="pack">pack</option>
+                <option value="box">box</option>
+                <option value="dus">dus</option>
+                <option value="karton">karton</option>
+                <option value="rim">rim</option>
+                <option value="krat">krat</option>
+                <option value="lusin">lusin (12)</option>
+              </optgroup>
             </select>
           </div>
+
+          {/* Kalau satuan kemasan: wajib isi isiPerPack + satuanUnit */}
+          {["pack","box","dus","karton","rim","krat","lusin"].includes(form.satuanBeli) && (<>
+            <div className="bahanbaku__field">
+              <label className="bahanbaku__label">Isi per {form.satuanBeli}</label>
+              <input className="bahanbaku__input" type="number" name="isiPerPack"
+                placeholder={form.satuanBeli === "lusin" ? "12" : "Contoh: 20"}
+                value={form.isiPerPack} onChange={handleChange} min="1" />
+            </div>
+            <div className="bahanbaku__field">
+              <label className="bahanbaku__label">Satuan Unit Terkecil</label>
+              <input className="bahanbaku__input" type="text" name="satuanUnit"
+                placeholder="Misal: lembar, botol, pcs, buah"
+                value={form.satuanUnit} onChange={handleChange} />
+              <p className="bahanbaku__hint-small">Satuan ini yang dipakai di Kalkulator Harga Jual</p>
+            </div>
+          </>)}
+
           {!editId && (
             <div className="bahanbaku__field">
-              <label className="bahanbaku__label">Stok Awal ({form.satuanBeli})</label>
+              <label className="bahanbaku__label">
+                Stok Awal ({["pack","box","dus","karton","rim","krat","lusin"].includes(form.satuanBeli) && form.satuanUnit ? form.satuanUnit : form.satuanBeli})
+              </label>
               <input className="bahanbaku__input" type="number" name="stokAwal"
                 placeholder="0" value={form.stokAwal} onChange={handleChange} min="0" />
             </div>
           )}
         </div>
 
+        {/* Preview HPP per unit terkecil */}
         {form.hargaBeli && form.jumlahBeli && +form.jumlahBeli > 0 && (
-          <p className="bahanbaku__preview">
-            ≈ {formatRupiah(hargaPerBase({ hargaBeli: +form.hargaBeli, jumlahBeli: +form.jumlahBeli, satuanBeli: form.satuanBeli }))}
-            {unitLabel({ satuanBeli: form.satuanBeli })}
-          </p>
+          <div className="bahanbaku__hpp-preview">
+            {["pack","box","dus","karton","rim","krat","lusin"].includes(form.satuanBeli) && form.isiPerPack && +form.isiPerPack > 0 ? (
+              <>
+                <span className="bahanbaku__hpp-label">HPP per {form.satuanUnit || "unit"}:</span>
+                <span className="bahanbaku__hpp-value">
+                  {formatRupiah(hargaPerBase({ hargaBeli: +form.hargaBeli, jumlahBeli: +form.jumlahBeli, satuanBeli: form.satuanBeli, isiPerPack: +form.isiPerPack }))}
+                  /{form.satuanUnit || "unit"}
+                </span>
+                <span className="bahanbaku__hpp-detail">
+                  ({form.jumlahBeli} {form.satuanBeli} × {form.isiPerPack} {form.satuanUnit || "unit"} = {+form.jumlahBeli * +form.isiPerPack} {form.satuanUnit || "unit"} total)
+                </span>
+              </>
+            ) : (
+              <span>
+                HPP: {formatRupiah(hargaPerBase({ hargaBeli: +form.hargaBeli, jumlahBeli: +form.jumlahBeli, satuanBeli: form.satuanBeli }))}
+                /{unitLabel({ satuanBeli: form.satuanBeli })}
+              </span>
+            )}
+          </div>
         )}
 
         {error && <p className="bahanbaku__error">⚠️ {error}</p>}
@@ -218,7 +288,12 @@ export default function BahanBaku() {
                   <p className="bahanbaku__item-nama">{b.nama}</p>
                   <p className="bahanbaku__item-meta">
                     {formatRupiah(b.hargaBeli)} / {b.jumlahBeli} {b.satuanBeli}
-                    <span className="bahanbaku__item-perunit"> (≈ {formatRupiah(hargaPerBase(b))}{unitLabel(b)})</span>
+                    {b.isiPerPack && b.satuanUnit && (
+                      <span className="bahanbaku__item-kemasan"> · {b.isiPerPack} {b.satuanUnit}/{b.satuanBeli}</span>
+                    )}
+                    <span className="bahanbaku__item-perunit">
+                      {" "}(HPP: {formatRupiah(hargaPerBase(b))}/{b.satuanUnit || unitLabel(b)})
+                    </span>
                   </p>
                 </div>
                 <div className="bahanbaku__item-stok">
@@ -264,7 +339,7 @@ export default function BahanBaku() {
                   value={restokSat}
                   onChange={e => setRestokSat(e.target.value)}
                 >
-                  {validUsageUnits(bahan.satuanBeli).map(u => <option key={u} value={u}>{u}</option>)}
+                  {validUsageUnits(bahan.satuanBeli, bahan.satuanUnit).map(u => <option key={u} value={u}>{u}</option>)}
                 </select>
               </div>
               {restokErr && <p className="bahanbaku__error">{restokErr}</p>}

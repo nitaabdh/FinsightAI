@@ -241,3 +241,48 @@
 .bahanbaku__modal-actions .bahanbaku__btn-sec,
 .bahanbaku__modal-actions .bahanbaku__btn-primary,
 .bahanbaku__modal-actions .bahanbaku__btn-danger { flex: 1; }
+
+/* ── Tambahan untuk fitur kemasan/isiPerPack ─────────────────────────────── */
+
+.bahanbaku__hint-small {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0.2rem 0 0;
+  font-style: italic;
+}
+
+.bahanbaku__hpp-preview {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.65rem 0.9rem;
+  background: rgba(245,158,11,0.08);
+  border: 1px solid rgba(245,158,11,0.2);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.bahanbaku__hpp-label {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.bahanbaku__hpp-value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: #f59e0b;
+  font-size: 14px;
+}
+
+.bahanbaku__hpp-detail {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.bahanbaku__item-kemasan {
+  color: #f59e0b;
+  font-weight: 600;
+}

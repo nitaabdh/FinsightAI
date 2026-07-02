@@ -5,7 +5,13 @@ import {
 } from "../utils/umkmCalc";
 import "./KalkulatorHarga.css";
 
-const emptyForm = { nama: "", items: [], biayaOperasional: "", targetUntung: "" };
+const emptyForm = {
+  nama: "", items: [],
+  biayaOperasional: "", biayaOperasionalPct: "",
+  targetUntung: "", targetUntungPct: "",
+};
+
+const GROQ_KEY = "finsight_groq_key";
 
 async function apiFetch(url, options = {}) {
   const token = localStorage.getItem("finsight_token");
@@ -14,6 +20,22 @@ async function apiFetch(url, options = {}) {
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(options.headers || {}) },
   });
   return res.json();
+}
+
+async function callGroq(apiKey, prompt) {
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 600,
+      temperature: 0.7,
+    }),
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.choices?.[0]?.message?.content || "";
 }
 
 export default function KalkulatorHarga() {
@@ -28,13 +50,19 @@ export default function KalkulatorHarga() {
   const [selJumlah, setSelJumlah] = useState("");
   const [selSatuan, setSelSatuan] = useState("");
 
+  // AI Saran Harga
+  const [aiOpen,    setAiOpen]    = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult,  setAiResult]  = useState("");
+  const [aiError,   setAiError]   = useState("");
+  const [aiProduk,  setAiProduk]  = useState(null); // produk yang sedang dianalisis
+
   useEffect(() => {
     if (!user) return;
     apiFetch(`/api/umkm?table=bahan_baku`).then(r => { if (r.success) setBahanList(r.data); });
     apiFetch(`/api/umkm?table=produk`).then(r => { if (r.success) setProdukList(r.data); });
   }, [user]);
 
-  // Sinkron bahan kalau ada update dari tab Bahan Baku
   useEffect(() => {
     const refresh = () => {
       if (user) apiFetch(`/api/umkm?table=bahan_baku`).then(r => { if (r.success) setBahanList(r.data); });
@@ -45,13 +73,60 @@ export default function KalkulatorHarga() {
 
   const bahanMap = Object.fromEntries(bahanList.map(b => [b.id, b]));
 
+  // ── Kalkulasi biaya ────────────────────────────────────────────────────────
+  const biayaBahan  = totalBiayaBahan(form.items, bahanMap);
+  const biayaOpsNum = +form.biayaOperasional || 0;
+  const targetNum   = +form.targetUntung || 0;
+  const totalBiaya  = biayaBahan + biayaOpsNum;
+  const hargaJual   = totalBiaya + targetNum;
+
+  // Persen relatif terhadap total biaya bahan (bukan total biaya)
+  const biayaOpsPct  = biayaBahan > 0 ? ((biayaOpsNum / biayaBahan) * 100).toFixed(1) : "";
+  const targetPct    = totalBiaya > 0 ? ((targetNum / totalBiaya) * 100).toFixed(1) : "";
+
+  // ── Handler field Rp/% ────────────────────────────────────────────────────
+  const handleOpsRp = (val) => {
+    const rp  = +val || 0;
+    const pct = biayaBahan > 0 ? ((rp / biayaBahan) * 100).toFixed(1) : "";
+    setForm(p => ({ ...p, biayaOperasional: val, biayaOperasionalPct: pct }));
+    setError("");
+  };
+  const handleOpsPct = (val) => {
+    const pct = +val || 0;
+    const rp  = Math.round((pct / 100) * biayaBahan);
+    setForm(p => ({ ...p, biayaOperasionalPct: val, biayaOperasional: rp > 0 ? String(rp) : "" }));
+    setError("");
+  };
+  const handleTargetRp = (val) => {
+    const rp  = +val || 0;
+    const pct = totalBiaya > 0 ? ((rp / totalBiaya) * 100).toFixed(1) : "";
+    setForm(p => ({ ...p, targetUntung: val, targetUntungPct: pct }));
+    setError("");
+  };
+  const handleTargetPct = (val) => {
+    const pct = +val || 0;
+    const rp  = Math.round((pct / 100) * totalBiaya);
+    setForm(p => ({ ...p, targetUntungPct: val, targetUntung: rp > 0 ? String(rp) : "" }));
+    setError("");
+  };
+
   const resetForm = () => {
     setForm(emptyForm); setEditId(null); setError("");
     setSelBahan(""); setSelJumlah(""); setSelSatuan("");
   };
 
   const openEdit = (p) => {
-    setForm({ nama: p.nama, items: p.items, biayaOperasional: String(p.biayaOperasional), targetUntung: String(p.targetUntung) });
+    const biayaB   = totalBiayaBahan(p.items, bahanMap);
+    const totalB   = biayaB + (p.biayaOperasional || 0);
+    const opsPct   = biayaB   > 0 ? ((p.biayaOperasional / biayaB) * 100).toFixed(1) : "";
+    const untPct   = totalB   > 0 ? ((p.targetUntung    / totalB)  * 100).toFixed(1) : "";
+    setForm({
+      nama: p.nama, items: p.items,
+      biayaOperasional: String(p.biayaOperasional),
+      biayaOperasionalPct: opsPct,
+      targetUntung: String(p.targetUntung),
+      targetUntungPct: untPct,
+    });
     setEditId(p.id); setError("");
     setSelBahan(""); setSelJumlah(""); setSelSatuan("");
   };
@@ -72,21 +147,15 @@ export default function KalkulatorHarga() {
 
   const handleHapusItem = (idx) => setForm(p => ({ ...p, items: p.items.filter((_, i) => i !== idx) }));
 
-  const biayaBahan      = totalBiayaBahan(form.items, bahanMap);
-  const biayaOpsNum     = +form.biayaOperasional || 0;
-  const targetUntungNum = +form.targetUntung || 0;
-  const totalBiaya      = biayaBahan + biayaOpsNum;
-  const hargaJual       = totalBiaya + targetUntungNum;
-
   const handleSubmit = async () => {
-    if (!form.nama.trim())      return setError("Nama produk tidak boleh kosong.");
+    if (!form.nama.trim())       return setError("Nama produk tidak boleh kosong.");
     if (form.items.length === 0) return setError("Tambahkan minimal satu bahan ke resep.");
 
     const payload = {
       nama: form.nama.trim(),
       items: form.items,
       biayaOperasional: biayaOpsNum,
-      targetUntung: targetUntungNum,
+      targetUntung: targetNum,
       biayaBahan,
       totalBiaya,
       hargaJual,
@@ -120,6 +189,54 @@ export default function KalkulatorHarga() {
     setDelId(null);
     if (editId === id) resetForm();
     window.dispatchEvent(new CustomEvent("produkUpdated"));
+  };
+
+  // ── AI Saran Harga ─────────────────────────────────────────────────────────
+  const handleAiAnalisis = async (produk) => {
+    const apiKey = localStorage.getItem(GROQ_KEY);
+    if (!apiKey) {
+      setAiError("API Key Groq belum diset. Isi dulu di halaman AI Agent.");
+      setAiOpen(true);
+      setAiResult("");
+      setAiProduk(produk);
+      return;
+    }
+
+    setAiProduk(produk);
+    setAiOpen(true);
+    setAiResult("");
+    setAiError("");
+    setAiLoading(true);
+
+    const bahan = produk.items.map(it => {
+      const b = bahanMap[it.bahanId];
+      return `${b?.nama || "bahan"} (${it.jumlahPakai} ${it.satuanPakai})`;
+    }).join(", ");
+
+    const prompt = `Kamu adalah konsultan bisnis UMKM Indonesia yang berpengalaman.
+
+Saya memiliki produk bernama "${produk.nama}" dengan detail biaya:
+- Bahan baku: ${formatRupiah(produk.biayaBahan)} (${bahan})
+- Biaya operasional: ${formatRupiah(produk.biayaOperasional)}
+- Total modal per unit: ${formatRupiah(produk.totalBiaya)}
+- Harga jual saya saat ini: ${formatRupiah(produk.hargaJual)} (target untung ${formatRupiah(produk.targetUntung)})
+
+Tolong analisis:
+1. Apakah harga jual saya kompetitif untuk produk sejenis di pasaran Indonesia?
+2. Berapa kisaran harga produk serupa yang biasa dijual UMKM/warung/online shop?
+3. Apakah margin keuntungan saya (${totalBiaya > 0 ? ((produk.targetUntung/produk.totalBiaya)*100).toFixed(0) : 0}%) sudah wajar untuk UMKM?
+4. Saran konkret untuk strategi penetapan harga yang lebih optimal.
+
+Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke poin. Format dengan poin-poin yang jelas.`;
+
+    try {
+      const result = await callGroq(apiKey, prompt);
+      setAiResult(result);
+    } catch (err) {
+      setAiError("Gagal menghubungi AI: " + (err.message || "Coba lagi."));
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   return (
@@ -164,23 +281,59 @@ export default function KalkulatorHarga() {
                   <span className="kalkharga__item-nama">{b ? b.nama : "(bahan dihapus)"}</span>
                   <span className="kalkharga__item-qty">{it.jumlahPakai} {it.satuanPakai}</span>
                   <span className="kalkharga__item-biaya">{formatRupiah(biaya)}</span>
-                  <button className="kalkharga__item-remove" onClick={() => handleHapusItem(idx)} title="Hapus">✕</button>
+                  <button className="kalkharga__item-remove" onClick={() => handleHapusItem(idx)}>✕</button>
                 </div>
               );
             })}
           </div>
         )}
 
+        {/* Biaya Operasional & Target Untung — Rp + % berdampingan */}
         <div className="kalkharga__costs">
           <div className="kalkharga__field">
-            <label className="kalkharga__label">Biaya Operasional (Rp)</label>
-            <input className="kalkharga__input" type="number" placeholder="Misal: 5000 (listrik, gas, kemasan)"
-              value={form.biayaOperasional} onChange={e => { setForm(p => ({ ...p, biayaOperasional: e.target.value })); setError(""); }} min="0" />
+            <label className="kalkharga__label">Biaya Operasional</label>
+            <div className="kalkharga__dual-input">
+              <div className="kalkharga__dual-wrap">
+                <span className="kalkharga__dual-prefix">Rp</span>
+                <input className="kalkharga__input kalkharga__input--dual" type="number"
+                  placeholder="0" min="0"
+                  value={form.biayaOperasional}
+                  onChange={e => handleOpsRp(e.target.value)} />
+              </div>
+              <div className="kalkharga__dual-wrap">
+                <input className="kalkharga__input kalkharga__input--dual kalkharga__input--pct" type="number"
+                  placeholder="0" min="0" max="100" step="0.1"
+                  value={form.biayaOperasionalPct}
+                  onChange={e => handleOpsPct(e.target.value)} />
+                <span className="kalkharga__dual-suffix">%</span>
+              </div>
+            </div>
+            {biayaBahan > 0 && biayaOpsNum > 0 && (
+              <p className="kalkharga__dual-hint">dari biaya bahan · {formatRupiah(biayaOpsNum)}</p>
+            )}
           </div>
+
           <div className="kalkharga__field">
-            <label className="kalkharga__label">Target Untung (Rp)</label>
-            <input className="kalkharga__input" type="number" placeholder="Misal: 3000"
-              value={form.targetUntung} onChange={e => { setForm(p => ({ ...p, targetUntung: e.target.value })); setError(""); }} min="0" />
+            <label className="kalkharga__label">Target Untung</label>
+            <div className="kalkharga__dual-input">
+              <div className="kalkharga__dual-wrap">
+                <span className="kalkharga__dual-prefix">Rp</span>
+                <input className="kalkharga__input kalkharga__input--dual" type="number"
+                  placeholder="0" min="0"
+                  value={form.targetUntung}
+                  onChange={e => handleTargetRp(e.target.value)} />
+              </div>
+              <div className="kalkharga__dual-wrap">
+                <input className="kalkharga__input kalkharga__input--dual kalkharga__input--pct" type="number"
+                  placeholder="0" min="0" max="100" step="0.1"
+                  value={form.targetUntungPct}
+                  onChange={e => handleTargetPct(e.target.value)} />
+                <span className="kalkharga__dual-suffix">%</span>
+              </div>
+            </div>
+            {totalBiaya > 0 && targetNum > 0 && (
+              <p className="kalkharga__dual-hint">dari total biaya · {formatRupiah(targetNum)}</p>
+            )}
           </div>
         </div>
 
@@ -188,7 +341,7 @@ export default function KalkulatorHarga() {
           <div className="kalkharga__sum-row"><span>Biaya Bahan</span><span>{formatRupiah(biayaBahan)}</span></div>
           <div className="kalkharga__sum-row"><span>Biaya Operasional</span><span>{formatRupiah(biayaOpsNum)}</span></div>
           <div className="kalkharga__sum-row kalkharga__sum-row--sub"><span>Total Biaya</span><span>{formatRupiah(totalBiaya)}</span></div>
-          <div className="kalkharga__sum-row"><span>Target Untung</span><span>{formatRupiah(targetUntungNum)}</span></div>
+          <div className="kalkharga__sum-row"><span>Target Untung</span><span>{formatRupiah(targetNum)}</span></div>
           <div className="kalkharga__sum-row kalkharga__sum-row--final"><span>Harga Jual</span><span>{formatRupiah(hargaJual)}</span></div>
         </div>
 
@@ -202,6 +355,7 @@ export default function KalkulatorHarga() {
         </div>
       </div>
 
+      {/* Daftar Produk */}
       <div className="kalkharga__list">
         <h3 className="kalkharga__list-title">Daftar Produk</h3>
         {produkList.length === 0 ? (
@@ -229,13 +383,69 @@ export default function KalkulatorHarga() {
                   <span>Modal: {formatRupiah(p.totalBiaya)}</span>
                   <span>Untung: {formatRupiah(p.targetUntung)}</span>
                 </div>
+                <div className="kalkharga__produk-margin">
+                  Margin: {p.totalBiaya > 0 ? ((p.targetUntung / p.totalBiaya) * 100).toFixed(0) : 0}%
+                </div>
                 <div className="kalkharga__produk-resep">{p.items.length} bahan dalam resep</div>
+                {/* Tombol AI Analisis */}
+                <button className="kalkharga__ai-btn" onClick={() => handleAiAnalisis(p)}>
+                  🤖 Analisis Harga AI
+                </button>
               </div>
             ))}
           </div>
         )}
       </div>
 
+      {/* Modal AI Saran Harga */}
+      {aiOpen && (
+        <div className="kalkharga__modal-overlay" onClick={() => { setAiOpen(false); setAiResult(""); }}>
+          <div className="kalkharga__modal kalkharga__modal--ai" onClick={e => e.stopPropagation()}>
+            <div className="kalkharga__ai-header">
+              <div>
+                <h4 className="kalkharga__modal-title">🤖 Analisis Harga AI</h4>
+                {aiProduk && <p className="kalkharga__ai-produk-name">{aiProduk.nama} · {formatRupiah(aiProduk.hargaJual)}</p>}
+              </div>
+              <button className="kalkharga__ai-close" onClick={() => { setAiOpen(false); setAiResult(""); }}>✕</button>
+            </div>
+
+            {aiLoading && (
+              <div className="kalkharga__ai-loading">
+                <div className="kalkharga__ai-spinner" />
+                <p>AI sedang menganalisis produk serupa di pasaran...</p>
+              </div>
+            )}
+
+            {aiError && !aiLoading && (
+              <div className="kalkharga__ai-error">
+                <p>⚠️ {aiError}</p>
+                {aiError.includes("API Key") && (
+                  <p className="kalkharga__ai-hint">Isi API Key Groq di halaman <strong>AI Agent</strong> terlebih dahulu.</p>
+                )}
+              </div>
+            )}
+
+            {aiResult && !aiLoading && (
+              <div className="kalkharga__ai-result">
+                {aiResult.split("\n").map((line, i) => (
+                  line.trim() ? <p key={i} className={line.startsWith("#") ? "kalkharga__ai-heading" : "kalkharga__ai-line"}>{line.replace(/^#+\s*/, "")}</p> : null
+                ))}
+              </div>
+            )}
+
+            <div className="kalkharga__modal-actions">
+              <button className="kalkharga__btn-sec" onClick={() => { setAiOpen(false); setAiResult(""); }}>Tutup</button>
+              {!aiLoading && aiProduk && (
+                <button className="kalkharga__btn-primary" onClick={() => handleAiAnalisis(aiProduk)}>
+                  🔄 Analisis Ulang
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Hapus */}
       {delId && (
         <div className="kalkharga__modal-overlay" onClick={() => setDelId(null)}>
           <div className="kalkharga__modal" onClick={e => e.stopPropagation()}>
