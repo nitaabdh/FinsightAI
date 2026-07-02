@@ -33,6 +33,7 @@ export default function DashboardUMKM() {
   const navigate  = useNavigate();
   const [transactions,  setTransactions]  = useState([]);
   const [utangPiutang,  setUtangPiutang]  = useState([]);
+  const [asetUsaha,     setAsetUsaha]     = useState([]);
   const [loading,       setLoading]       = useState(true);
   const [menuOpen,      setMenuOpen]      = useState(false);
   const [profile,       setProfile]       = useState(null);
@@ -54,10 +55,12 @@ export default function DashboardUMKM() {
     Promise.all([
       fetch(`/api/transactions?mode=umkm`, { headers: h }).then(r => r.json()),
       apiFetch(`/api/umkm?table=utang_piutang`),
+      apiFetch(`/api/umkm?table=aset_usaha`),
       fetch(`/api/profile`, { headers: h }).then(r => r.json()).catch(() => ({ success: false })),
-    ]).then(([txRes, upRes, profRes]) => {
+    ]).then(([txRes, upRes, asetRes, profRes]) => {
       if (txRes.success)  setTransactions(txRes.data);
       if (upRes.success)  setUtangPiutang(upRes.data);
+      if (asetRes.success) setAsetUsaha(asetRes.data);
       if (profRes.success) setProfile(profRes.data);
     }).finally(() => setLoading(false));
   }, [user]);
@@ -108,6 +111,9 @@ export default function DashboardUMKM() {
     .filter(it => it.selisih !== null && it.selisih <= 3)
     .sort((a, b) => a.selisih - b.selisih)
     .slice(0, 5);
+
+  // ── Total Nilai Aset Usaha ───────────────────────────────────────────────────
+  const totalNilaiAset = asetUsaha.reduce((s, it) => s + Number(it.hargaBeli || 0), 0);
 
   // ── Tren 6 bulan ─────────────────────────────────────────────────────────────
   const tren6Bulan = [];
@@ -198,6 +204,12 @@ export default function DashboardUMKM() {
             <p className="du__metric-label">Laba Bersih Bulan Ini</p>
             <p className="du__metric-value">{formatRupiah(labaBulanIni)}</p>
             <p className="du__metric-sub">{labaSub}</p>
+          </div>
+          <div className="du__metric du__metric--aset">
+            <div className="du__metric-icon du__metric-icon--aset">💎</div>
+            <p className="du__metric-label">Total Aset Usaha</p>
+            <p className="du__metric-value">{formatRupiah(totalNilaiAset)}</p>
+            <p className="du__metric-sub">{asetUsaha.length} item peralatan tercatat</p>
           </div>
         </div>
 

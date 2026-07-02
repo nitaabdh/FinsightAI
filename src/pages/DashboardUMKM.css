@@ -89,7 +89,7 @@
 /* ── 3 Metric Cards ── */
 .du__metrics {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 0.75rem;
 }
 .du__metric {
@@ -111,12 +111,14 @@
 .du__metric-icon--expense { background: rgba(239,68,68,0.12); }
 .du__metric-icon--laba    { background: rgba(16,185,129,0.12); }
 .du__metric-icon--rugi    { background: rgba(239,68,68,0.12); }
+.du__metric-icon--aset    { background: rgba(139,92,246,0.12); }
 .du__metric-label { font-size: 11px; color: var(--text-muted); font-family: var(--font-body); }
 .du__metric-value { font-family: var(--font-display); font-size: 17px; font-weight: 800; margin: 0.1rem 0; }
 .du__metric--omzet   .du__metric-value { color: #f59e0b; }
 .du__metric--expense .du__metric-value { color: #ef4444; }
 .du__metric--laba    .du__metric-value { color: #10b981; }
 .du__metric--rugi    .du__metric-value { color: #ef4444; }
+.du__metric--aset    .du__metric-value { color: #8b5cf6; }
 .du__metric-sub { font-size: 10px; color: var(--text-muted); font-family: var(--font-body); }
 
 /* ── Jatuh Tempo ── */
@@ -243,7 +245,6 @@
   .du { gap: 0.85rem; }
   .du__greeting { font-size: 18px; }
   .du__metrics { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-  .du__metrics .du__metric:nth-child(3) { grid-column: span 2; }
   .du__metric-value { font-size: 14px; }
   .du__row2 { grid-template-columns: 1fr; }
   .du__tren { padding: 0.9rem 0.85rem; }
