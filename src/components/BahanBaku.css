@@ -338,3 +338,40 @@
   font-style: italic;
   padding: 0.5rem 0.1rem;
 }
+
+/* ── Tambahan v3: fitur opsional "1 unit bisa jadi berapa hasil" ────────── */
+
+.bahanbaku__yield-toggle {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--accent-umkm);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 0.2rem 0;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.bahanbaku__yield-toggle:hover { color: #fbbf24; }
+
+.bahanbaku__kemasan-box--yield {
+  background: rgba(129,140,248,0.06);
+  border-color: rgba(129,140,248,0.25);
+}
+
+.bahanbaku__kemasan-box-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.bahanbaku__yield-close {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-decoration: underline;
+  flex-shrink: 0;
+}
+.bahanbaku__yield-close:hover { color: #f87171; }

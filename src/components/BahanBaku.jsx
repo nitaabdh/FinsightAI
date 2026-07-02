@@ -3,12 +3,12 @@ import { useAuth } from "../context/AuthContext";
 import {
   genId,
   formatRupiah,
-  hargaPerBase, nilaiStok, stokDisplay,
+  hargaPerBase, nilaiStok, stokDisplay, hargaUnitLabel,
   toBase, unitGroupOf,
 } from "../utils/umkmCalc";
 import "./BahanBaku.css";
 
-const emptyForm = { nama: "", jumlahBeli: "", satuanBeli: "kg", isiPerPack: "", hargaBeli: "" };
+const emptyForm = { nama: "", jumlahBeli: "", satuanBeli: "kg", isiPerPack: "", hargaBeli: "", hasilPerUnit: "", hasilLabel: "" };
 
 async function apiFetch(url, options = {}) {
   const token = localStorage.getItem("finsight_token");
@@ -34,6 +34,7 @@ export default function BahanBaku() {
   const [restokJml, setRestokJml] = useState("");
   const [restokHarga, setRestokHarga] = useState("");
   const [restokErr, setRestokErr] = useState("");
+  const [showYield, setShowYield] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -44,7 +45,7 @@ export default function BahanBaku() {
 
   const isPack = form.satuanBeli === "pack";
 
-  const resetForm = () => { setForm(emptyForm); setEditId(null); setError(""); };
+  const resetForm = () => { setForm(emptyForm); setEditId(null); setError(""); setShowYield(false); };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -55,30 +56,43 @@ export default function BahanBaku() {
   // Harga per satuan terkecil (gram/ml/pcs) dari input form saat ini — buat preview
   const previewHarga = () => {
     if (!form.hargaBeli || !form.jumlahBeli || +form.jumlahBeli <= 0) return null;
-    if (isPack) {
-      if (!form.isiPerPack || +form.isiPerPack <= 0) return null;
-      return hargaPerBase({
-        hargaBeli: +form.hargaBeli, jumlahBeli: +form.jumlahBeli,
-        satuanBeli: "pack", isiPerPack: +form.isiPerPack,
-      });
-    }
-    return hargaPerBase({ hargaBeli: +form.hargaBeli, jumlahBeli: +form.jumlahBeli, satuanBeli: form.satuanBeli });
+    if (isPack && (!form.isiPerPack || +form.isiPerPack <= 0)) return null;
+    return hargaPerBase({
+      hargaBeli: +form.hargaBeli, jumlahBeli: +form.jumlahBeli,
+      satuanBeli: form.satuanBeli, isiPerPack: isPack ? +form.isiPerPack : null,
+      hasilPerUnit: form.hasilPerUnit ? +form.hasilPerUnit : null,
+      hasilLabel: form.hasilLabel,
+    });
   };
 
   const previewSatuan = () => {
+    if (form.hasilPerUnit && +form.hasilPerUnit > 1) return form.hasilLabel || "hasil";
+    if (isPack) return "pcs";
+    const g = unitGroupOf(form.satuanBeli);
+    return g === "berat" ? "gram" : g === "volume" ? "ml" : "pcs";
+  };
+
+  // Nama satuan kecil saat ini (sebelum dipecah jadi hasil) — buat label kotak opsional
+  const satuanKecilSaatIni = () => {
     if (isPack) return "pcs";
     const g = unitGroupOf(form.satuanBeli);
     return g === "berat" ? "gram" : g === "volume" ? "ml" : "pcs";
   };
 
   const handleSubmit = async () => {
-    const { nama, hargaBeli, jumlahBeli, satuanBeli, isiPerPack } = form;
+    const { nama, hargaBeli, jumlahBeli, satuanBeli, isiPerPack, hasilPerUnit, hasilLabel } = form;
 
     if (!nama.trim())                    return setError("Nama bahan belum diisi.");
     if (!jumlahBeli || +jumlahBeli <= 0) return setError("Jumlah beli harus lebih dari 0.");
     if (!hargaBeli || +hargaBeli <= 0)   return setError("Harga belum diisi.");
     if (isPack && (!isiPerPack || +isiPerPack <= 0))
       return setError("Isi 1 pack jadi berapa pcs dulu ya.");
+    if (showYield && hasilPerUnit && +hasilPerUnit > 1 && !hasilLabel.trim())
+      return setError("Kasih nama hasilnya dulu (misal: cetakan, gantungan kunci).");
+
+    const yieldPayload = (showYield && hasilPerUnit && +hasilPerUnit > 1)
+      ? { hasilPerUnit: +hasilPerUnit, hasilLabel: hasilLabel.trim() }
+      : { hasilPerUnit: null, hasilLabel: null };
 
     if (editId) {
       // Edit = koreksi data (nama/jumlah/harga bahan itu sendiri), bukan nambah stok
@@ -86,6 +100,7 @@ export default function BahanBaku() {
         nama: nama.trim(), hargaBeli: +hargaBeli, jumlahBeli: +jumlahBeli,
         satuanBeli, isiPerPack: isPack ? +isiPerPack : null,
         satuanUnit: isPack ? "pcs" : null,
+        ...yieldPayload,
       };
       const r = await apiFetch(`/api/umkm?table=bahan_baku`, {
         method: "PUT",
@@ -101,6 +116,7 @@ export default function BahanBaku() {
         nama: nama.trim(), hargaBeli: +hargaBeli, jumlahBeli: +jumlahBeli,
         satuanBeli, isiPerPack: isPack ? +isiPerPack : null,
         satuanUnit: isPack ? "pcs" : null,
+        ...yieldPayload,
         stok: stokBase, createdAt: Date.now(),
       };
       const r = await apiFetch(`/api/umkm?table=bahan_baku`, {
@@ -121,7 +137,10 @@ export default function BahanBaku() {
       satuanBeli: b.satuanBeli,
       isiPerPack: b.isiPerPack ? String(b.isiPerPack) : "",
       hargaBeli: String(b.hargaBeli),
+      hasilPerUnit: b.hasilPerUnit ? String(b.hasilPerUnit) : "",
+      hasilLabel: b.hasilLabel || "",
     });
+    setShowYield(!!b.hasilPerUnit);
     setEditId(b.id);
     setError("");
   };
@@ -187,11 +206,7 @@ export default function BahanBaku() {
   // ── Helper ─────────────────────────────────────────────────────────────────
   const totalNilaiStok = list.reduce((s, b) => s + nilaiStok(b), 0);
 
-  const unitLabel = (b) => {
-    if (b.satuanUnit) return b.satuanUnit;
-    const g = unitGroupOf(b.satuanBeli);
-    return g === "berat" ? "gram" : g === "volume" ? "ml" : "pcs";
-  };
+  const unitLabel = (b) => hargaUnitLabel(b);
 
   const preview = previewHarga();
 
@@ -238,8 +253,36 @@ export default function BahanBaku() {
           <div className="bahanbaku__kemasan-box">
             <label className="bahanbaku__label">1 pack itu jadi berapa pcs?</label>
             <input className="bahanbaku__input" type="number" name="isiPerPack"
-              placeholder="Contoh: 50 (buat packaging) atau 340 (buat kertas foto, kalau 1 lembar ≈ 17 cetakan × 20 lembar)"
+              placeholder="Contoh: 50 (buat packaging) atau 20 (buat kertas foto)"
               value={form.isiPerPack} onChange={handleChange} min="1" />
+          </div>
+        )}
+
+        {/* Opsional: 1 satuan kecil bisa jadi berapa hasil (misal 1 lembar → 17 cetakan) */}
+        {!showYield ? (
+          <button type="button" className="bahanbaku__yield-toggle" onClick={() => setShowYield(true)}>
+            + Rata-rata 1 {satuanKecilSaatIni()} bisa jadi beberapa hasil? (opsional)
+          </button>
+        ) : (
+          <div className="bahanbaku__kemasan-box bahanbaku__kemasan-box--yield">
+            <div className="bahanbaku__kemasan-box-head">
+              <label className="bahanbaku__label">
+                Rata-rata 1 {satuanKecilSaatIni()} bisa jadi berapa hasil/produk?
+              </label>
+              <button type="button" className="bahanbaku__yield-close"
+                onClick={() => { setShowYield(false); setForm(p => ({ ...p, hasilPerUnit: "", hasilLabel: "" })); }}>
+                Batal
+              </button>
+            </div>
+            <div className="bahanbaku__kemasan-row">
+              <input className="bahanbaku__input" type="number" name="hasilPerUnit"
+                placeholder="Contoh: 17" value={form.hasilPerUnit} onChange={handleChange} min="1" />
+              <input className="bahanbaku__input" type="text" name="hasilLabel"
+                placeholder="Nama hasilnya, misal: cetakan" value={form.hasilLabel} onChange={handleChange} />
+            </div>
+            <p className="bahanbaku__hint-small">
+              Contoh: 1 lembar kertas foto rata-rata jadi 17 cetakan gantungan kunci → harga otomatis dihitung per cetakan, bukan per lembar.
+            </p>
           </div>
         )}
 

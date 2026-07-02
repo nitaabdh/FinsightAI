@@ -104,7 +104,7 @@ function buildPayload(body, table, userId, isUpdate = false) {
   const base = isUpdate ? {} : { id: body.id, user_id: userId };
 
   if (table === "bahan_baku") {
-    return {
+    const payload = {
       ...base,
       nama:          body.nama,
       harga_beli:    body.hargaBeli,
@@ -112,8 +112,17 @@ function buildPayload(body, table, userId, isUpdate = false) {
       satuan_beli:   body.satuanBeli,
       isi_per_pack:  body.isiPerPack ?? null,
       satuan_unit:   body.satuanUnit ?? null,
-      stok:          body.stok ?? 0,
+      hasil_per_unit: body.hasilPerUnit ?? null,
+      hasil_label:    body.hasilLabel ?? null,
     };
+    // Stok cuma ditulis kalau memang dikirim eksplisit (tambah baru / restock).
+    // Edit koreksi data (nama/harga/dll) TIDAK boleh menyentuh stok sama sekali.
+    if (!isUpdate) {
+      payload.stok = body.stok ?? 0;
+    } else if (body.stok !== undefined) {
+      payload.stok = body.stok;
+    }
+    return payload;
   }
 
   if (table === "produk") {
@@ -161,7 +170,7 @@ function normalize(row, table) {
   const base = { id: row.id, createdAt: row.created_at };
 
   if (table === "bahan_baku") {
-    return { ...base, nama: row.nama, hargaBeli: row.harga_beli, jumlahBeli: row.jumlah_beli, satuanBeli: row.satuan_beli, isiPerPack: row.isi_per_pack, satuanUnit: row.satuan_unit, stok: row.stok };
+    return { ...base, nama: row.nama, hargaBeli: row.harga_beli, jumlahBeli: row.jumlah_beli, satuanBeli: row.satuan_beli, isiPerPack: row.isi_per_pack, satuanUnit: row.satuan_unit, hasilPerUnit: row.hasil_per_unit, hasilLabel: row.hasil_label, stok: row.stok };
   }
 
   if (table === "produk") {

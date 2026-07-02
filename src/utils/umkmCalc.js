@@ -35,7 +35,9 @@ export const unitGroupOf = (unit) => {
 };
 
 // Satuan yang valid untuk dipakai di resep, sesuai grup bahan
-export const validUsageUnits = (satuanBeli, satuanUnit) => {
+export const validUsageUnits = (satuanBeli, satuanUnit, hasilPerUnit, hasilLabel) => {
+  // Kalau ada hasil (misal 1 lembar jadi 17 cetakan), satuan resep = nama hasil itu
+  if (hasilPerUnit && +hasilPerUnit > 1) return [hasilLabel || "hasil"];
   // Kalau bahan pakai sistem pack (ada satuanUnit), unit resep = satuanUnit itu
   if (satuanUnit) return [satuanUnit];
   const g = unitGroupOf(satuanBeli);
@@ -92,11 +94,22 @@ export const stokDisplay = (bahan) => {
 };
 // Harga beli per base unit (Rp/gram, Rp/ml, Rp/pcs, Rp/lembar, dll)
 // Untuk kemasan: hargaBeli / (jumlahBeli × isiPerPack)
+// Kalau ada hasilPerUnit (misal 1 lembar rata-rata jadi 17 cetakan), harga dibagi lagi
+// supaya jadi harga per satu hasil — ini murni buat estimasi biaya, bukan tracking stok fisik.
 export const hargaPerBase = (bahan) => {
   const isi  = parseFloat(bahan.isiPerPack) || 1;
   const base = toBase(bahan.jumlahBeli, bahan.satuanBeli, isi);
   if (base <= 0) return 0;
-  return (parseFloat(bahan.hargaBeli) || 0) / base;
+  let harga = (parseFloat(bahan.hargaBeli) || 0) / base;
+  const hasil = parseFloat(bahan.hasilPerUnit) || 0;
+  if (hasil > 1) harga = harga / hasil;
+  return harga;
+};
+
+// Label satuan yang dipakai untuk tampil harga per-unit (list bahan, preview, dll)
+export const hargaUnitLabel = (bahan) => {
+  if (parseFloat(bahan.hasilPerUnit) > 1) return bahan.hasilLabel || "hasil";
+  return baseUnitLabel(bahan);
 };
 
 // Biaya pemakaian satu baris resep (bahan + jumlah pakai) → Rupiah
