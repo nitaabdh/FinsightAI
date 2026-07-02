@@ -106,11 +106,13 @@ function buildPayload(body, table, userId, isUpdate = false) {
   if (table === "bahan_baku") {
     return {
       ...base,
-      nama:        body.nama,
-      harga_beli:  body.hargaBeli,
-      jumlah_beli: body.jumlahBeli,
-      satuan_beli: body.satuanBeli,
-      stok:        body.stok ?? 0,
+      nama:          body.nama,
+      harga_beli:    body.hargaBeli,
+      jumlah_beli:   body.jumlahBeli,
+      satuan_beli:   body.satuanBeli,
+      isi_per_pack:  body.isiPerPack ?? null,
+      satuan_unit:   body.satuanUnit ?? null,
+      stok:          body.stok ?? 0,
     };
   }
 
@@ -159,7 +161,7 @@ function normalize(row, table) {
   const base = { id: row.id, createdAt: row.created_at };
 
   if (table === "bahan_baku") {
-    return { ...base, nama: row.nama, hargaBeli: row.harga_beli, jumlahBeli: row.jumlah_beli, satuanBeli: row.satuan_beli, stok: row.stok };
+    return { ...base, nama: row.nama, hargaBeli: row.harga_beli, jumlahBeli: row.jumlah_beli, satuanBeli: row.satuan_beli, isiPerPack: row.isi_per_pack, satuanUnit: row.satuan_unit, stok: row.stok };
   }
 
   if (table === "produk") {
