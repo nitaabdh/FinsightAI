@@ -119,16 +119,6 @@ export const totalBiayaBahan = (items, bahanMap) =>
 // Nilai stok estimasi (Rp)
 export const nilaiStok = (bahan) => hargaPerBase(bahan) * (parseFloat(bahan.stok) || 0);
 
-// Display stok dalam satuan beli (lebih natural untuk user)
-export const stokDisplay = (bahan) => {
-  const base = parseFloat(bahan.stok) || 0;
-  const satuan = bahan.satuanBeli;
-  const display = fromBase(base, satuan);
-  // Format angka: buang desimal berlebih
-  const formatted = parseFloat(display.toFixed(4)).toString();
-  return `${formatted} ${satuan}`;
-};
-
 // Apakah stok cukup untuk memenuhi satu resep × jumlahUnit?
 export const cekKecukupanStok = (items, bahanList, jumlahUnit) => {
   const bahanMap = Object.fromEntries(bahanList.map((b) => [b.id, b]));
