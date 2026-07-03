@@ -2,37 +2,52 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import PageHeader from "../components/PageHeader";
-import { getTransactions, calcSummary, formatRupiah, groupByMonth, groupByCategory, monthLabel } from "../utils/storage";
+import { getTransactions, calcSummary, formatRupiah, groupByMonth, groupByCategory, monthLabel, isModalUsaha } from "../utils/storage";
 import BreakEvenPoint from "../components/BreakEvenPoint";
 import UtangPiutang from "../components/UtangPiutang";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import "./LaporanPage.css";
 
 export default function LaporanPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("labarugi");
   const [transactions, setTransactions] = useState([]);
+  const [asetUsaha, setAsetUsaha]       = useState([]);
   const [filterMonth, setFilterMonth]   = useState("semua");
   const [loading, setLoading]           = useState(true);
 
   useEffect(() => {
     if (!user) return;
     const token = localStorage.getItem("finsight_token");
+    const h = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
     setLoading(true);
-    fetch(`/api/transactions?mode=umkm`, {
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
-    }).then(r => r.json())
-      .then(r => { if (r.success) setTransactions(r.data); })
-      .finally(() => setLoading(false));
+    Promise.all([
+      fetch(`/api/transactions?mode=umkm`, { headers: h }).then(r => r.json()),
+      fetch(`/api/umkm?table=aset_usaha`, { headers: h }).then(r => r.json()),
+    ]).then(([txRes, asetRes]) => {
+      if (txRes.success)   setTransactions(txRes.data);
+      if (asetRes.success) setAsetUsaha(asetRes.data);
+    }).finally(() => setLoading(false));
   }, [user]);
 
-  const months = [...new Set(transactions.map((t) => (t.date || t.createdAt || "").slice(0, 7)).filter(Boolean))].sort().reverse();
+  const usahaTx = transactions.filter(t => !isModalUsaha(t)); // Omzet/Laba murni, tanpa modal
+  const modalTx = transactions.filter(isModalUsaha);
+
+  const months = [...new Set(usahaTx.map((t) => (t.date || t.createdAt || "").slice(0, 7)).filter(Boolean))].sort().reverse();
 
   const filtered = filterMonth === "semua"
-    ? transactions
-    : transactions.filter((t) => (t.date || t.createdAt || "").slice(0, 7) === filterMonth);
+    ? usahaTx
+    : usahaTx.filter((t) => (t.date || t.createdAt || "").slice(0, 7) === filterMonth);
+
+  const modalFiltered = filterMonth === "semua"
+    ? modalTx
+    : modalTx.filter((t) => (t.date || t.createdAt || "").slice(0, 7) === filterMonth);
+  const totalModal    = modalFiltered.reduce((s, t) => s + Number(t.amount || 0), 0);
+  const totalNilaiAset = asetUsaha.reduce((s, it) => s + Number(it.hargaBeli || 0), 0);
 
   const summary    = calcSummary(filtered);
-  const byMonth    = groupByMonth(transactions);
+  const byMonth    = groupByMonth(usahaTx);
   const byCategory = groupByCategory(filtered);
   const margin     = summary.pemasukan > 0 ? ((summary.saldo / summary.pemasukan) * 100).toFixed(1) : 0;
 
@@ -46,7 +61,7 @@ export default function LaporanPage() {
   let comparison = null;
   if (filterMonth !== "semua") {
     const prevKey  = prevMonthKeyOf(filterMonth);
-    const prevTx   = transactions.filter((t) => (t.date || t.createdAt || "").slice(0, 7) === prevKey);
+    const prevTx   = usahaTx.filter((t) => (t.date || t.createdAt || "").slice(0, 7) === prevKey);
     const prevSummary    = calcSummary(prevTx);
     const prevByCategory = groupByCategory(prevTx);
     const hasPrevData    = prevTx.length > 0;
@@ -76,26 +91,104 @@ export default function LaporanPage() {
   const currCategoryMap = Object.fromEntries(byCategory);
   const prevCategoryMap = comparison ? Object.fromEntries(comparison.prevByCategory) : {};
 
-  const handleExport = () => {
-    const rows = [
-      ["Tanggal", "Tipe", "Kategori", "Keterangan", "Nominal"],
-      ...filtered.map((t) => [
-        (t.date || t.createdAt || "").slice(0, 10),
-        t.type, t.category || "-", t.description || "-", t.amount,
-      ]),
-      [],
-      ["", "", "", "Total Pemasukan", summary.pemasukan],
-      ["", "", "", "Total Pengeluaran", summary.pengeluaran],
-      ["", "", "", "Laba Bersih", summary.saldo],
-    ];
-    const csv  = rows.map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href = url;
-    a.download = `laporan-${filterMonth === "semua" ? "semua" : filterMonth}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    const pageW = doc.internal.pageSize.getWidth();
+    const AMBER = [217, 119, 6];
+    const periodeLabel = filterMonth === "semua" ? "Semua Periode" : monthLabel(filterMonth);
+    const tanggalCetak = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+    let y = 18;
+
+    // ── Header ──
+    doc.setFontSize(16); doc.setFont(undefined, "bold"); doc.setTextColor(...AMBER);
+    doc.text("LAPORAN KEUANGAN USAHA", 14, y);
+    doc.setFontSize(9); doc.setFont(undefined, "normal"); doc.setTextColor(90);
+    y += 6;
+    doc.text(`Periode: ${periodeLabel}`, 14, y);
+    doc.text(`Dicetak: ${tanggalCetak}`, pageW - 14, y, { align: "right" });
+    y += 3;
+    doc.setDrawColor(...AMBER); doc.setLineWidth(0.5); doc.line(14, y, pageW - 14, y);
+    y += 8;
+
+    // ── Ringkasan ──
+    autoTable(doc, {
+      startY: y,
+      head: [["Ringkasan", "Nominal"]],
+      body: [
+        ["Total Omzet", formatRupiah(summary.pemasukan)],
+        ["Total Pengeluaran", formatRupiah(summary.pengeluaran)],
+        ["Laba Bersih", formatRupiah(summary.saldo)],
+        ["Margin Laba", `${margin}%`],
+        ["Modal Usaha" + (filterMonth === "semua" ? " (total)" : " (periode ini)"), formatRupiah(totalModal)],
+        ["Total Aset Usaha (per hari ini)", formatRupiah(totalNilaiAset)],
+      ],
+      theme: "grid",
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: AMBER, textColor: 255, fontStyle: "bold" },
+      columnStyles: { 1: { halign: "right" } },
+      margin: { left: 14, right: 14 },
+    });
+    y = doc.lastAutoTable.finalY + 10;
+
+    // ── Pengeluaran per Kategori ──
+    if (byCategory.length > 0) {
+      autoTable(doc, {
+        startY: y,
+        head: [["Kategori Pengeluaran", "Nominal", "% dari total"]],
+        body: byCategory.map(([cat, amt]) => [
+          cat,
+          formatRupiah(amt),
+          `${summary.pengeluaran > 0 ? ((amt / summary.pengeluaran) * 100).toFixed(0) : 0}%`,
+        ]),
+        theme: "grid",
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: AMBER, textColor: 255, fontStyle: "bold" },
+        columnStyles: { 1: { halign: "right" }, 2: { halign: "right" } },
+        margin: { left: 14, right: 14 },
+      });
+      y = doc.lastAutoTable.finalY + 10;
+    }
+
+    // ── Tren Bulanan ──
+    if (byMonth.length > 0) {
+      if (y > 240) { doc.addPage(); y = 18; }
+      autoTable(doc, {
+        startY: y,
+        head: [["Bulan", "Pendapatan", "Pengeluaran", "Laba Bersih"]],
+        body: byMonth.map(([m, val]) => [
+          monthLabel(m), formatRupiah(val.pemasukan), formatRupiah(val.pengeluaran),
+          formatRupiah(val.pemasukan - val.pengeluaran),
+        ]),
+        theme: "grid",
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: AMBER, textColor: 255, fontStyle: "bold" },
+        columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } },
+        margin: { left: 14, right: 14 },
+      });
+      y = doc.lastAutoTable.finalY + 10;
+    }
+
+    // ── Ringkasan Otomatis ──
+    if (filtered.length > 0) {
+      if (y > 250) { doc.addPage(); y = 18; }
+      doc.setFontSize(10); doc.setFont(undefined, "bold"); doc.setTextColor(30);
+      doc.text("Ringkasan Otomatis", 14, y);
+      y += 6;
+      const narasi = `Pada periode ini, usaha mencatat omzet sebesar ${formatRupiah(summary.pemasukan)} dengan pengeluaran ${formatRupiah(summary.pengeluaran)}, menghasilkan laba bersih ${formatRupiah(summary.saldo)} (margin ${margin}%).`;
+      doc.setFontSize(9); doc.setFont(undefined, "normal"); doc.setTextColor(70);
+      const lines = doc.splitTextToSize(narasi, pageW - 28);
+      doc.text(lines, 14, y);
+    }
+
+    // ── Footer ──
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8); doc.setTextColor(150);
+      doc.text(`Halaman ${i} dari ${pageCount} · Dibuat otomatis oleh FinSight AI`, pageW / 2, 290, { align: "center" });
+    }
+
+    doc.save(`laporan-keuangan-${filterMonth === "semua" ? "semua" : filterMonth}.pdf`);
   };
 
   return (
@@ -147,7 +240,7 @@ export default function LaporanPage() {
             {activeTab === "labarugi" && (
               <div className="laporanpage__labarugi">
 
-                {/* Filter + Export */}
+            {/* Filter + Export */}
                 <div className="laporanpage__header-actions">
                   <select
                     className="laporanpage__select"
@@ -157,8 +250,8 @@ export default function LaporanPage() {
                     <option value="semua">Semua Periode</option>
                     {months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}
                   </select>
-                  <button className="laporanpage__export-btn" onClick={handleExport}>
-                    ⬇ Export CSV
+                  <button className="laporanpage__export-btn" onClick={handleExportPDF}>
+                    📄 Export PDF
                   </button>
                 </div>
 
@@ -181,6 +274,23 @@ export default function LaporanPage() {
                     <span className="laporanpage__sum-label">🧾 Transaksi</span>
                     <span className="laporanpage__sum-value">{filtered.length}</span>
                     <span className="laporanpage__sum-sub">entri tercatat</span>
+                  </div>
+                </div>
+
+                {/* Modal & Aset — dipisah dari Omzet/Laba karena beda sifat (bukan hasil usaha) */}
+                <div className="laporanpage__section">
+                  <h3 className="laporanpage__section-title">Modal &amp; Aset Usaha</h3>
+                  <div className="laporanpage__submetrics">
+                    <div className="laporanpage__sum-card laporanpage__sum-card--modal">
+                      <span className="laporanpage__sum-label">🏦 Modal Usaha</span>
+                      <span className="laporanpage__sum-value">{formatRupiah(totalModal)}</span>
+                      <span className="laporanpage__sum-sub">{filterMonth === "semua" ? "Total keseluruhan" : `Periode ${monthLabel(filterMonth)}`} · tidak dihitung sebagai omzet</span>
+                    </div>
+                    <div className="laporanpage__sum-card laporanpage__sum-card--aset">
+                      <span className="laporanpage__sum-label">💎 Total Aset Usaha</span>
+                      <span className="laporanpage__sum-value">{formatRupiah(totalNilaiAset)}</span>
+                      <span className="laporanpage__sum-sub">{asetUsaha.length} item peralatan · nilai per hari ini</span>
+                    </div>
                   </div>
                 </div>
 
@@ -342,7 +452,7 @@ export default function LaporanPage() {
                   <p>
                     {filtered.length === 0
                       ? "Belum ada transaksi untuk periode ini."
-                      : `Pada periode ini, usahamu mencatat omzet sebesar ${formatRupiah(summary.pemasukan)} dengan pengeluaran ${formatRupiah(summary.pengeluaran)}, menghasilkan laba bersih ${formatRupiah(summary.saldo)} (margin ${margin}%). ${Number(margin) >= 30 ? "Margin yang sehat! Pertahankan efisiensi ini." : Number(margin) >= 10 ? "Margin cukup baik. Coba tingkatkan omzet atau kurangi pengeluaran." : "Margin masih rendah. Evaluasi struktur biaya usahamu."}`
+                      : `Pada periode ini, usahamu mencatat omzet sebesar ${formatRupiah(summary.pemasukan)} dengan pengeluaran ${formatRupiah(summary.pengeluaran)}, menghasilkan laba bersih ${formatRupiah(summary.saldo)} (margin ${margin}%). ${Number(margin) >= 30 ? "Margin yang sehat! Pertahankan efisiensi ini." : Number(margin) >= 10 ? "Margin cukup baik. Coba tingkatkan omzet atau kurangi pengeluaran." : "Margin masih rendah. Evaluasi struktur biaya usahamu."} ${totalModal > 0 ? `Selain itu, ada setoran modal sebesar ${formatRupiah(totalModal)} pada periode ini yang tidak dihitung sebagai omzet.` : ""} Saat ini total nilai aset usaha (peralatan) tercatat ${formatRupiah(totalNilaiAset)}.`
                     }
                   </p>
                 </div>
