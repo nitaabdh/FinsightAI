@@ -5,7 +5,7 @@
 
 export const CATEGORIES = {
   umkm: {
-    pemasukan: ["Penjualan Produk", "Jasa", "Komisi", "Investasi", "Lainnya"],
+    pemasukan: ["Modal Usaha", "Penjualan Produk", "Jasa", "Komisi", "Investasi", "Lainnya"],
     pengeluaran: ["Bahan Baku / HPP", "Operasional", "Gaji Karyawan", "Marketing", "Utilitas", "Lainnya"],
   },
   personal: {
@@ -105,6 +105,11 @@ function normalizeTransaction(tx) {
     createdAt:   tx.created_at,
   };
 }
+
+// ── Modal Usaha ───────────────────────────────────────────────────────────────
+// Transaksi kategori "Modal Usaha" adalah setoran modal, bukan pendapatan usaha,
+// jadi harus dikeluarkan dari perhitungan Omzet/Laba supaya laporan keuangan akurat.
+export const isModalUsaha = (t) => t.type === "pemasukan" && t.category === "Modal Usaha";
 
 // ── Kalkulasi (tidak berubah, pure function) ──────────────────────────────────
 export const calcSummary = (transactions) => {

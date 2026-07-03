@@ -2,14 +2,17 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import {
   genId, formatRupiah, biayaItem, totalBiayaBahan, validUsageUnits,
+  biayaOpsItem, totalBiayaOperasional,
 } from "../utils/umkmCalc";
 import "./KalkulatorHarga.css";
 
 const emptyForm = {
   nama: "", items: [],
-  biayaOperasional: "", biayaOperasionalPct: "",
+  biayaOperasionalItems: [],
   targetUntung: "", targetUntungPct: "",
 };
+
+const emptyOpsForm = { nama: "", biaya: "" };
 
 const GROQ_KEY = "finsight_groq_key";
 
@@ -40,6 +43,8 @@ async function callGroq(apiKey, prompt) {
 
 export default function KalkulatorHarga() {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("kalkulator"); // "kalkulator" | "operasional"
+
   const [bahanList,  setBahanList]  = useState([]);
   const [produkList, setProdukList] = useState([]);
   const [form,    setForm]    = useState(emptyForm);
@@ -49,6 +54,17 @@ export default function KalkulatorHarga() {
   const [selBahan,  setSelBahan]  = useState("");
   const [selJumlah, setSelJumlah] = useState("");
   const [selSatuan, setSelSatuan] = useState("");
+
+  // Dropdown tambah biaya operasional ke resep produk
+  const [selOps,       setSelOps]       = useState("");
+  const [selOpsJumlah, setSelOpsJumlah] = useState("1");
+
+  // Master data Biaya Operasional
+  const [opsList,   setOpsList]   = useState([]);
+  const [opsForm,   setOpsForm]   = useState(emptyOpsForm);
+  const [opsEditId, setOpsEditId] = useState(null);
+  const [opsError,  setOpsError]  = useState("");
+  const [opsDelId,  setOpsDelId]  = useState(null);
 
   // AI Saran Harga
   const [aiOpen,    setAiOpen]    = useState(false);
@@ -61,6 +77,7 @@ export default function KalkulatorHarga() {
     if (!user) return;
     apiFetch(`/api/umkm?table=bahan_baku`).then(r => { if (r.success) setBahanList(r.data); });
     apiFetch(`/api/umkm?table=produk`).then(r => { if (r.success) setProdukList(r.data); });
+    apiFetch(`/api/umkm?table=biaya_operasional`).then(r => { if (r.success) setOpsList(r.data); });
   }, [user]);
 
   useEffect(() => {
@@ -72,31 +89,18 @@ export default function KalkulatorHarga() {
   }, [user]);
 
   const bahanMap = Object.fromEntries(bahanList.map(b => [b.id, b]));
+  const opsMap   = Object.fromEntries(opsList.map(o => [o.id, o]));
 
   // ── Kalkulasi biaya ────────────────────────────────────────────────────────
   const biayaBahan  = totalBiayaBahan(form.items, bahanMap);
-  const biayaOpsNum = +form.biayaOperasional || 0;
+  const biayaOpsNum = totalBiayaOperasional(form.biayaOperasionalItems, opsMap);
   const targetNum   = +form.targetUntung || 0;
   const totalBiaya  = biayaBahan + biayaOpsNum;
   const hargaJual   = totalBiaya + targetNum;
 
-  // Persen relatif terhadap total biaya bahan (bukan total biaya)
-  const biayaOpsPct  = biayaBahan > 0 ? ((biayaOpsNum / biayaBahan) * 100).toFixed(1) : "";
-  const targetPct    = totalBiaya > 0 ? ((targetNum / totalBiaya) * 100).toFixed(1) : "";
+  const targetPct   = totalBiaya > 0 ? ((targetNum / totalBiaya) * 100).toFixed(1) : "";
 
-  // ── Handler field Rp/% ────────────────────────────────────────────────────
-  const handleOpsRp = (val) => {
-    const rp  = +val || 0;
-    const pct = biayaBahan > 0 ? ((rp / biayaBahan) * 100).toFixed(1) : "";
-    setForm(p => ({ ...p, biayaOperasional: val, biayaOperasionalPct: pct }));
-    setError("");
-  };
-  const handleOpsPct = (val) => {
-    const pct = +val || 0;
-    const rp  = Math.round((pct / 100) * biayaBahan);
-    setForm(p => ({ ...p, biayaOperasionalPct: val, biayaOperasional: rp > 0 ? String(rp) : "" }));
-    setError("");
-  };
+  // ── Handler field Rp/% target untung ──────────────────────────────────────
   const handleTargetRp = (val) => {
     const rp  = +val || 0;
     const pct = totalBiaya > 0 ? ((rp / totalBiaya) * 100).toFixed(1) : "";
@@ -113,22 +117,24 @@ export default function KalkulatorHarga() {
   const resetForm = () => {
     setForm(emptyForm); setEditId(null); setError("");
     setSelBahan(""); setSelJumlah(""); setSelSatuan("");
+    setSelOps(""); setSelOpsJumlah("1");
   };
 
   const openEdit = (p) => {
     const biayaB   = totalBiayaBahan(p.items, bahanMap);
-    const totalB   = biayaB + (p.biayaOperasional || 0);
-    const opsPct   = biayaB   > 0 ? ((p.biayaOperasional / biayaB) * 100).toFixed(1) : "";
+    const opsItems = p.biayaOperasionalItems || [];
+    const biayaO   = totalBiayaOperasional(opsItems, opsMap);
+    const totalB   = biayaB + biayaO;
     const untPct   = totalB   > 0 ? ((p.targetUntung    / totalB)  * 100).toFixed(1) : "";
     setForm({
       nama: p.nama, items: p.items,
-      biayaOperasional: String(p.biayaOperasional),
-      biayaOperasionalPct: opsPct,
+      biayaOperasionalItems: opsItems,
       targetUntung: String(p.targetUntung),
       targetUntungPct: untPct,
     });
     setEditId(p.id); setError("");
     setSelBahan(""); setSelJumlah(""); setSelSatuan("");
+    setSelOps(""); setSelOpsJumlah("1");
   };
 
   const handlePilihBahan = (id) => {
@@ -147,6 +153,18 @@ export default function KalkulatorHarga() {
 
   const handleHapusItem = (idx) => setForm(p => ({ ...p, items: p.items.filter((_, i) => i !== idx) }));
 
+  // ── Tambah/hapus item Biaya Operasional dari master ke resep produk ───────
+  const handleTambahOpsItem = () => {
+    if (!selOps)                                                 return setError("Pilih biaya operasional terlebih dahulu.");
+    if (!selOpsJumlah || isNaN(selOpsJumlah) || +selOpsJumlah <= 0) return setError("Masukkan jumlah yang valid.");
+    setForm(p => ({ ...p, biayaOperasionalItems: [...p.biayaOperasionalItems, { opsId: selOps, jumlah: +selOpsJumlah }] }));
+    setSelOps(""); setSelOpsJumlah("1");
+    setError("");
+  };
+
+  const handleHapusOpsItem = (idx) =>
+    setForm(p => ({ ...p, biayaOperasionalItems: p.biayaOperasionalItems.filter((_, i) => i !== idx) }));
+
   const handleSubmit = async () => {
     if (!form.nama.trim())       return setError("Nama produk tidak boleh kosong.");
     if (form.items.length === 0) return setError("Tambahkan minimal satu bahan ke resep.");
@@ -155,6 +173,7 @@ export default function KalkulatorHarga() {
       nama: form.nama.trim(),
       items: form.items,
       biayaOperasional: biayaOpsNum,
+      biayaOperasionalItems: form.biayaOperasionalItems,
       targetUntung: targetNum,
       biayaBahan,
       totalBiaya,
@@ -189,6 +208,43 @@ export default function KalkulatorHarga() {
     setDelId(null);
     if (editId === id) resetForm();
     window.dispatchEvent(new CustomEvent("produkUpdated"));
+  };
+
+  // ── CRUD Master Biaya Operasional ──────────────────────────────────────────
+  const resetOpsForm = () => { setOpsForm(emptyOpsForm); setOpsEditId(null); setOpsError(""); };
+
+  const openOpsEdit = (o) => {
+    setOpsForm({ nama: o.nama, biaya: String(o.biaya) });
+    setOpsEditId(o.id); setOpsError("");
+  };
+
+  const handleOpsFormSubmit = async () => {
+    if (!opsForm.nama.trim())                              return setOpsError("Nama biaya operasional tidak boleh kosong.");
+    if (!opsForm.biaya || isNaN(opsForm.biaya) || +opsForm.biaya < 0) return setOpsError("Masukkan nominal biaya yang valid.");
+
+    const payload = { nama: opsForm.nama.trim(), biaya: +opsForm.biaya };
+
+    if (opsEditId) {
+      const r = await apiFetch(`/api/umkm?table=biaya_operasional`, {
+        method: "PUT",
+        body: JSON.stringify({ id: opsEditId, ...payload }),
+      });
+      if (r.success) setOpsList(p => p.map(x => x.id === opsEditId ? r.data : x));
+    } else {
+      const r = await apiFetch(`/api/umkm?table=biaya_operasional`, {
+        method: "POST",
+        body: JSON.stringify({ id: genId(), ...payload, createdAt: Date.now() }),
+      });
+      if (r.success) setOpsList(p => [r.data, ...p]);
+    }
+    resetOpsForm();
+  };
+
+  const handleOpsDel = async (id) => {
+    await apiFetch(`/api/umkm?table=biaya_operasional&id=${id}`, { method: "DELETE" });
+    setOpsList(p => p.filter(x => x.id !== id));
+    setOpsDelId(null);
+    if (opsEditId === id) resetOpsForm();
   };
 
   // ── AI Saran Harga ─────────────────────────────────────────────────────────
@@ -241,6 +297,70 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
 
   return (
     <div className="kalkharga">
+      <div className="kalkharga__tabs">
+        <button
+          className={`kalkharga__tab ${activeTab === "kalkulator" ? "kalkharga__tab--active" : ""}`}
+          onClick={() => setActiveTab("kalkulator")}
+        >
+          🧮 Kalkulator
+        </button>
+        <button
+          className={`kalkharga__tab ${activeTab === "operasional" ? "kalkharga__tab--active" : ""}`}
+          onClick={() => setActiveTab("operasional")}
+        >
+          💡 Biaya Operasional
+        </button>
+      </div>
+
+      {activeTab === "operasional" && (
+        <div className="kalkharga__ops-page">
+          <div className="kalkharga__form">
+            <h3 className="kalkharga__form-title">{opsEditId ? "✏️ Edit Biaya Operasional" : "+ Tambah Biaya Operasional"}</h3>
+
+            <div className="kalkharga__addbahan-row" style={{ gridTemplateColumns: "2fr 1fr auto" }}>
+              <input className="kalkharga__input" type="text" placeholder="Misal: Listrik, Gas, Tenaga Kerja"
+                value={opsForm.nama} onChange={e => { setOpsForm(p => ({ ...p, nama: e.target.value })); setOpsError(""); }} />
+              <div className="kalkharga__dual-wrap">
+                <span className="kalkharga__dual-prefix">Rp</span>
+                <input className="kalkharga__input kalkharga__input--dual" type="number" placeholder="0" min="0"
+                  value={opsForm.biaya} onChange={e => { setOpsForm(p => ({ ...p, biaya: e.target.value })); setOpsError(""); }} />
+              </div>
+              <button className="kalkharga__addbtn" onClick={handleOpsFormSubmit}>
+                {opsEditId ? "Simpan" : "+ Tambah"}
+              </button>
+            </div>
+            {opsEditId && <button className="kalkharga__btn-sec" style={{ alignSelf: "flex-start" }} onClick={resetOpsForm}>Batal Edit</button>}
+            {opsError && <p className="kalkharga__error">⚠️ {opsError}</p>}
+          </div>
+
+          <div className="kalkharga__list">
+            <h3 className="kalkharga__list-title">Daftar Biaya Operasional</h3>
+            {opsList.length === 0 ? (
+              <div className="kalkharga__empty">
+                <p>💡</p>
+                <p>Belum ada biaya operasional.</p>
+                <p>Tambahkan misalnya listrik, gas, atau tenaga kerja per batch.</p>
+              </div>
+            ) : (
+              <div className="kalkharga__ops-list">
+                {opsList.map(o => (
+                  <div key={o.id} className="kalkharga__ops-row">
+                    <span className="kalkharga__item-nama">{o.nama}</span>
+                    <span className="kalkharga__item-biaya">{formatRupiah(o.biaya)}</span>
+                    <div className="kalkharga__produk-actions">
+                      <button className="kalkharga__produk-edit" onClick={() => openOpsEdit(o)} title="Edit">✏️</button>
+                      <button className="kalkharga__produk-del" onClick={() => setOpsDelId(o.id)} title="Hapus">🗑</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === "kalkulator" && (
+      <>
       <div className="kalkharga__form">
         <h3 className="kalkharga__form-title">{editId ? "✏️ Edit Produk" : "+ Hitung Harga Jual Produk"}</h3>
 
@@ -288,31 +408,43 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
           </div>
         )}
 
-        {/* Biaya Operasional & Target Untung — Rp + % berdampingan */}
-        <div className="kalkharga__costs">
-          <div className="kalkharga__field">
-            <label className="kalkharga__label">Biaya Operasional</label>
-            <div className="kalkharga__dual-input">
-              <div className="kalkharga__dual-wrap">
-                <span className="kalkharga__dual-prefix">Rp</span>
-                <input className="kalkharga__input kalkharga__input--dual" type="number"
-                  placeholder="0" min="0"
-                  value={form.biayaOperasional}
-                  onChange={e => handleOpsRp(e.target.value)} />
-              </div>
-              <div className="kalkharga__dual-wrap">
-                <input className="kalkharga__input kalkharga__input--dual kalkharga__input--pct" type="number"
-                  placeholder="0" min="0" max="100" step="0.1"
-                  value={form.biayaOperasionalPct}
-                  onChange={e => handleOpsPct(e.target.value)} />
-                <span className="kalkharga__dual-suffix">%</span>
-              </div>
+        {/* Biaya Operasional — dropdown dari master data, sama pola dengan Tambah Bahan */}
+        <div className="kalkharga__addbahan">
+          <label className="kalkharga__label">Tambah Biaya Operasional dari Master Data</label>
+          {opsList.length === 0 ? (
+            <p className="kalkharga__hint">Belum ada biaya operasional. Tambahkan dulu di tab <strong>💡 Biaya Operasional</strong>.</p>
+          ) : (
+            <div className="kalkharga__addbahan-row" style={{ gridTemplateColumns: "2fr 1fr auto" }}>
+              <select className="kalkharga__input" value={selOps} onChange={e => setSelOps(e.target.value)}>
+                <option value="">-- Pilih biaya operasional --</option>
+                {opsList.map(o => <option key={o.id} value={o.id}>{o.nama} ({formatRupiah(o.biaya)})</option>)}
+              </select>
+              <input className="kalkharga__input kalkharga__input--qty" type="number" placeholder="Jumlah"
+                value={selOpsJumlah} onChange={e => setSelOpsJumlah(e.target.value)} min="0" />
+              <button className="kalkharga__addbtn" onClick={handleTambahOpsItem}>+ Tambah</button>
             </div>
-            {biayaBahan > 0 && biayaOpsNum > 0 && (
-              <p className="kalkharga__dual-hint">dari biaya bahan · {formatRupiah(biayaOpsNum)}</p>
-            )}
-          </div>
+          )}
+        </div>
 
+        {form.biayaOperasionalItems.length > 0 && (
+          <div className="kalkharga__items">
+            {form.biayaOperasionalItems.map((it, idx) => {
+              const o = opsMap[it.opsId];
+              const biaya = o ? biayaOpsItem(o, it.jumlah) : 0;
+              return (
+                <div key={idx} className="kalkharga__item-row">
+                  <span className="kalkharga__item-nama">{o ? o.nama : "(dihapus)"}</span>
+                  <span className="kalkharga__item-qty">x{it.jumlah}</span>
+                  <span className="kalkharga__item-biaya">{formatRupiah(biaya)}</span>
+                  <button className="kalkharga__item-remove" onClick={() => handleHapusOpsItem(idx)}>✕</button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Target Untung — Rp + % berdampingan */}
+        <div className="kalkharga__costs">
           <div className="kalkharga__field">
             <label className="kalkharga__label">Target Untung</label>
             <div className="kalkharga__dual-input">
@@ -445,7 +577,7 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
         </div>
       )}
 
-      {/* Modal Hapus */}
+      {/* Modal Hapus Produk */}
       {delId && (
         <div className="kalkharga__modal-overlay" onClick={() => setDelId(null)}>
           <div className="kalkharga__modal" onClick={e => e.stopPropagation()}>
@@ -454,6 +586,22 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
             <div className="kalkharga__modal-actions">
               <button className="kalkharga__btn-sec" onClick={() => setDelId(null)}>Batal</button>
               <button className="kalkharga__btn-danger" onClick={() => handleDel(delId)}>Hapus</button>
+            </div>
+          </div>
+        </div>
+      )}
+      </>
+      )}
+
+      {/* Modal Hapus Biaya Operasional */}
+      {opsDelId && (
+        <div className="kalkharga__modal-overlay" onClick={() => setOpsDelId(null)}>
+          <div className="kalkharga__modal" onClick={e => e.stopPropagation()}>
+            <h4 className="kalkharga__modal-title">Hapus biaya operasional ini?</h4>
+            <p className="kalkharga__modal-sub">Produk yang sudah memakai biaya ini akan menampilkan "(dihapus)" pada resepnya.</p>
+            <div className="kalkharga__modal-actions">
+              <button className="kalkharga__btn-sec" onClick={() => setOpsDelId(null)}>Batal</button>
+              <button className="kalkharga__btn-danger" onClick={() => handleOpsDel(opsDelId)}>Hapus</button>
             </div>
           </div>
         </div>

@@ -112,6 +112,7 @@
 .du__metric-icon--laba    { background: rgba(16,185,129,0.12); }
 .du__metric-icon--rugi    { background: rgba(239,68,68,0.12); }
 .du__metric-icon--aset    { background: rgba(139,92,246,0.12); }
+.du__metric-icon--modal   { background: rgba(59,130,246,0.12); }
 .du__metric-label { font-size: 11px; color: var(--text-muted); font-family: var(--font-body); }
 .du__metric-value { font-family: var(--font-display); font-size: 17px; font-weight: 800; margin: 0.1rem 0; }
 .du__metric--omzet   .du__metric-value { color: #f59e0b; }
@@ -119,6 +120,7 @@
 .du__metric--laba    .du__metric-value { color: #10b981; }
 .du__metric--rugi    .du__metric-value { color: #ef4444; }
 .du__metric--aset    .du__metric-value { color: #8b5cf6; }
+.du__metric--modal   .du__metric-value { color: #3b82f6; }
 .du__metric-sub { font-size: 10px; color: var(--text-muted); font-family: var(--font-body); }
 
 /* ── Jatuh Tempo ── */

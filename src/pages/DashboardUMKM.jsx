@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import { BarChart, Bar, ResponsiveContainer, Tooltip, CartesianGrid, XAxis, YAxis } from "recharts";
-import { calcSummary, formatRupiah, groupByCategory } from "../utils/storage";
+import { calcSummary, formatRupiah, groupByCategory, isModalUsaha } from "../utils/storage";
 import { labelJatuhTempo, selisihHari } from "../utils/umkmCalc";
 import "./Dashboard.css";
 import "./DashboardUMKM.css";
@@ -75,8 +75,11 @@ export default function DashboardUMKM() {
   }, [user]);
 
   // ── Kalkulasi ────────────────────────────────────────────────────────────────
-  const summary       = calcSummary(transactions);
-  const topCategories = groupByCategory(transactions.filter(tx => tx.type === "pengeluaran")).slice(0, 5);
+  const modalTx        = transactions.filter(isModalUsaha);
+  const usahaTx         = transactions.filter(t => !isModalUsaha(t)); // exclude modal dari omzet/laba
+  const modalUsaha      = modalTx.reduce((s, t) => s + Number(t.amount || 0), 0);
+  const summary        = calcSummary(usahaTx);
+  const topCategories = groupByCategory(usahaTx.filter(tx => tx.type === "pengeluaran")).slice(0, 5);
   const recentTx      = [...transactions].sort((a,b) => new Date(b.date||b.createdAt) - new Date(a.date||a.createdAt)).slice(0, 5);
 
   const monthKeyOf    = (tx) => (tx.date || tx.createdAt || "").slice(0, 7);
@@ -84,8 +87,8 @@ export default function DashboardUMKM() {
   const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
   const prevMonthKey    = (() => { const d = new Date(now.getFullYear(), now.getMonth()-1,1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; })();
 
-  const currentMonthTx = transactions.filter(t => monthKeyOf(t) === currentMonthKey);
-  const prevMonthTx    = transactions.filter(t => monthKeyOf(t) === prevMonthKey);
+  const currentMonthTx = usahaTx.filter(t => monthKeyOf(t) === currentMonthKey);
+  const prevMonthTx    = usahaTx.filter(t => monthKeyOf(t) === prevMonthKey);
   const labaBulanIni   = calcSummary(currentMonthTx).saldo;
   const labaBulanLalu  = calcSummary(prevMonthTx).saldo;
 
@@ -121,8 +124,8 @@ export default function DashboardUMKM() {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
     const label = d.toLocaleDateString("id-ID", { month: "short", year: "2-digit" });
-    const pemasukan   = transactions.filter(tx => monthKeyOf(tx) === key && tx.type === "pemasukan").reduce((s,tx) => s+Number(tx.amount||0), 0);
-    const pengeluaran = transactions.filter(tx => monthKeyOf(tx) === key && tx.type === "pengeluaran").reduce((s,tx) => s+Number(tx.amount||0), 0);
+    const pemasukan   = usahaTx.filter(tx => monthKeyOf(tx) === key && tx.type === "pemasukan").reduce((s,tx) => s+Number(tx.amount||0), 0);
+    const pengeluaran = usahaTx.filter(tx => monthKeyOf(tx) === key && tx.type === "pengeluaran").reduce((s,tx) => s+Number(tx.amount||0), 0);
     tren6Bulan.push({ label, pemasukan, pengeluaran, laba: pemasukan - pengeluaran });
   }
 
@@ -204,6 +207,12 @@ export default function DashboardUMKM() {
             <p className="du__metric-label">Laba Bersih Bulan Ini</p>
             <p className="du__metric-value">{formatRupiah(labaBulanIni)}</p>
             <p className="du__metric-sub">{labaSub}</p>
+          </div>
+          <div className="du__metric du__metric--modal">
+            <div className="du__metric-icon du__metric-icon--modal">🏦</div>
+            <p className="du__metric-label">Modal Usaha</p>
+            <p className="du__metric-value">{formatRupiah(modalUsaha)}</p>
+            <p className="du__metric-sub">{modalTx.length} setoran modal tercatat</p>
           </div>
           <div className="du__metric du__metric--aset">
             <div className="du__metric-icon du__metric-icon--aset">💎</div>

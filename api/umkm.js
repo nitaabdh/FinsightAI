@@ -13,7 +13,7 @@ function verifyToken(req) {
   catch { return null; }
 }
 
-const VALID_TABLES = ["bahan_baku", "produk", "aset_usaha", "utang_piutang"];
+const VALID_TABLES = ["bahan_baku", "produk", "aset_usaha", "utang_piutang", "biaya_operasional"];
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -128,13 +128,22 @@ function buildPayload(body, table, userId, isUpdate = false) {
   if (table === "produk") {
     return {
       ...base,
-      nama:              body.nama,
-      items:             body.items || [],
-      biaya_operasional: body.biayaOperasional || 0,
-      target_untung:     body.targetUntung || 0,
-      biaya_bahan:       body.biayaBahan || 0,
-      total_biaya:       body.totalBiaya || 0,
-      harga_jual:        body.hargaJual || 0,
+      nama:                     body.nama,
+      items:                    body.items || [],
+      biaya_operasional:        body.biayaOperasional || 0,
+      biaya_operasional_items:  body.biayaOperasionalItems || [],
+      target_untung:            body.targetUntung || 0,
+      biaya_bahan:              body.biayaBahan || 0,
+      total_biaya:              body.totalBiaya || 0,
+      harga_jual:               body.hargaJual || 0,
+    };
+  }
+
+  if (table === "biaya_operasional") {
+    return {
+      ...base,
+      nama:  body.nama,
+      biaya: body.biaya || 0,
     };
   }
 
@@ -174,7 +183,11 @@ function normalize(row, table) {
   }
 
   if (table === "produk") {
-    return { ...base, nama: row.nama, items: row.items || [], biayaOperasional: row.biaya_operasional, targetUntung: row.target_untung, biayaBahan: row.biaya_bahan, totalBiaya: row.total_biaya, hargaJual: row.harga_jual };
+    return { ...base, nama: row.nama, items: row.items || [], biayaOperasional: row.biaya_operasional, biayaOperasionalItems: row.biaya_operasional_items || [], targetUntung: row.target_untung, biayaBahan: row.biaya_bahan, totalBiaya: row.total_biaya, hargaJual: row.harga_jual };
+  }
+
+  if (table === "biaya_operasional") {
+    return { ...base, nama: row.nama, biaya: row.biaya };
   }
 
   if (table === "aset_usaha") {

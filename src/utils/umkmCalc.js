@@ -125,6 +125,18 @@ export const totalBiayaBahan = (items, bahanMap) =>
     return b ? sum + biayaItem(b, it.jumlahPakai, it.satuanPakai) : sum;
   }, 0);
 
+// ── Biaya Operasional (master data) ───────────────────────────────────────────
+// Biaya pemakaian satu baris biaya operasional (item master + jumlah) → Rupiah
+export const biayaOpsItem = (ops, jumlah) =>
+  (parseFloat(ops?.biaya) || 0) * (parseFloat(jumlah) || 1);
+
+// Total biaya operasional dari daftar item terpilih di produk
+export const totalBiayaOperasional = (items, opsMap) =>
+  (items || []).reduce((sum, it) => {
+    const o = opsMap[it.opsId];
+    return o ? sum + biayaOpsItem(o, it.jumlah) : sum;
+  }, 0);
+
 // ── Stok ──────────────────────────────────────────────────────────────────────
 // Stok disimpan dalam BASE UNIT (gram/ml/pcs), bukan satuan beli.
 // Ini supaya pengurangan dari resep (jumlahPakai dalam satuan sembarang) tinggal toBase() langsung.

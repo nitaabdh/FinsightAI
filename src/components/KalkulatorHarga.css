@@ -499,3 +499,56 @@
   line-height: 1.6;
   margin: 0;
 }
+
+/* ── Tabs ─────────────────────────────────────────────────────────────────── */
+.kalkharga__tabs {
+  display: flex;
+  gap: 0.4rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.3rem;
+}
+
+.kalkharga__tab {
+  flex: 1;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.kalkharga__tab:hover { color: var(--text-primary); }
+
+.kalkharga__tab--active {
+  color: #fff;
+  background: linear-gradient(135deg, #d97706, #f59e0b);
+  box-shadow: 0 4px 12px var(--accent-umkm-glow);
+}
+
+/* ── Biaya Operasional master list ───────────────────────────────────────── */
+.kalkharga__ops-page { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.kalkharga__ops-list { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.kalkharga__ops-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.85rem;
+  font-size: 13px;
+}
+
+@media (max-width: 700px) {
+  .kalkharga__ops-row { grid-template-columns: 1.5fr 1fr auto; font-size: 12px; }
+}
