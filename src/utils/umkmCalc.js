@@ -173,6 +173,19 @@ export const applyStokDelta = (bahanList, items, jumlahUnit, arah) =>
     return { ...b, stok: (parseFloat(b.stok) || 0) + delta };
   });
 
+// ── Format Rupiah input dengan titik ribuan (untuk pengalaman ngetik form) ────
+// Contoh: ketik "5000" → tampil "5.000". Value yang disimpan ke state TETAP
+// angka murni tanpa titik — titiknya cuma buat tampilan supaya user nggak
+// gampang salah hitung nol.
+export const formatRibuan = (val) => {
+  const digits = String(val ?? "").replace(/\D/g, "");
+  if (!digits) return "";
+  return parseInt(digits, 10).toLocaleString("id-ID");
+};
+
+// Balikin dari string berisi titik ke digit murni (buat disimpan ke state)
+export const unformatRibuan = (val) => String(val ?? "").replace(/\D/g, "");
+
 // ── Format ────────────────────────────────────────────────────────────────────
 export const formatRupiah = (num) =>
   "Rp" + (parseFloat(num) || 0).toLocaleString("id-ID", { maximumFractionDigits: 0 });

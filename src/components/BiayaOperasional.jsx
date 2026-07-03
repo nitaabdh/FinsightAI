@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { genId, formatRupiah } from "../utils/umkmCalc";
+import RupiahInput from "./RupiahInput";
 import "./BiayaOperasional.css";
 
 const emptyForm = { nama: "", biaya: "" };
@@ -81,8 +82,8 @@ export default function BiayaOperasional() {
             <label className="biayaops__label">Biaya</label>
             <div className="biayaops__rp-wrap">
               <span className="biayaops__rp-prefix">Rp</span>
-              <input className="biayaops__input biayaops__input--rp" type="number" placeholder="0" min="0"
-                value={form.biaya} onChange={e => { setForm(p => ({ ...p, biaya: e.target.value })); setError(""); }} />
+              <RupiahInput className="biayaops__input biayaops__input--rp"
+                value={form.biaya} onChange={v => { setForm(p => ({ ...p, biaya: v })); setError(""); }} />
             </div>
           </div>
         </div>

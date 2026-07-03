@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import {
   genId, formatRupiah, biayaItem, totalBiayaBahan, validUsageUnits,
   biayaOpsItem, totalBiayaOperasional,
 } from "../utils/umkmCalc";
+import RupiahInput from "./RupiahInput";
 import "./KalkulatorHarga.css";
 
 const emptyForm = {
@@ -41,6 +42,7 @@ async function callGroq(apiKey, prompt) {
 
 export default function KalkulatorHarga() {
   const { user } = useAuth();
+  const formRef = useRef(null);
 
   const [bahanList,  setBahanList]  = useState([]);
   const [produkList, setProdukList] = useState([]);
@@ -134,6 +136,7 @@ export default function KalkulatorHarga() {
     setEditId(p.id); setError("");
     setSelBahan(""); setSelJumlah(""); setSelSatuan("");
     setSelOps(""); setSelOpsJumlah("1");
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const handlePilihBahan = (id) => {
@@ -259,7 +262,7 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
 
   return (
     <div className="kalkharga">
-      <div className="kalkharga__form">
+      <div className="kalkharga__form" ref={formRef}>
         <h3 className="kalkharga__form-title">{editId ? "✏️ Edit Produk" : "+ Hitung Harga Jual Produk"}</h3>
 
         <div className="kalkharga__field">
@@ -348,10 +351,9 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
             <div className="kalkharga__dual-input">
               <div className="kalkharga__dual-wrap">
                 <span className="kalkharga__dual-prefix">Rp</span>
-                <input className="kalkharga__input kalkharga__input--dual" type="number"
-                  placeholder="0" min="0"
+                <RupiahInput className="kalkharga__input kalkharga__input--dual"
                   value={form.targetUntung}
-                  onChange={e => handleTargetRp(e.target.value)} />
+                  onChange={v => handleTargetRp(v)} />
               </div>
               <div className="kalkharga__dual-wrap">
                 <input className="kalkharga__input kalkharga__input--dual kalkharga__input--pct" type="number"
