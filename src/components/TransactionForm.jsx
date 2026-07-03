@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { CATEGORIES } from "../utils/storage";
 import { formatRupiah } from "../utils/umkmCalc";
+import RupiahInput from "./RupiahInput";
 import "./TransactionForm.css";
 
 const KATEGORI_PRODUK = "Penjualan Produk";
@@ -20,7 +21,7 @@ function getCategoryEmoji(cat) {
 }
 
 async function apiFetch(url, options = {}) {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("finsight_token");
   const res = await fetch(url, {
     ...options,
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(options.headers || {}) },
@@ -58,7 +59,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
 
   useEffect(() => {
     if (user) {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("finsight_token");
       fetch(`/api/transactions?mode=${mode}`, {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       }).then(r => r.json()).then(r => {
@@ -120,6 +121,12 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
     setError("");
     if (name === "type" && value !== "pemasukan") { setSelProdukId(""); setSelItems(null); setJumlahUnit("1"); }
     if (["amount", "category", "description"].includes(name)) { setSelProdukId(""); setSelItems(null); }
+  };
+
+  const handleAmountChange = (val) => {
+    setForm(prev => ({ ...prev, amount: val }));
+    setError("");
+    setSelProdukId(""); setSelItems(null);
   };
 
   const handleCatSelect = (cat) => {
@@ -221,8 +228,8 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
 
           <div className="txform__field">
             <label className="txform__label">Nominal (Rp)</label>
-            <input className={"txform__input txform__input--" + accent} type="number" name="amount"
-              placeholder="Contoh: 150000" value={form.amount} onChange={handleChange} min="0" />
+            <RupiahInput className={"txform__input txform__input--" + accent}
+              placeholder="Contoh: 150.000" value={form.amount} onChange={handleAmountChange} />
           </div>
 
           <div className="txform__field">

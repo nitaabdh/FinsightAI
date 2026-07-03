@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { genId, formatRupiah } from "../utils/umkmCalc";
+import RupiahInput from "./RupiahInput";
 import "./AsetUsaha.css";
 
 const KATEGORI_PRESET = ["Masak", "Display", "Kasir", "Penyimpanan", "Kebersihan", "Furnitur"];
@@ -151,8 +152,9 @@ export default function AsetUsaha() {
           </div>
           <div className="asetusaha__field">
             <label className="asetusaha__label">Harga Beli (Rp)</label>
-            <input className="asetusaha__input" type="number" name="hargaBeli"
-              placeholder="Contoh: 1500000" value={form.hargaBeli} onChange={handleChange} min="0" />
+            <RupiahInput className="asetusaha__input"
+              placeholder="Contoh: 1.500.000" value={form.hargaBeli}
+              onChange={v => { setForm(p => ({ ...p, hargaBeli: v })); setError(""); }} />
           </div>
           <div className="asetusaha__field">
             <label className="asetusaha__label">Kondisi</label>

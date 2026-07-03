@@ -74,7 +74,15 @@ export default async function handler(req, res) {
         .maybeSingle();
 
       if (error) throw error;
-      return res.status(200).json({ success: true, data: data || null });
+      // Key Groq TIDAK PERNAH dibalikin ke browser, walau punya sendiri —
+      // cuma flag hasApiKey yang dikirim, biar frontend tau harus nampilin
+      // form "Masukkan API Key" atau langsung chat.
+      let responseData = data;
+      if (data) {
+        const { groq_api_key, ...rest } = data;
+        responseData = { ...rest, hasApiKey: !!groq_api_key };
+      }
+      return res.status(200).json({ success: true, data: responseData });
     }
 
     // ── PUT: update field profil ──
@@ -102,6 +110,36 @@ export default async function handler(req, res) {
 
       if (error) throw error;
       return res.status(200).json({ success: true, data });
+    }
+
+    // ── POST save-api-key ── (key Groq disimpan di server, nggak pernah dibalikin ke browser lagi)
+    if (req.method === "POST" && action === "save-api-key") {
+      const body = await getJsonBody(req);
+      const apiKey = (body.apiKey || "").trim();
+      if (!apiKey || !apiKey.startsWith("gsk_")) {
+        return res.status(400).json({ success: false, message: "Groq API key tidak valid." });
+      }
+
+      const { error } = await supabase
+        .from("profiles")
+        .upsert(
+          { user_id: userId, groq_api_key: apiKey, updated_at: new Date().toISOString() },
+          { onConflict: "user_id" }
+        );
+
+      if (error) throw error;
+      return res.status(200).json({ success: true, hasApiKey: true });
+    }
+
+    // ── POST clear-api-key ──
+    if (req.method === "POST" && action === "clear-api-key") {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ groq_api_key: null, updated_at: new Date().toISOString() })
+        .eq("user_id", userId);
+
+      if (error) throw error;
+      return res.status(200).json({ success: true, hasApiKey: false });
     }
 
     // ── POST upload-avatar ──

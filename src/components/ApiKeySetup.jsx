@@ -18,7 +18,10 @@ export default function ApiKeySetup({ onSave, accent }) {
       <h3 className="apikey__title">Masukkan Groq API Key</h3>
       <p className="apikey__desc">
         AI Agent membutuhkan Groq API Key untuk berjalan.<br />
-        Key kamu disimpan di browser, tidak dikirim ke server kami.
+        Key kamu disimpan aman di server (bukan cuma di browser), jadi otomatis
+        tersedia walau kamu login dari HP atau laptop lain. Key ini privat —
+        cuma bisa dipakai akunmu sendiri dan tidak pernah ditampilkan lagi
+        setelah disimpan.
       </p>
 
       <div className="apikey__steps">
