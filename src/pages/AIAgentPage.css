@@ -5,7 +5,8 @@
   flex-direction: column;
   gap: 1.25rem;
   height: 100vh;
-  overflow: hidden;
+  height: 100dvh;
+  overflow-y: auto;
 }
 
 .aipage__context-skeleton {
@@ -109,13 +110,14 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
 
 @media (max-width: 600px) {
-  .aipage { padding: 1rem; height: auto; }
-  .aipage__chat-wrap { min-height: 500px; }
+  .aipage { padding: 1rem; height: auto; overflow-y: visible; }
+  .aipage__chat-wrap { min-height: 500px; max-height: none; }
 }
