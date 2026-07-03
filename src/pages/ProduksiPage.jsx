@@ -38,12 +38,23 @@ export default function ProduksiPage() {
           ))}
         </div>
 
-        {/* Tab content */}
+        {/* Tab content — semua tab tetap ke-mount, cuma disembunyikan pakai CSS.
+            Ini sengaja BUKAN conditional render ({activeTab === X && <Comp/>}) supaya
+            state di dalam form tiap tab (ketikan yang belum disimpan) nggak hilang
+            waktu pindah-pindah tab. */}
         <div className="produksipage__content">
-          {activeTab === "bahan"       && <BahanBaku />}
-          {activeTab === "operasional" && <BiayaOperasional />}
-          {activeTab === "kalkulator"  && <KalkulatorHarga />}
-          {activeTab === "aset"        && <AsetUsaha />}
+          <div style={{ display: activeTab === "bahan" ? "block" : "none" }}>
+            <BahanBaku />
+          </div>
+          <div style={{ display: activeTab === "operasional" ? "block" : "none" }}>
+            <BiayaOperasional />
+          </div>
+          <div style={{ display: activeTab === "kalkulator" ? "block" : "none" }}>
+            <KalkulatorHarga />
+          </div>
+          <div style={{ display: activeTab === "aset" ? "block" : "none" }}>
+            <AsetUsaha />
+          </div>
         </div>
       </div>
     </DashboardLayout>
