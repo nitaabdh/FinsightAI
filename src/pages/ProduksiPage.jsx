@@ -2,14 +2,16 @@ import { useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import PageHeader from "../components/PageHeader";
 import BahanBaku from "../components/BahanBaku";
+import BiayaOperasional from "../components/BiayaOperasional";
 import KalkulatorHarga from "../components/KalkulatorHarga";
 import AsetUsaha from "../components/AsetUsaha";
 import "./ProduksiPage.css";
 
 const TABS = [
-  { id: "bahan",      icon: "🧺", label: "Bahan Baku" },
-  { id: "kalkulator", icon: "🧮", label: "Kalkulator Harga Jual" },
-  { id: "aset",       icon: "🧰", label: "Aset Usaha" },
+  { id: "bahan",       icon: "🧺", label: "Bahan Baku" },
+  { id: "operasional", icon: "💡", label: "Biaya Operasional" },
+  { id: "kalkulator",  icon: "🧮", label: "Kalkulator Harga Jual" },
+  { id: "aset",        icon: "🧰", label: "Aset Usaha" },
 ];
 
 export default function ProduksiPage() {
@@ -38,9 +40,10 @@ export default function ProduksiPage() {
 
         {/* Tab content */}
         <div className="produksipage__content">
-          {activeTab === "bahan"      && <BahanBaku />}
-          {activeTab === "kalkulator" && <KalkulatorHarga />}
-          {activeTab === "aset"       && <AsetUsaha />}
+          {activeTab === "bahan"       && <BahanBaku />}
+          {activeTab === "operasional" && <BiayaOperasional />}
+          {activeTab === "kalkulator"  && <KalkulatorHarga />}
+          {activeTab === "aset"        && <AsetUsaha />}
         </div>
       </div>
     </DashboardLayout>
