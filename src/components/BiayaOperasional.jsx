@@ -5,6 +5,15 @@ import "./BiayaOperasional.css";
 
 const emptyForm = { nama: "", biaya: "" };
 
+async function apiFetch(url, options = {}) {
+  const token = localStorage.getItem("finsight_token");
+  const res = await fetch(url, {
+    ...options,
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(options.headers || {}) },
+  });
+  return res.json();
+}
+
 export default function BiayaOperasional() {
   const { user } = useAuth();
   const [opsList, setOpsList] = useState([]);
