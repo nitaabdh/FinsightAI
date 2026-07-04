@@ -59,6 +59,9 @@ export default function KalkulatorHarga() {
   const [selOpsJumlah, setSelOpsJumlah] = useState("1");
   const [opsList,       setOpsList]       = useState([]);
 
+  const [showForm, setShowForm] = useState(false);
+  const [search,   setSearch]   = useState("");
+
   // AI Saran Harga
   const [aiOpen,    setAiOpen]    = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -101,6 +104,10 @@ export default function KalkulatorHarga() {
 
   const targetPct   = totalBiaya > 0 ? ((targetNum / totalBiaya) * 100).toFixed(1) : "";
 
+  const filteredProdukList = produkList.filter(p =>
+    p.nama.toLowerCase().includes(search.trim().toLowerCase())
+  );
+
   // ── Handler field Rp/% target untung ──────────────────────────────────────
   const handleTargetRp = (val) => {
     const rp  = +val || 0;
@@ -119,6 +126,7 @@ export default function KalkulatorHarga() {
     setForm(emptyForm); setEditId(null); setError("");
     setSelBahan(""); setSelJumlah(""); setSelSatuan("");
     setSelOps(""); setSelOpsJumlah("1");
+    setShowForm(false);
   };
 
   const openEdit = (p) => {
@@ -136,7 +144,8 @@ export default function KalkulatorHarga() {
     setEditId(p.id); setError("");
     setSelBahan(""); setSelJumlah(""); setSelSatuan("");
     setSelOps(""); setSelOpsJumlah("1");
-    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setShowForm(true);
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   };
 
   const handlePilihBahan = (id) => {
@@ -262,6 +271,11 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
 
   return (
     <div className="kalkharga">
+      {!showForm ? (
+        <button className="kalkharga__btn-primary" style={{ alignSelf: "flex-start" }} onClick={() => setShowForm(true)}>
+          + Hitung Harga Jual Produk
+        </button>
+      ) : (
       <div className="kalkharga__form" ref={formRef}>
         <h3 className="kalkharga__form-title">{editId ? "✏️ Edit Produk" : "+ Hitung Harga Jual Produk"}</h3>
 
@@ -380,25 +394,35 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
         {error && <p className="kalkharga__error">⚠️ {error}</p>}
 
         <div className="kalkharga__form-actions">
-          {editId && <button className="kalkharga__btn-sec" onClick={resetForm}>Batal</button>}
+          <button className="kalkharga__btn-sec" onClick={resetForm}>Batal</button>
           <button className="kalkharga__btn-primary" onClick={handleSubmit}>
             {editId ? "Simpan Perubahan" : "💾 Simpan Produk"}
           </button>
         </div>
       </div>
+      )}
 
       {/* Daftar Produk */}
       <div className="kalkharga__list">
-        <h3 className="kalkharga__list-title">Daftar Produk</h3>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+          <h3 className="kalkharga__list-title" style={{ margin: 0 }}>Daftar Produk</h3>
+          {produkList.length > 0 && (
+            <input className="kalkharga__input" type="text" placeholder="🔍 Cari produk..."
+              style={{ maxWidth: "240px" }}
+              value={search} onChange={e => setSearch(e.target.value)} />
+          )}
+        </div>
         {produkList.length === 0 ? (
           <div className="kalkharga__empty">
             <p>🛍️</p>
             <p>Belum ada produk dihitung.</p>
             <p>Gunakan form di atas untuk menghitung harga jual pertama kamu.</p>
           </div>
+        ) : filteredProdukList.length === 0 ? (
+          <div className="kalkharga__empty"><p>🔍</p><p>Tidak ada produk yang cocok dengan pencarian.</p></div>
         ) : (
           <div className="kalkharga__produk-grid">
-            {produkList.map(p => (
+            {filteredProdukList.map(p => (
               <div key={p.id} className="kalkharga__produk-card">
                 <div className="kalkharga__produk-header">
                   <span className="kalkharga__produk-nama">{p.nama}</span>

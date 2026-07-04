@@ -35,13 +35,15 @@ export default function AsetUsaha() {
   const [delId, setDelId]   = useState(null);
   const [filterKategori, setFilterKategori] = useState("semua");
   const [filterKondisi,  setFilterKondisi]  = useState("semua");
+  const [showForm, setShowForm] = useState(false);
+  const [search,   setSearch]   = useState("");
 
   useEffect(() => {
     if (!user) return;
     apiFetch(`/api/umkm?table=aset_usaha`).then(r => { if (r.success) setList(r.data); });
   }, [user]);
 
-  const resetForm = () => { setForm(emptyForm); setEditId(null); setError(""); };
+  const resetForm = () => { setForm(emptyForm); setEditId(null); setError(""); setShowForm(false); };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -96,6 +98,7 @@ export default function AsetUsaha() {
     });
     setEditId(it.id);
     setError("");
+    setShowForm(true);
   };
 
   const handleDel = async (id) => {
@@ -109,6 +112,7 @@ export default function AsetUsaha() {
   const filtered = list
     .filter(it => filterKategori === "semua" || it.kategori === filterKategori)
     .filter(it => filterKondisi  === "semua" || it.kondisi  === filterKondisi)
+    .filter(it => it.nama.toLowerCase().includes(search.trim().toLowerCase()))
     .sort((a, b) => new Date(b.tanggalBeli) - new Date(a.tanggalBeli));
   const totalNilaiAset = list.reduce((s, it) => s + it.hargaBeli, 0);
   const kondisiLabel = (val) => KONDISI_OPTIONS.find(k => k.value === val)?.label || val;
@@ -122,6 +126,11 @@ export default function AsetUsaha() {
         </div>
       )}
 
+      {!showForm ? (
+        <button className="asetusaha__btn-primary" style={{ alignSelf: "flex-start" }} onClick={() => setShowForm(true)}>
+          + Tambah Aset Usaha
+        </button>
+      ) : (
       <div className="asetusaha__form">
         <h3 className="asetusaha__form-title">{editId ? "✏️ Edit Aset" : "+ Tambah Aset Usaha"}</h3>
         <div className="asetusaha__grid">
@@ -170,15 +179,19 @@ export default function AsetUsaha() {
         </div>
         {error && <p className="asetusaha__error">⚠️ {error}</p>}
         <div className="asetusaha__form-actions">
-          {editId && <button className="asetusaha__btn-sec" onClick={resetForm}>Batal</button>}
+          <button className="asetusaha__btn-sec" onClick={resetForm}>Batal</button>
           <button className="asetusaha__btn-primary" onClick={handleSubmit}>
             {editId ? "Simpan Perubahan" : "+ Tambah Aset"}
           </button>
         </div>
       </div>
+      )}
 
       {list.length > 0 && (
         <div className="asetusaha__filters">
+          <input className="asetusaha__select" type="text" placeholder="🔍 Cari nama aset..."
+            style={{ flex: 1, minWidth: "160px" }}
+            value={search} onChange={e => setSearch(e.target.value)} />
           <select className="asetusaha__select" value={filterKategori} onChange={e => setFilterKategori(e.target.value)}>
             <option value="semua">Semua Kategori</option>
             {semuaKategori.map(k => <option key={k} value={k}>{k}</option>)}

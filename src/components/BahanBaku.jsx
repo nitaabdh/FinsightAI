@@ -36,6 +36,8 @@ export default function BahanBaku() {
   const [restokHarga, setRestokHarga] = useState("");
   const [restokErr, setRestokErr] = useState("");
   const [showYield, setShowYield] = useState(false);
+  const [showForm,  setShowForm]  = useState(false);
+  const [search,    setSearch]    = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -46,7 +48,7 @@ export default function BahanBaku() {
 
   const isPack = form.satuanBeli === "pack";
 
-  const resetForm = () => { setForm(emptyForm); setEditId(null); setError(""); setShowYield(false); };
+  const resetForm = () => { setForm(emptyForm); setEditId(null); setError(""); setShowYield(false); setShowForm(false); };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -144,6 +146,7 @@ export default function BahanBaku() {
     setShowYield(!!b.hasilPerUnit);
     setEditId(b.id);
     setError("");
+    setShowForm(true);
   };
 
   const handleDel = async (id) => {
@@ -211,11 +214,20 @@ export default function BahanBaku() {
 
   const preview = previewHarga();
 
+  const filteredList = list.filter(b =>
+    b.nama.toLowerCase().includes(search.trim().toLowerCase())
+  );
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="bahanbaku">
 
       {/* Form tambah/edit */}
+      {!showForm ? (
+        <button className="bahanbaku__btn-primary" style={{ alignSelf: "flex-start" }} onClick={() => setShowForm(true)}>
+          + Tambah Bahan Baku
+        </button>
+      ) : (
       <div className="bahanbaku__form">
         <h3 className="bahanbaku__form-title">{editId ? "✏️ Koreksi Data Bahan" : "+ Tambah Bahan Baku"}</h3>
 
@@ -299,12 +311,13 @@ export default function BahanBaku() {
         {error && <p className="bahanbaku__error">⚠️ {error}</p>}
 
         <div className="bahanbaku__form-actions">
-          {editId && <button className="bahanbaku__btn-sec" onClick={resetForm}>Batal</button>}
+          <button className="bahanbaku__btn-sec" onClick={resetForm}>Batal</button>
           <button className="bahanbaku__btn-primary" onClick={handleSubmit}>
             {editId ? "Simpan Perubahan" : "+ Tambah Bahan"}
           </button>
         </div>
       </div>
+      )}
 
       {/* Total nilai stok */}
       {list.length > 0 && (
@@ -316,14 +329,21 @@ export default function BahanBaku() {
 
       {/* List bahan */}
       <div className="bahanbaku__list">
+        {list.length > 0 && (
+          <input className="bahanbaku__input" type="text" placeholder="🔍 Cari bahan baku..."
+            style={{ marginBottom: "0.85rem" }}
+            value={search} onChange={e => setSearch(e.target.value)} />
+        )}
         {list.length === 0 ? (
           <div className="bahanbaku__empty">
             <p>🧺</p>
             <p>Belum ada bahan baku tercatat.</p>
             <p>Tambahkan dari form di atas untuk mulai mengelola stok.</p>
           </div>
+        ) : filteredList.length === 0 ? (
+          <div className="bahanbaku__empty"><p>🔍</p><p>Tidak ada bahan yang cocok dengan pencarian.</p></div>
         ) : (
-          list.map(b => {
+          filteredList.map(b => {
             const stokBase  = parseFloat(b.stok) || 0;
             const stokMinus = stokBase < 0;
             return (
