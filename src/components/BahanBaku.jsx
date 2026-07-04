@@ -6,6 +6,7 @@ import {
   hargaPerBase, nilaiStok, stokDisplay, hargaUnitLabel,
   toBase, unitGroupOf,
 } from "../utils/umkmCalc";
+import RupiahInput from "./RupiahInput";
 import "./BahanBaku.css";
 
 const emptyForm = { nama: "", jumlahBeli: "", satuanBeli: "kg", isiPerPack: "", hargaBeli: "", hasilPerUnit: "", hasilLabel: "" };
@@ -243,8 +244,9 @@ export default function BahanBaku() {
           </div>
           <div className="bahanbaku__field">
             <label className="bahanbaku__label">Harga Totalnya (Rp)</label>
-            <input className="bahanbaku__input" type="number" name="hargaBeli"
-              placeholder="Contoh: 60000" value={form.hargaBeli} onChange={handleChange} min="0" />
+            <RupiahInput className="bahanbaku__input"
+              placeholder="Contoh: 60.000" value={form.hargaBeli}
+              onChange={v => { setForm(p => ({ ...p, hargaBeli: v })); setError(""); }} />
           </div>
         </div>
 
@@ -373,12 +375,11 @@ export default function BahanBaku() {
               </div>
               <div className="bahanbaku__field" style={{ marginBottom: "1rem" }}>
                 <label className="bahanbaku__label">Harga totalnya berapa (Rp)?</label>
-                <input
-                  className="bahanbaku__input" type="number"
-                  placeholder="Contoh: 22000"
+                <RupiahInput
+                  className="bahanbaku__input"
+                  placeholder="Contoh: 22.000"
                   value={restokHarga}
-                  onChange={e => { setRestokHarga(e.target.value); setRestokErr(""); }}
-                  min="0"
+                  onChange={v => { setRestokHarga(v); setRestokErr(""); }}
                 />
               </div>
               <p className="bahanbaku__hpp-hint">

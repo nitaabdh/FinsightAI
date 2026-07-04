@@ -152,7 +152,9 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
     if (!produk) return;
     const qty = parseInt(jumlahUnit, 10) || 1;
     setSelItems(produk.items);
-    setForm(prev => ({ ...prev, amount: String(produk.hargaJual * qty), category: KATEGORI_PRODUK, description: produk.nama }));
+    // Math.round jaga-jaga kalau hargaJual tersimpan desimal (dari hasil bagi/kali
+    // di Kalkulator Harga) — desimal bikin titik ribuan salah kalkulasi kalau lolos mentah.
+    setForm(prev => ({ ...prev, amount: String(Math.round(produk.hargaJual * qty)), category: KATEGORI_PRODUK, description: produk.nama }));
     setCatQuery(KATEGORI_PRODUK);
     setError("");
   };
@@ -163,7 +165,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
     const produk = produkList.find(p => p.id === selProdukId);
     if (!produk) return;
     const qty = parseInt(val, 10) || 0;
-    setForm(prev => ({ ...prev, amount: String(produk.hargaJual * qty) }));
+    setForm(prev => ({ ...prev, amount: String(Math.round(produk.hargaJual * qty)) }));
   };
 
   const handleSubmit = () => {

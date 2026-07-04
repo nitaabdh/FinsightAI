@@ -178,9 +178,14 @@ export const applyStokDelta = (bahanList, items, jumlahUnit, arah) =>
 // angka murni tanpa titik — titiknya cuma buat tampilan supaya user nggak
 // gampang salah hitung nol.
 export const formatRibuan = (val) => {
-  const digits = String(val ?? "").replace(/\D/g, "");
-  if (!digits) return "";
-  return parseInt(digits, 10).toLocaleString("id-ID");
+  if (val === "" || val === null || val === undefined) return "";
+  // Value yang masuk ke sini SELALU angka polos (dari ketikan yang udah di-
+  // unformat, atau dari hasil kalkulasi lain) — titik yang muncul di sini
+  // (kalau ada) berarti titik DESIMAL asli, bukan pemisah ribuan. Makanya
+  // langsung parseFloat, baru dibulatkan, baru diformat ulang.
+  const num = typeof val === "number" ? val : parseFloat(val);
+  if (isNaN(num)) return "";
+  return Math.round(num).toLocaleString("id-ID");
 };
 
 // Balikin dari string berisi titik ke digit murni (buat disimpan ke state)

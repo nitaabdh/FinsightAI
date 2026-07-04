@@ -174,12 +174,12 @@ export default function KalkulatorHarga() {
     const payload = {
       nama: form.nama.trim(),
       items: form.items,
-      biayaOperasional: biayaOpsNum,
+      biayaOperasional: Math.round(biayaOpsNum),
       biayaOperasionalItems: form.biayaOperasionalItems,
-      targetUntung: targetNum,
-      biayaBahan,
-      totalBiaya,
-      hargaJual,
+      targetUntung: Math.round(targetNum),
+      biayaBahan: Math.round(biayaBahan),
+      totalBiaya: Math.round(totalBiaya),
+      hargaJual: Math.round(hargaJual),
     };
 
     if (editId) {
