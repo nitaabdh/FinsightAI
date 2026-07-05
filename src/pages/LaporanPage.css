@@ -433,3 +433,11 @@
   .laporanpage__tabs { width: 100%; }
   .laporanpage__tab { flex: 1; text-align: center; font-size: 12px; padding: 0.5rem 0.4rem; }
 }
+
+/* ── Tambahan: Saldo per Kas di LaporanPage (bisa lebih dari 2 kartu, auto-wrap) ── */
+
+.laporanpage__submetrics--wrap {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.85rem;
+}

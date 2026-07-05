@@ -142,8 +142,16 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
   const isExistingCat = categories.some(c => c.toLowerCase() === catQuery.toLowerCase().trim());
   const isCustomInput = catQuery.trim() !== "" && !isExistingCat;
 
-  // Kas: preset + histori pemakaian sebelumnya, tanpa duplikat
-  const kasOptions = [...new Set([...KAS_PRESET, ...usedKas])];
+  // Kas: preset + histori pemakaian sebelumnya, dedup case-insensitive
+  // ("BCA" & "bca" dianggap sama, yang dipakai casing yang pertama kali muncul)
+  const kasOptions = (() => {
+    const map = {};
+    [...KAS_PRESET, ...usedKas].forEach(k => {
+      const key = k.toLowerCase().trim();
+      if (!(key in map)) map[key] = k;
+    });
+    return Object.values(map);
+  })();
   const kasSuggestions = kasQuery.trim() === ""
     ? kasOptions
     : kasOptions.filter(k => k.toLowerCase().includes(kasQuery.toLowerCase()));
@@ -226,10 +234,18 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
     if (showKas && !form.kas?.trim()) { setError("Pilih atau isi kas/wadah uangnya terlebih dahulu."); return; }
     if (selProdukId && (!jumlahUnit || isNaN(jumlahUnit) || Number(jumlahUnit) <= 0)) { setError("Masukkan jumlah unit yang valid."); return; }
 
+    // Kalau kas yang diketik cocok (case-insensitive) sama yang udah ada, pakai casing yang lama
+    // biar nggak nyipta variasi baru (misal ketik "bca" padahal udah ada "BCA").
+    let kasFinal = form.kas?.trim();
+    if (showKas && kasFinal) {
+      const match = kasOptions.find(k => k.toLowerCase() === kasFinal.toLowerCase());
+      if (match) kasFinal = match;
+    }
+
     const data = {
       ...form,
       amount: Number(form.amount),
-      ...(showKas ? { kas: form.kas.trim() } : {}),
+      ...(showKas ? { kas: kasFinal } : {}),
       ...(selProdukId
         ? { produkId: selProdukId, items: selItems || [], jumlahUnit: Number(jumlahUnit) || 1 }
         : { produkId: null, items: [], jumlahUnit: null }),

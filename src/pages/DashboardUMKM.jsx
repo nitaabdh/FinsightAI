@@ -37,6 +37,7 @@ export default function DashboardUMKM() {
   const [loading,       setLoading]       = useState(true);
   const [menuOpen,      setMenuOpen]      = useState(false);
   const [profile,       setProfile]       = useState(null);
+  const [showAllKas,    setShowAllKas]    = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -120,18 +121,24 @@ export default function DashboardUMKM() {
 
   // ── Saldo per Kas/Wadah Uang ───────────────────────────────────────────────
   // Pakai SEMUA transaksi (termasuk setoran modal) — kas fisik memang kena efeknya juga.
+  // Grouping case-insensitive ("BCA" & "bca" dianggap kas yang sama, pakai nama pertama yang muncul).
   const KAS_EMOJI = { "kas tunai": "💵", "rekening bank": "🏦", "e-wallet": "📱" };
   const getKasEmoji = (k) => KAS_EMOJI[(k || "").toLowerCase().trim()] || "💳";
 
-  const saldoPerKas = (() => {
+  const kasStats = (() => {
     const map = {};
     transactions.forEach(tx => {
       const nama = tx.kas || "Kas Tunai";
-      if (!(nama in map)) map[nama] = 0;
-      map[nama] += tx.type === "pemasukan" ? Number(tx.amount || 0) : -Number(tx.amount || 0);
+      const key  = nama.toLowerCase().trim();
+      if (!(key in map)) map[key] = { nama, saldo: 0, count: 0 };
+      map[key].saldo += tx.type === "pemasukan" ? Number(tx.amount || 0) : -Number(tx.amount || 0);
+      map[key].count += 1;
     });
-    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+    // Urutan: paling sering dipakai dulu, kalau seri baru dilihat dari saldo terbesar (absolut)
+    return Object.values(map).sort((a, b) => b.count - a.count || Math.abs(b.saldo) - Math.abs(a.saldo));
   })();
+
+  const kasVisible = showAllKas ? kasStats : kasStats.slice(0, 4);
 
   // ── Tren 6 bulan ─────────────────────────────────────────────────────────────
   const tren6Bulan = [];
@@ -238,18 +245,23 @@ export default function DashboardUMKM() {
         </div>
 
         {/* ── SALDO PER KAS / WADAH UANG ── */}
-        {saldoPerKas.length > 0 && (
+        {kasStats.length > 0 && (
           <div className="du__kas">
             <div className="du__section-header">
               <span className="du__section-title">💰 Saldo per Kas</span>
+              {kasStats.length > 4 && (
+                <button className="du__see-all" onClick={() => setShowAllKas(v => !v)}>
+                  {showAllKas ? "Sembunyikan ↑" : `Lihat semua (${kasStats.length}) →`}
+                </button>
+              )}
             </div>
             <div className="du__kas-grid">
-              {saldoPerKas.map(([nama, saldo]) => (
-                <div key={nama} className={"du__kas-card" + (saldo < 0 ? " du__kas-card--minus" : "")}>
-                  <span className="du__kas-icon">{getKasEmoji(nama)}</span>
+              {kasVisible.map(k => (
+                <div key={k.nama} className={"du__kas-card" + (k.saldo < 0 ? " du__kas-card--minus" : "")}>
+                  <span className="du__kas-icon">{getKasEmoji(k.nama)}</span>
                   <div className="du__kas-info">
-                    <p className="du__kas-nama">{nama}</p>
-                    <p className={"du__kas-saldo" + (saldo < 0 ? " du__kas-saldo--minus" : "")}>{formatRupiah(saldo)}</p>
+                    <p className="du__kas-nama">{k.nama}</p>
+                    <p className={"du__kas-saldo" + (k.saldo < 0 ? " du__kas-saldo--minus" : "")}>{formatRupiah(k.saldo)}</p>
                   </div>
                 </div>
               ))}

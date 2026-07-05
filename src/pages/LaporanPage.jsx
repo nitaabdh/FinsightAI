@@ -47,6 +47,23 @@ export default function LaporanPage() {
   const totalModal    = modalFiltered.reduce((s, t) => s + Number(t.amount || 0), 0);
   const totalNilaiAset = asetUsaha.reduce((s, it) => s + Number(it.hargaBeli || 0), 0);
 
+  // ── Saldo per Kas — posisi kas SAAT INI, sengaja TIDAK ikut filter periode ───
+  // (sama prinsipnya kayak Total Aset Usaha: ini snapshot hari ini, bukan pergerakan per bulan)
+  const KAS_EMOJI = { "kas tunai": "💵", "rekening bank": "🏦", "e-wallet": "📱" };
+  const getKasEmoji = (k) => KAS_EMOJI[(k || "").toLowerCase().trim()] || "💳";
+
+  const kasStats = (() => {
+    const map = {};
+    transactions.forEach(tx => {
+      const nama = tx.kas || "Kas Tunai";
+      const key  = nama.toLowerCase().trim();
+      if (!(key in map)) map[key] = { nama, saldo: 0, count: 0 };
+      map[key].saldo += tx.type === "pemasukan" ? Number(tx.amount || 0) : -Number(tx.amount || 0);
+      map[key].count += 1;
+    });
+    return Object.values(map).sort((a, b) => b.count - a.count || Math.abs(b.saldo) - Math.abs(a.saldo));
+  })();
+
   const summary    = calcSummary(filtered);
   const byMonth    = groupByMonth(usahaTx);
   const byCategory = groupByCategory(filtered);
@@ -130,6 +147,22 @@ export default function LaporanPage() {
       margin: { left: 14, right: 14 },
     });
     y = doc.lastAutoTable.finalY + 10;
+
+    // ── Saldo per Kas (posisi saat ini, bukan pergerakan periode) ──
+    if (kasStats.length > 0) {
+      if (y > 240) { doc.addPage(); y = 18; }
+      autoTable(doc, {
+        startY: y,
+        head: [["Kas / Wadah Uang", "Saldo Saat Ini"]],
+        body: kasStats.map(k => [k.nama, formatRupiah(k.saldo)]),
+        theme: "grid",
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: AMBER, textColor: 255, fontStyle: "bold" },
+        columnStyles: { 1: { halign: "right" } },
+        margin: { left: 14, right: 14 },
+      });
+      y = doc.lastAutoTable.finalY + 10;
+    }
 
     // ── Pengeluaran per Kategori ──
     if (byCategory.length > 0) {
@@ -294,6 +327,24 @@ export default function LaporanPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Saldo per Kas — posisi saat ini, tidak ikut filter periode di atas */}
+                {kasStats.length > 0 && (
+                  <div className="laporanpage__section">
+                    <h3 className="laporanpage__section-title">Saldo per Kas</h3>
+                    <p className="laporanpage__pl-hint" style={{ marginBottom: "0.75rem" }}>
+                      Posisi kas saat ini — angka ini tidak berubah walau kamu ganti filter periode di atas.
+                    </p>
+                    <div className="laporanpage__submetrics laporanpage__submetrics--wrap">
+                      {kasStats.map(k => (
+                        <div key={k.nama} className={"laporanpage__sum-card " + (k.saldo < 0 ? "laporanpage__sum-card--loss" : "laporanpage__sum-card--neutral")}>
+                          <span className="laporanpage__sum-label">{getKasEmoji(k.nama)} {k.nama}</span>
+                          <span className="laporanpage__sum-value">{formatRupiah(k.saldo)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Tren + Kategori */}
                 <div className="laporanpage__row">
