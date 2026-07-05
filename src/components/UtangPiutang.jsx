@@ -4,6 +4,7 @@ import {
   genId,
   formatRupiah, labelJatuhTempo,
 } from "../utils/umkmCalc";
+import RupiahInput from "./RupiahInput";
 import "./UtangPiutang.css";
 
 const emptyForm = { jenis: "piutang", nama: "", nominal: "", jatuhTempo: "", catatan: "" };
@@ -138,9 +139,10 @@ const toggleLunas = async (id) => {
           </div>
           <div className="utangpiutang__field">
             <label className="utangpiutang__label">Nominal (Rp)</label>
-            <input
-              className="utangpiutang__input" type="number" name="nominal"
-              placeholder="Contoh: 500000" value={form.nominal} onChange={handleChange} min="0"
+            <RupiahInput
+              className="utangpiutang__input"
+              placeholder="Contoh: 500.000" value={form.nominal}
+              onChange={v => { setForm(p => ({ ...p, nominal: v })); setError(""); }}
             />
           </div>
           <div className="utangpiutang__field">

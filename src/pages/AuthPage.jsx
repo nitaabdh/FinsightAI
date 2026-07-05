@@ -133,7 +133,7 @@ export default function AuthPage() {
               </>
             ) : (
               <>
-                <p className="auth__forgot-hint">Email ditemukan! Buat password baru untuk <strong>{forgotEmail}</strong>.</p>
+                <p className="auth__forgot-hint">Buat password baru untuk <strong>{forgotEmail}</strong>. Kalau email ini nggak terdaftar, kamu akan diberi tahu setelah submit.</p>
                 <div className="auth__field">
                   <label className="auth__label">Password Baru</label>
                   <div className="auth__input-wrap">

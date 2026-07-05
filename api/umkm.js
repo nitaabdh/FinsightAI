@@ -13,7 +13,7 @@ function verifyToken(req) {
   catch { return null; }
 }
 
-const VALID_TABLES = ["bahan_baku", "produk", "aset_usaha", "utang_piutang", "biaya_operasional"];
+const VALID_TABLES = ["bahan_baku", "produk", "aset_usaha", "utang_piutang", "biaya_operasional", "supplier"];
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -147,6 +147,17 @@ function buildPayload(body, table, userId, isUpdate = false) {
     };
   }
 
+  if (table === "supplier") {
+    return {
+      ...base,
+      nama:            body.nama,
+      kontak_wa:       body.kontakWa || "",
+      link_marketplace: body.linkMarketplace || "",
+      kategori:        body.kategori || "",
+      catatan:         body.catatan || "",
+    };
+  }
+
   if (table === "aset_usaha") {
     return {
       ...base,
@@ -188,6 +199,10 @@ function normalize(row, table) {
 
   if (table === "biaya_operasional") {
     return { ...base, nama: row.nama, biaya: row.biaya };
+  }
+
+  if (table === "supplier") {
+    return { ...base, nama: row.nama, kontakWa: row.kontak_wa, linkMarketplace: row.link_marketplace, kategori: row.kategori, catatan: row.catatan };
   }
 
   if (table === "aset_usaha") {

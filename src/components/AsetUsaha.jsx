@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { genId, formatRupiah } from "../utils/umkmCalc";
 import RupiahInput from "./RupiahInput";
@@ -28,6 +28,7 @@ async function apiFetch(url, options = {}) {
 
 export default function AsetUsaha() {
   const { user } = useAuth();
+  const formRef = useRef(null);
   const [list, setList]     = useState([]);
   const [form, setForm]     = useState(emptyForm);
   const [editId, setEditId] = useState(null);
@@ -99,6 +100,7 @@ export default function AsetUsaha() {
     setEditId(it.id);
     setError("");
     setShowForm(true);
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   };
 
   const handleDel = async (id) => {
@@ -131,7 +133,7 @@ export default function AsetUsaha() {
           + Tambah Aset Usaha
         </button>
       ) : (
-      <div className="asetusaha__form">
+      <div className="asetusaha__form" ref={formRef}>
         <h3 className="asetusaha__form-title">{editId ? "✏️ Edit Aset" : "+ Tambah Aset Usaha"}</h3>
         <div className="asetusaha__grid">
           <div className="asetusaha__field asetusaha__field--wide">

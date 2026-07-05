@@ -5,6 +5,7 @@ import BahanBaku from "../components/BahanBaku";
 import BiayaOperasional from "../components/BiayaOperasional";
 import KalkulatorHarga from "../components/KalkulatorHarga";
 import AsetUsaha from "../components/AsetUsaha";
+import Supplier from "../components/Supplier";
 import "./ProduksiPage.css";
 
 const TABS = [
@@ -12,6 +13,7 @@ const TABS = [
   { id: "operasional", icon: "💡", label: "Biaya Operasional" },
   { id: "kalkulator",  icon: "🧮", label: "Kalkulator Harga Jual" },
   { id: "aset",        icon: "🧰", label: "Aset Usaha" },
+  { id: "supplier",    icon: "📇", label: "Supplier" },
 ];
 
 export default function ProduksiPage() {
@@ -54,6 +56,9 @@ export default function ProduksiPage() {
           </div>
           <div style={{ display: activeTab === "aset" ? "block" : "none" }}>
             <AsetUsaha />
+          </div>
+          <div style={{ display: activeTab === "supplier" ? "block" : "none" }}>
+            <Supplier />
           </div>
         </div>
       </div>

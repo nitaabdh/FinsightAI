@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import {
   genId,
@@ -26,6 +26,7 @@ async function apiFetch(url, options = {}) {
 
 export default function BahanBaku() {
   const { user } = useAuth();
+  const formRef = useRef(null);
   const [list,      setList]      = useState([]);
   const [form,      setForm]      = useState(emptyForm);
   const [editId,    setEditId]    = useState(null); // koreksi data, bukan restock
@@ -35,6 +36,9 @@ export default function BahanBaku() {
   const [restokJml, setRestokJml] = useState("");
   const [restokHarga, setRestokHarga] = useState("");
   const [restokErr, setRestokErr] = useState("");
+  const [kurangiId,    setKurangiId]    = useState(null);
+  const [kurangiJml,   setKurangiJml]   = useState("");
+  const [kurangiErr,   setKurangiErr]   = useState("");
   const [showYield, setShowYield] = useState(false);
   const [showForm,  setShowForm]  = useState(false);
   const [search,    setSearch]    = useState("");
@@ -147,6 +151,7 @@ export default function BahanBaku() {
     setEditId(b.id);
     setError("");
     setShowForm(true);
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   };
 
   const handleDel = async (id) => {
@@ -207,6 +212,39 @@ export default function BahanBaku() {
     setRestokId(null);
   };
 
+  // ── Kurangi stok manual (rusak, hilang, kadaluarsa, sample, koreksi, dll) ──
+  // Beda dari transaksi: ini nggak lewat resep produk, dan harga per satuan
+  // TIDAK berubah — cuma stok fisiknya yang dikurangi.
+  const openKurangi = (b) => {
+    setKurangiId(b.id);
+    setKurangiJml("");
+    setKurangiErr("");
+  };
+
+  const confirmKurangi = async () => {
+    if (!kurangiJml || +kurangiJml <= 0) return setKurangiErr("Isi jumlah yang valid.");
+    const bahan = list.find(b => b.id === kurangiId);
+    if (!bahan) return;
+
+    const isPackBahan = !!bahan.satuanUnit;
+    const stokKurang = isPackBahan
+      ? toBase(+kurangiJml, bahan.satuanBeli, bahan.isiPerPack)
+      : toBase(+kurangiJml, bahan.satuanBeli);
+
+    const stokLama = parseFloat(bahan.stok) || 0;
+    const stokBaru = stokLama - stokKurang;
+
+    const r = await apiFetch(`/api/umkm?table=bahan_baku`, {
+      method: "PUT",
+      body: JSON.stringify({ id: kurangiId, ...bahan, stok: stokBaru }),
+    });
+    if (r.success) {
+      setList(p => p.map(b => b.id === kurangiId ? r.data : b));
+      window.dispatchEvent(new CustomEvent("bahanBakuUpdated"));
+    }
+    setKurangiId(null);
+  };
+
   // ── Helper ─────────────────────────────────────────────────────────────────
   const totalNilaiStok = list.reduce((s, b) => s + nilaiStok(b), 0);
 
@@ -228,7 +266,7 @@ export default function BahanBaku() {
           + Tambah Bahan Baku
         </button>
       ) : (
-      <div className="bahanbaku__form">
+      <div className="bahanbaku__form" ref={formRef}>
         <h3 className="bahanbaku__form-title">{editId ? "✏️ Koreksi Data Bahan" : "+ Tambah Bahan Baku"}</h3>
 
         <div className="bahanbaku__grid">
@@ -362,6 +400,7 @@ export default function BahanBaku() {
                 </div>
                 <div className="bahanbaku__item-actions">
                   <button className="bahanbaku__item-restok" onClick={() => openRestok(b)} title="Beli Lagi / Tambah Stok">+ Stok</button>
+                  <button className="bahanbaku__item-restok" onClick={() => openKurangi(b)} title="Kurangi Stok (rusak/hilang/sample)">− Stok</button>
                   <button className="bahanbaku__item-edit" onClick={() => openEdit(b)} title="Koreksi Data">✏️</button>
                   <button className="bahanbaku__item-del" onClick={() => setDelId(b.id)} title="Hapus">🗑</button>
                 </div>
@@ -409,6 +448,51 @@ export default function BahanBaku() {
               <div className="bahanbaku__modal-actions">
                 <button className="bahanbaku__btn-sec" onClick={() => setRestokId(null)}>Batal</button>
                 <button className="bahanbaku__btn-primary" onClick={confirmRestok}>Tambah Stok</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Modal Kurangi Stok Manual */}
+      {kurangiId && (() => {
+        const bahan = list.find(b => b.id === kurangiId);
+        if (!bahan) return null;
+        const satuanLabel = bahan.satuanUnit || bahan.satuanBeli;
+        const stokBaruPreview = kurangiJml && +kurangiJml > 0
+          ? (parseFloat(bahan.stok) || 0) - toBase(+kurangiJml, bahan.satuanBeli, bahan.isiPerPack)
+          : null;
+        return (
+          <div className="bahanbaku__modal-overlay" onClick={() => setKurangiId(null)}>
+            <div className="bahanbaku__modal" onClick={e => e.stopPropagation()}>
+              <h4 className="bahanbaku__modal-title">− Kurangi Stok</h4>
+              <p className="bahanbaku__modal-sub">
+                <strong>{bahan.nama}</strong> — stok sekarang: {stokDisplay(bahan)}
+              </p>
+              <p className="bahanbaku__hpp-hint" style={{ marginBottom: "0.75rem" }}>
+                Buat kondisi di luar penjualan lewat transaksi — misal bahan rusak, hilang, kadaluarsa, dipakai sample, atau koreksi hitung fisik. Harga per satuan tidak berubah, cuma stoknya.
+              </p>
+              <div className="bahanbaku__field" style={{ marginBottom: "0.75rem" }}>
+                <label className="bahanbaku__label">Kurangi berapa {satuanLabel}?</label>
+                <input
+                  className="bahanbaku__input" type="number"
+                  placeholder={`Contoh: 2 ${satuanLabel}`}
+                  value={kurangiJml}
+                  onChange={e => { setKurangiJml(e.target.value); setKurangiErr(""); }}
+                  min="0" autoFocus
+                />
+              </div>
+              {stokBaruPreview !== null && (
+                <p className={"bahanbaku__hpp-hint" + (stokBaruPreview < 0 ? " bahanbaku__error" : "")} style={{ marginBottom: "0.75rem" }}>
+                  {stokBaruPreview < 0
+                    ? `⚠ Stok akan jadi minus (${parseFloat(stokBaruPreview.toFixed(2))} ${unitLabel(bahan)}). Cek lagi jumlahnya.`
+                    : `Stok setelah dikurangi: ${parseFloat(stokBaruPreview.toFixed(2))} ${unitLabel(bahan)}`}
+                </p>
+              )}
+              {kurangiErr && <p className="bahanbaku__error">{kurangiErr}</p>}
+              <div className="bahanbaku__modal-actions">
+                <button className="bahanbaku__btn-sec" onClick={() => setKurangiId(null)}>Batal</button>
+                <button className="bahanbaku__btn-danger" onClick={confirmKurangi}>Kurangi Stok</button>
               </div>
             </div>
           </div>

@@ -8,6 +8,7 @@ import UtangPiutang from "../components/UtangPiutang";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import "./LaporanPage.css";
+import "./DashboardSkeleton.css";
 
 export default function LaporanPage() {
   const { user } = useAuth();

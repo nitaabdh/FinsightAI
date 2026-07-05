@@ -13,8 +13,6 @@ const emptyForm = {
   targetUntung: "", targetUntungPct: "",
 };
 
-const GROQ_KEY = "finsight_groq_key";
-
 async function apiFetch(url, options = {}) {
   const token = localStorage.getItem("finsight_token");
   const res = await fetch(url, {
@@ -22,22 +20,6 @@ async function apiFetch(url, options = {}) {
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(options.headers || {}) },
   });
   return res.json();
-}
-
-async function callGroq(apiKey, prompt) {
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      messages: [{ role: "user", content: prompt }],
-      max_tokens: 600,
-      temperature: 0.7,
-    }),
-  });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
-  return data.choices?.[0]?.message?.content || "";
 }
 
 export default function KalkulatorHarga() {
@@ -223,15 +205,6 @@ export default function KalkulatorHarga() {
 
   // ── AI Saran Harga ─────────────────────────────────────────────────────────
   const handleAiAnalisis = async (produk) => {
-    const apiKey = localStorage.getItem(GROQ_KEY);
-    if (!apiKey) {
-      setAiError("API Key Groq belum diset. Isi dulu di halaman AI Agent.");
-      setAiOpen(true);
-      setAiResult("");
-      setAiProduk(produk);
-      return;
-    }
-
     setAiProduk(produk);
     setAiOpen(true);
     setAiResult("");
@@ -260,8 +233,27 @@ Tolong analisis:
 Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke poin. Format dengan poin-poin yang jelas.`;
 
     try {
-      const result = await callGroq(apiKey, prompt);
-      setAiResult(result);
+      // Lewat backend (/api/ai-chat) — key Groq diambil server-side dari Supabase,
+      // konsisten sama arsitektur AI Agent (nggak ada lagi key di localStorage browser).
+      const r = await apiFetch(`/api/ai-chat`, {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{ role: "user", content: prompt }],
+          mode: "umkm",
+          summary: { pemasukan: 0, pengeluaran: 0, saldo: 0 },
+        }),
+      });
+
+      if (!r.success) {
+        if (r.needsApiKey) {
+          setAiError("API Key Groq belum diset. Isi dulu di halaman AI Agent.");
+        } else {
+          throw new Error(r.message || "Gagal menghubungi AI.");
+        }
+        return;
+      }
+
+      setAiResult(r.data?.content || "");
     } catch (err) {
       setAiError("Gagal menghubungi AI: " + (err.message || "Coba lagi."));
     } finally {

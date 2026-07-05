@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import PageHeader from "../components/PageHeader";
+import RupiahInput from "../components/RupiahInput";
 import { formatRupiah } from "../utils/storage";
 import "./TargetPage.css";
+import "./DashboardSkeleton.css";
 
 const getToken = () => localStorage.getItem("finsight_token");
 
@@ -226,13 +228,11 @@ export default function TargetPage() {
 
                       {/* Input nominal bebas */}
                       <div className="targetpage__custom-wrap">
-                        <input
+                        <RupiahInput
                           className="targetpage__custom-input"
-                          type="number"
                           placeholder="Nominal lain..."
                           value={customAmount[t.id] || ""}
-                          onChange={(e) => setCustomAmount((p) => ({ ...p, [t.id]: e.target.value }))}
-                          min="0"
+                          onChange={(v) => setCustomAmount((p) => ({ ...p, [t.id]: v }))}
                         />
                         <button
                           className="targetpage__custom-btn"
@@ -266,11 +266,13 @@ export default function TargetPage() {
                 </div>
                 <div className="targetpage__field">
                   <label>Nominal Target (Rp)</label>
-                  <input name="target" type="number" placeholder="Contoh: 5000000" value={form.target} onChange={handleChange} />
+                  <RupiahInput placeholder="Contoh: 5.000.000" value={form.target}
+                    onChange={v => { setForm(p => ({ ...p, target: v })); setError(""); }} />
                 </div>
                 <div className="targetpage__field">
                   <label>Sudah Terkumpul (Rp)</label>
-                  <input name="terkumpul" type="number" placeholder="0 jika belum ada" value={form.terkumpul} onChange={handleChange} />
+                  <RupiahInput placeholder="0 jika belum ada" value={form.terkumpul}
+                    onChange={v => { setForm(p => ({ ...p, terkumpul: v })); setError(""); }} />
                 </div>
 
                 {/* Penempatan tabungan — bisa pilih dari daftar atau ketik sendiri */}

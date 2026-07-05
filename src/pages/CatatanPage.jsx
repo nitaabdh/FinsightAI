@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import PageHeader from "../components/PageHeader";
 import "./CatatanPage.css";
+import "./DashboardSkeleton.css";
 import NoteEditor from "../components/NoteEditor";
 
 // ─── Storage helpers ─────────────────────────────────────────────────────────

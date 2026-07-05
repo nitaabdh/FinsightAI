@@ -4,6 +4,7 @@ import { CATEGORIES } from "../utils/storage";
 import { formatRupiah } from "../utils/umkmCalc";
 import RupiahInput from "./RupiahInput";
 import "./TransactionForm.css";
+import "./TransactionForm.smartcat.css";
 
 const KATEGORI_PRODUK = "Penjualan Produk";
 

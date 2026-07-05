@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { genId, formatRupiah } from "../utils/umkmCalc";
 import RupiahInput from "./RupiahInput";
@@ -17,6 +17,7 @@ async function apiFetch(url, options = {}) {
 
 export default function BiayaOperasional() {
   const { user } = useAuth();
+  const formRef = useRef(null);
   const [opsList, setOpsList] = useState([]);
   const [form,    setForm]    = useState(emptyForm);
   const [editId,  setEditId]  = useState(null);
@@ -35,6 +36,7 @@ export default function BiayaOperasional() {
   const openEdit = (o) => {
     setForm({ nama: o.nama, biaya: String(o.biaya) });
     setEditId(o.id); setError(""); setShowForm(true);
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   };
 
   const handleSubmit = async () => {
@@ -80,7 +82,7 @@ export default function BiayaOperasional() {
           + Tambah Biaya Operasional
         </button>
       ) : (
-        <div className="biayaops__form">
+        <div className="biayaops__form" ref={formRef}>
           <h3 className="biayaops__form-title">{editId ? "✏️ Edit Biaya Operasional" : "+ Tambah Biaya Operasional"}</h3>
 
           <div className="biayaops__form-row">
