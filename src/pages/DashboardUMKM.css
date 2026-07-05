@@ -252,3 +252,59 @@
   .du__tren { padding: 0.9rem 0.85rem; }
   .du__categories { padding: 0.9rem 0.85rem; }
 }
+
+/* ── Tambahan: Saldo per Kas / Wadah Uang ────────────────────────────────── */
+
+.du__kas {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.25rem;
+}
+
+.du__kas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.du__kas-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.9rem;
+}
+
+.du__kas-card--minus {
+  border-color: rgba(239,68,68,0.35);
+  background: rgba(239,68,68,0.06);
+}
+
+.du__kas-icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.du__kas-info { min-width: 0; }
+
+.du__kas-nama {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.du__kas-saldo {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.du__kas-saldo--minus { color: #f87171; }

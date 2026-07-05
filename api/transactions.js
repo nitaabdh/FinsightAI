@@ -43,7 +43,7 @@ export default async function handler(req, res) {
 
     // ── POST: tambah transaksi baru ──────────────────────────────────────────
     if (req.method === "POST") {
-      const { mode, type, amount, category, description, date, items, jumlah_unit, produk_id } = req.body;
+      const { mode, type, amount, category, description, date, items, jumlah_unit, produk_id, kas } = req.body;
 
       if (!mode || !type || !amount) {
         return res.status(400).json({ success: false, message: "Field mode, type, amount wajib diisi." });
@@ -62,6 +62,7 @@ export default async function handler(req, res) {
           items: items || [],
           jumlah_unit: jumlah_unit || 1,
           produk_id: produk_id || null,
+          kas: mode === "umkm" ? (kas || "Kas Tunai") : null,
         })
         .select()
         .single();
@@ -72,13 +73,13 @@ export default async function handler(req, res) {
 
     // ── PUT: edit transaksi ──────────────────────────────────────────────────
     if (req.method === "PUT") {
-      const { id, type, amount, category, description, date, items, jumlah_unit, produk_id } = req.body;
+      const { id, type, amount, category, description, date, items, jumlah_unit, produk_id, kas } = req.body;
 
       if (!id) return res.status(400).json({ success: false, message: "ID transaksi wajib diisi." });
 
       const { data, error } = await supabase
         .from("transactions")
-        .update({ type, amount, category, description, date, items, jumlah_unit, produk_id })
+        .update({ type, amount, category, description, date, items, jumlah_unit, produk_id, kas })
         .eq("id", id)
         .eq("user_id", userId) // pastikan hanya bisa edit milik sendiri
         .select()

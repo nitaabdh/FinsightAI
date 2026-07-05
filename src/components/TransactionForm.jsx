@@ -8,6 +8,9 @@ import "./TransactionForm.smartcat.css";
 
 const KATEGORI_PRODUK = "Penjualan Produk";
 
+// Preset kas/wadah uang bawaan — selalu muncul di dropdown, bisa ditambah custom sendiri
+const KAS_PRESET = ["Kas Tunai", "Rekening Bank", "E-Wallet"];
+
 const CATEGORY_EMOJI = {
   "makan": "🍔", "makanan": "🍔", "transportasi": "🚗", "transport": "🚗",
   "belanja": "🛍️", "hiburan": "🎮", "kesehatan": "💊", "pendidikan": "📚",
@@ -19,6 +22,12 @@ const CATEGORY_EMOJI = {
 function getCategoryEmoji(cat) {
   if (!cat) return "🗂️";
   return CATEGORY_EMOJI[cat.toLowerCase().trim()] || "🗂️";
+}
+
+const KAS_EMOJI = { "kas tunai": "💵", "rekening bank": "🏦", "e-wallet": "📱" };
+function getKasEmoji(k) {
+  if (!k) return "💳";
+  return KAS_EMOJI[k.toLowerCase().trim()] || "💳";
 }
 
 async function apiFetch(url, options = {}) {
@@ -36,6 +45,10 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
   const isEdit = !!editData;
   const catInputRef = useRef(null);
   const catDropdownRef = useRef(null);
+  const kasInputRef = useRef(null);
+  const kasDropdownRef = useRef(null);
+
+  const showKas = mode === "umkm";
 
   const [form, setForm] = useState({
     type:        editData?.type        || "pemasukan",
@@ -43,6 +56,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
     category:    editData?.category    || "",
     description: editData?.description || "",
     date:        editData?.date        || new Date().toISOString().slice(0, 10),
+    ...(showKas ? { kas: editData?.kas || "Kas Tunai" } : {}),
   });
   const [error, setError] = useState("");
 
@@ -50,6 +64,11 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
   const [catQuery,      setCatQuery]      = useState(editData?.category || "");
   const [catOpen,       setCatOpen]       = useState(false);
   const [usedCategories, setUsedCategories] = useState([]);
+
+  // Smart kas/wadah state (mirip pola kategori)
+  const [kasQuery, setKasQuery] = useState(editData?.kas || (showKas ? "Kas Tunai" : ""));
+  const [kasOpen,  setKasOpen]  = useState(false);
+  const [usedKas,  setUsedKas]  = useState([]);
 
   const [produkList,  setProdukList]  = useState([]);
   const [selProdukId, setSelProdukId] = useState(editData?.produkId || "");
@@ -67,6 +86,10 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
         if (r.success) {
           const cats = [...new Set(r.data.map(tx => tx.category).filter(Boolean))];
           setUsedCategories(cats);
+          if (showKas) {
+            const kasHist = [...new Set(r.data.map(tx => tx.kas).filter(Boolean))];
+            setUsedKas(kasHist);
+          }
         }
       });
     }
@@ -78,6 +101,10 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
       if (catDropdownRef.current && !catDropdownRef.current.contains(e.target) &&
           catInputRef.current && !catInputRef.current.contains(e.target)) {
         setCatOpen(false);
+      }
+      if (kasDropdownRef.current && !kasDropdownRef.current.contains(e.target) &&
+          kasInputRef.current && !kasInputRef.current.contains(e.target)) {
+        setKasOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -115,6 +142,14 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
   const isExistingCat = categories.some(c => c.toLowerCase() === catQuery.toLowerCase().trim());
   const isCustomInput = catQuery.trim() !== "" && !isExistingCat;
 
+  // Kas: preset + histori pemakaian sebelumnya, tanpa duplikat
+  const kasOptions = [...new Set([...KAS_PRESET, ...usedKas])];
+  const kasSuggestions = kasQuery.trim() === ""
+    ? kasOptions
+    : kasOptions.filter(k => k.toLowerCase().includes(kasQuery.toLowerCase()));
+  const isExistingKas = kasOptions.some(k => k.toLowerCase() === kasQuery.toLowerCase().trim());
+  const isCustomKasInput = kasQuery.trim() !== "" && !isExistingKas;
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value, ...(name === "type" ? { category: "" } : {}) }));
@@ -146,6 +181,22 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
     setSelProdukId(""); setSelItems(null);
   };
 
+  // Handler kas — pola sama persis dengan kategori
+  const handleKasSelect = (kas) => {
+    setForm(prev => ({ ...prev, kas }));
+    setKasQuery(kas);
+    setKasOpen(false);
+    setError("");
+  };
+
+  const handleKasInput = (e) => {
+    const val = e.target.value;
+    setKasQuery(val);
+    setForm(prev => ({ ...prev, kas: val }));
+    setKasOpen(true);
+    setError("");
+  };
+
   const handleSelectProduk = (produkId) => {
     setSelProdukId(produkId);
     if (!produkId) { setSelItems(null); return; }
@@ -172,11 +223,13 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
   const handleSubmit = () => {
     if (!form.amount || isNaN(form.amount) || Number(form.amount) <= 0) { setError("Masukkan nominal yang valid."); return; }
     if (!form.category) { setError("Pilih kategori terlebih dahulu."); return; }
+    if (showKas && !form.kas?.trim()) { setError("Pilih atau isi kas/wadah uangnya terlebih dahulu."); return; }
     if (selProdukId && (!jumlahUnit || isNaN(jumlahUnit) || Number(jumlahUnit) <= 0)) { setError("Masukkan jumlah unit yang valid."); return; }
 
     const data = {
       ...form,
       amount: Number(form.amount),
+      ...(showKas ? { kas: form.kas.trim() } : {}),
       ...(selProdukId
         ? { produkId: selProdukId, items: selItems || [], jumlahUnit: Number(jumlahUnit) || 1 }
         : { produkId: null, items: [], jumlahUnit: null }),
@@ -234,6 +287,55 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
             <RupiahInput className={"txform__input txform__input--" + accent}
               placeholder="Contoh: 150.000" value={form.amount} onChange={handleAmountChange} />
           </div>
+
+          {/* Kas / Wadah Uang — cuma tampil di mode UMKM */}
+          {showKas && (
+            <div className="txform__field">
+              <label className="txform__label">{form.type === "pemasukan" ? "Uang Masuk ke Kas" : "Uang Keluar dari Kas"}</label>
+              <div className="txform__cat-wrap" style={{ position: "relative" }}>
+                <input
+                  ref={kasInputRef}
+                  className={"txform__input txform__input--" + accent + (isCustomKasInput ? " txform__input--custom-cat" : "")}
+                  type="text"
+                  placeholder="Ketik atau pilih kas..."
+                  value={kasQuery}
+                  onChange={handleKasInput}
+                  onFocus={() => setKasOpen(true)}
+                  autoComplete="off"
+                />
+                {isCustomKasInput && (
+                  <span className="txform__cat-badge txform__cat-badge--new">Baru</span>
+                )}
+                {isExistingKas && kasQuery.trim() !== "" && (
+                  <span className="txform__cat-badge txform__cat-badge--exists">✓ Ada</span>
+                )}
+                {kasOpen && kasSuggestions.length > 0 && (
+                  <div ref={kasDropdownRef} className="txform__cat-dropdown">
+                    {isCustomKasInput && (
+                      <div
+                        className="txform__cat-option txform__cat-option--create"
+                        onMouseDown={() => handleKasSelect(kasQuery.trim())}
+                      >
+                        <span>➕</span> Buat "<strong>{kasQuery.trim()}</strong>"
+                      </div>
+                    )}
+                    {kasSuggestions.map(k => (
+                      <div
+                        key={k}
+                        className={"txform__cat-option " + (k === form.kas ? "txform__cat-option--active" : "")}
+                        onMouseDown={() => handleKasSelect(k)}
+                      >
+                        <span>{getKasEmoji(k)}</span> {k}
+                        {!KAS_PRESET.includes(k) && (
+                          <span className="txform__cat-used">Pernah dipakai</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="txform__field">
             <label className="txform__label">Kategori</label>
