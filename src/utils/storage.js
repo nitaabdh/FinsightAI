@@ -53,6 +53,7 @@ export const addTransaction = async (userId, mode, data) => {
       items: data.items || [],
       jumlah_unit: data.jumlahUnit || 1,
       produk_id: data.produkId || null,
+      kas: data.kas || null,
     }),
   });
   if (!result.success) throw new Error(result.message);
@@ -73,6 +74,7 @@ export const editTransaction = async (userId, mode, updatedTx) => {
       items: updatedTx.items || [],
       jumlah_unit: updatedTx.jumlahUnit || 1,
       produk_id: updatedTx.produkId || null,
+      kas: updatedTx.kas || null,
     }),
   });
   if (!result.success) throw new Error(result.message);
@@ -102,6 +104,7 @@ function normalizeTransaction(tx) {
     items:       tx.items || [],
     jumlahUnit:  tx.jumlah_unit || 1,
     produkId:    tx.produk_id || null,
+    kas:         tx.kas || null,
     createdAt:   tx.created_at,
   };
 }
