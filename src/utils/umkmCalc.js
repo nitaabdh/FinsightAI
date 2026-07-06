@@ -44,16 +44,6 @@ export const validUsageUnits = (satuanBeli, satuanUnit, hasilPerUnit, hasilLabel
   return UNIT_GROUPS[g]?.units || ["pcs"];
 };
 
-// Satuan yang bisa dipilih waktu TAMBAH/KURANGI STOK fisik — sengaja TIDAK ikut
-// hasilPerUnit (itu cuma estimasi biaya, bukan satuan fisik yang beneran disimpan).
-// Untuk bahan kemasan: bisa pilih satuan beli (pack) ATAU satuan kecil (pcs).
-// Untuk bahan kiloan/literan: bisa pilih kg/gram atau liter/ml.
-export const restokUnitOptions = (bahan) => {
-  if (bahan.satuanUnit) return [bahan.satuanBeli, bahan.satuanUnit];
-  const g = unitGroupOf(bahan.satuanBeli);
-  return UNIT_GROUPS[g]?.units || [bahan.satuanBeli];
-};
-
 // Konversi angka ke base unit (gram / ml / pcs / unit-terkecil)
 // Untuk satuan kemasan (pack/dus/karton/dll), base = satuanUnit (pcs/lembar/botol/dll)
 export const toBase = (value, unit, isiPerPack = 1) => {
@@ -135,12 +125,14 @@ export const totalBiayaBahan = (items, bahanMap) =>
     return b ? sum + biayaItem(b, it.jumlahPakai, it.satuanPakai) : sum;
   }, 0);
 
-// ── Biaya Operasional (master data + item terpilih di resep) ──────────────────
-// Satu item operasional dipilih dengan jumlah (default 1x) — biaya totalnya dikali jumlah.
-export const biayaOpsItem = (ops, jumlah = 1) => (parseFloat(ops?.biaya) || 0) * (parseFloat(jumlah) || 1);
+// ── Biaya Operasional (master data) ───────────────────────────────────────────
+// Biaya pemakaian satu baris biaya operasional (item master + jumlah) → Rupiah
+export const biayaOpsItem = (ops, jumlah) =>
+  (parseFloat(ops?.biaya) || 0) * (parseFloat(jumlah) || 1);
 
-export const totalBiayaOperasional = (opsItems, opsMap) =>
-  (opsItems || []).reduce((sum, it) => {
+// Total biaya operasional dari daftar item terpilih di produk
+export const totalBiayaOperasional = (items, opsMap) =>
+  (items || []).reduce((sum, it) => {
     const o = opsMap[it.opsId];
     return o ? sum + biayaOpsItem(o, it.jumlah) : sum;
   }, 0);
@@ -180,6 +172,24 @@ export const applyStokDelta = (bahanList, items, jumlahUnit, arah) =>
     const delta = toBase(it.jumlahPakai, it.satuanPakai) * jumlahUnit * arah;
     return { ...b, stok: (parseFloat(b.stok) || 0) + delta };
   });
+
+// ── Format Rupiah input dengan titik ribuan (untuk pengalaman ngetik form) ────
+// Contoh: ketik "5000" → tampil "5.000". Value yang disimpan ke state TETAP
+// angka murni tanpa titik — titiknya cuma buat tampilan supaya user nggak
+// gampang salah hitung nol.
+export const formatRibuan = (val) => {
+  if (val === "" || val === null || val === undefined) return "";
+  // Value yang masuk ke sini SELALU angka polos (dari ketikan yang udah di-
+  // unformat, atau dari hasil kalkulasi lain) — titik yang muncul di sini
+  // (kalau ada) berarti titik DESIMAL asli, bukan pemisah ribuan. Makanya
+  // langsung parseFloat, baru dibulatkan, baru diformat ulang.
+  const num = typeof val === "number" ? val : parseFloat(val);
+  if (isNaN(num)) return "";
+  return Math.round(num).toLocaleString("id-ID");
+};
+
+// Balikin dari string berisi titik ke digit murni (buat disimpan ke state)
+export const unformatRibuan = (val) => String(val ?? "").replace(/\D/g, "");
 
 // ── Format ────────────────────────────────────────────────────────────────────
 export const formatRupiah = (num) =>
