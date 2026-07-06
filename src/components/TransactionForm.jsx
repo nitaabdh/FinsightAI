@@ -137,7 +137,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
   // biar nggak ada items/jumlahUnit "hantu" ikut kesave pas submit.
   useEffect(() => {
     if (!showProdukPicker && selProdukId) { setSelProdukId(""); setSelItems(null); }
-  }, [showProdukPicker]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [showProdukPicker]);
 
   const categories = (() => {
     const base = CATEGORIES[mode]?.[form.type] || [];
