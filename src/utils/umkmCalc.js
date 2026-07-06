@@ -76,18 +76,23 @@ export const toBase = (value, unit, isiPerPack = 1) => {
   return v;
 };
 
-// Konversi angka ke base unit, dengan dukungan satuan hasil custom (cetakan/pin/dll).
-// Dipakai khusus untuk restock (+ Stok / − Kurangi Stok) di BahanBaku.jsx, karena di sana
-// user bisa pilih satuan hasil (dari restokUnitOptions) alih-alih satuan beli biasa.
-// Kalau unit yang dipilih = hasilLabel bahan itu, jumlahnya dibagi hasilPerUnit dulu
-// supaya balik ke base unit fisik (misal: 5 cetakan ÷ 17 cetakan/lembar = 5/17 lembar).
+// Konversi angka ke SATUAN TRACKING stok, dengan dukungan satuan hasil custom (cetakan/pin/dll).
+// PENTING: kalau bahan punya hasilPerUnit, satuan tracking stok = satuan HASIL itu sendiri
+// (misal "pin"), bukan satuan fisik (lembar/pack). Jadi:
+//   - Kalau unit yang dipilih user = hasilLabel ("pin"), nilainya sudah dalam satuan hasil,
+//     langsung dipakai apa adanya.
+//   - Kalau unit yang dipilih = satuan fisik (lembar/pack/pcs/dll), dikonversi dulu ke base
+//     fisik (toBase), lalu DIKALIKAN hasilPerUnit supaya jadi jumlah hasil-nya
+//     (misal: 1 pack (isi 20 lembar) × 15 pin/lembar = 300 pin).
+// Dipakai di BahanBaku.jsx (stok awal, restock +Stok/−Kurangi) dan umkmCalc (cek stok/kurangi resep).
 export const toBaseWithHasil = (value, unit, bahan) => {
   const hasil = parseFloat(bahan?.hasilPerUnit) || 0;
-  if (hasil > 1 && unit === (bahan.hasilLabel || "hasil")) {
-    const v = parseFloat(value) || 0;
-    return v / hasil;
+  const v = parseFloat(value) || 0;
+  if (hasil > 1) {
+    if (unit === (bahan.hasilLabel || "hasil")) return v;
+    return toBase(v, unit, bahan?.isiPerPack || 1) * hasil;
   }
-  return toBase(value, unit, bahan?.isiPerPack || 1);
+  return toBase(v, unit, bahan?.isiPerPack || 1);
 };
 
 // Konversi dari base unit kembali ke satuan display (untuk tampil di UI)
@@ -118,6 +123,12 @@ export const baseUnitLabel = (bahan) => {
 // Display stok dalam satuan terkecil (lebih natural untuk user)
 export const stokDisplay = (bahan) => {
   const base = parseFloat(bahan.stok) || 0;
+  const hasil = parseFloat(bahan.hasilPerUnit) || 0;
+  // Bahan dengan hasil custom (pin/cetakan): stok memang di-tracking & ditampilkan
+  // langsung dalam satuan hasil itu (misal "300 pin"), bukan satuan fisiknya (lembar/pack).
+  if (hasil > 1) {
+    return `${parseFloat(base.toFixed(4))} ${bahan.hasilLabel || "hasil"}`;
+  }
   if (bahan.satuanUnit) {
     // Kemasan: stok sudah dalam unit terkecil
     return `${parseFloat(base.toFixed(4))} ${bahan.satuanUnit}`;
@@ -184,7 +195,9 @@ export const cekKecukupanStok = (items, bahanList, jumlahUnit) => {
   return items.map((it) => {
     const b = bahanMap[it.bahanId];
     if (!b) return { bahanId: it.bahanId, nama: "(dihapus)", cukup: false, stokAda: 0, butuh: 0 };
-    const butuhBase = toBase(it.jumlahPakai, it.satuanPakai) * jumlahUnit;
+    // toBaseWithHasil: kalau bahan punya hasilPerUnit, satuanPakai resep = hasilLabel-nya
+    // (diatur di validUsageUnits), jadi jumlahPakai sudah otomatis sepadan sama stok (hasil unit).
+    const butuhBase = toBaseWithHasil(it.jumlahPakai, it.satuanPakai, b) * jumlahUnit;
     const stokBase  = parseFloat(b.stok) || 0;
     return {
       bahanId: it.bahanId,
@@ -192,7 +205,7 @@ export const cekKecukupanStok = (items, bahanList, jumlahUnit) => {
       cukup:   stokBase >= butuhBase,
       stokAda: stokBase,
       butuh:   butuhBase,
-      satuan:  baseUnitLabel(b.satuanBeli),
+      satuan:  hargaUnitLabel(b),
     };
   });
 };
@@ -203,7 +216,7 @@ export const applyStokDelta = (bahanList, items, jumlahUnit, arah) =>
   bahanList.map((b) => {
     const it = items.find((i) => i.bahanId === b.id);
     if (!it) return b;
-    const delta = toBase(it.jumlahPakai, it.satuanPakai) * jumlahUnit * arah;
+    const delta = toBaseWithHasil(it.jumlahPakai, it.satuanPakai, b) * jumlahUnit * arah;
     return { ...b, stok: (parseFloat(b.stok) || 0) + delta };
   });
 

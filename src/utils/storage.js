@@ -6,7 +6,7 @@
 export const CATEGORIES = {
   umkm: {
     pemasukan: ["Modal Usaha", "Penjualan Produk", "Jasa", "Komisi", "Investasi", "Lainnya"],
-    pengeluaran: ["Bahan Baku / HPP", "Operasional", "Gaji Karyawan", "Marketing", "Utilitas", "Lainnya"],
+    pengeluaran: ["Bahan Baku / HPP", "Operasional", "Gaji Karyawan", "Marketing", "Pembelian Aset Usaha", "Kerugian Stok (Rusak/Gagal)", "Sample & Marketing", "Utilitas", "Lainnya"],
   },
   personal: {
     pemasukan: ["Gaji", "Freelance", "Bisnis Sampingan", "Hadiah", "Lainnya"],

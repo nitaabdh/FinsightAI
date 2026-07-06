@@ -7,6 +7,9 @@ import "./TransactionForm.css";
 import "./TransactionForm.smartcat.css";
 
 const KATEGORI_PRODUK = "Penjualan Produk";
+// Kategori khusus: bikin produk buat sample/contoh marketing — stok bahan tetap kepakai
+// sesuai resep, TAPI ini pengeluaran (biaya), BUKAN pemasukan penjualan.
+const KATEGORI_SAMPLE = "Sample & Marketing";
 
 // Preset kas/wadah uang bawaan — selalu muncul di dropdown, bisa ditambah custom sendiri
 const KAS_PRESET = ["Kas Tunai", "Rekening Bank", "E-Wallet"];
@@ -75,7 +78,8 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
   const [jumlahUnit,  setJumlahUnit]  = useState(editData?.jumlahUnit ? String(editData.jumlahUnit) : "1");
   const [selItems,    setSelItems]    = useState(editData?.items || null);
 
-  const showProdukPicker = mode === "umkm" && form.type === "pemasukan";
+  const showProdukPicker = mode === "umkm" && (form.type === "pemasukan" || (form.type === "pengeluaran" && form.category === KATEGORI_SAMPLE));
+  const isSampleFlow = form.type === "pengeluaran" && form.category === KATEGORI_SAMPLE;
 
   useEffect(() => {
     if (user) {
@@ -128,10 +132,17 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
     return () => window.removeEventListener("produkUpdated", refresh);
   }, [user, mode]);
 
+  // Kalau produk-picker jadi disembunyikan (ganti tipe atau kategori menjauh dari
+  // Penjualan Produk / Sample & Marketing), produk yg kepilih sebelumnya harus direset —
+  // biar nggak ada items/jumlahUnit "hantu" ikut kesave pas submit.
+  useEffect(() => {
+    if (!showProdukPicker && selProdukId) { setSelProdukId(""); setSelItems(null); }
+  }, [showProdukPicker]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const categories = (() => {
     const base = CATEGORIES[mode]?.[form.type] || [];
     const combined = [...new Set([...base, ...usedCategories])];
-    if (showProdukPicker && !combined.includes(KATEGORI_PRODUK)) return [...combined, KATEGORI_PRODUK];
+    if (showProdukPicker && form.type === "pemasukan" && !combined.includes(KATEGORI_PRODUK)) return [...combined, KATEGORI_PRODUK];
     return combined;
   })();
 
@@ -212,10 +223,19 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
     if (!produk) return;
     const qty = parseInt(jumlahUnit, 10) || 1;
     setSelItems(produk.items);
-    // Math.round jaga-jaga kalau hargaJual tersimpan desimal (dari hasil bagi/kali
+    // Sample/marketing: nominal yang kecatat = biaya produksi (HPP), bukan harga jual —
+    // karena ini pengeluaran/biaya, bukan pemasukan penjualan. Kategori juga TIDAK ditimpa
+    // (biar tetap "Sample & Marketing", bukan berubah jadi "Penjualan Produk").
+    const nilai = isSampleFlow ? (produk.totalBiaya || 0) : produk.hargaJual;
+    // Math.round jaga-jaga kalau hargaJual/totalBiaya tersimpan desimal (dari hasil bagi/kali
     // di Kalkulator Harga) — desimal bikin titik ribuan salah kalkulasi kalau lolos mentah.
-    setForm(prev => ({ ...prev, amount: String(Math.round(produk.hargaJual * qty)), category: KATEGORI_PRODUK, description: produk.nama }));
-    setCatQuery(KATEGORI_PRODUK);
+    setForm(prev => ({
+      ...prev,
+      amount: String(Math.round(nilai * qty)),
+      description: produk.nama,
+      ...(isSampleFlow ? {} : { category: KATEGORI_PRODUK }),
+    }));
+    if (!isSampleFlow) setCatQuery(KATEGORI_PRODUK);
     setError("");
   };
 
@@ -225,7 +245,8 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
     const produk = produkList.find(p => p.id === selProdukId);
     if (!produk) return;
     const qty = parseInt(val, 10) || 0;
-    setForm(prev => ({ ...prev, amount: String(Math.round(produk.hargaJual * qty)) }));
+    const nilai = isSampleFlow ? (produk.totalBiaya || 0) : produk.hargaJual;
+    setForm(prev => ({ ...prev, amount: String(Math.round(nilai * qty)) }));
   };
 
   const handleSubmit = () => {
@@ -275,6 +296,60 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
         </div>
 
         <div className="txform__fields">
+          <div className="txform__field">
+            <label className="txform__label">Kategori</label>
+            <div className="txform__cat-wrap" style={{ position: "relative" }}>
+              <input
+                ref={catInputRef}
+                className={"txform__input txform__input--" + accent + (isCustomInput ? " txform__input--custom-cat" : "")}
+                type="text"
+                placeholder="Ketik atau pilih kategori..."
+                value={catQuery}
+                onChange={handleCatInput}
+                onFocus={() => setCatOpen(true)}
+                autoComplete="off"
+              />
+              {catQuery && (
+                <button className="txform__cat-clear" onClick={() => { setCatQuery(""); setForm(p => ({ ...p, category: "" })); setCatOpen(true); }}>✕</button>
+              )}
+              {isCustomInput && (
+                <span className="txform__cat-badge txform__cat-badge--new">Baru</span>
+              )}
+              {isExistingCat && catQuery.trim() !== "" && (
+                <span className="txform__cat-badge txform__cat-badge--exists">✓ Ada</span>
+              )}
+              {catOpen && catSuggestions.length > 0 && (
+                <div ref={catDropdownRef} className="txform__cat-dropdown">
+                  {isCustomInput && (
+                    <div
+                      className="txform__cat-option txform__cat-option--create"
+                      onMouseDown={() => handleCatSelect(catQuery.trim())}
+                    >
+                      <span>➕</span> Buat "<strong>{catQuery.trim()}</strong>"
+                    </div>
+                  )}
+                  {catSuggestions.map(c => (
+                    <div
+                      key={c}
+                      className={"txform__cat-option " + (c === form.category ? "txform__cat-option--active" : "")}
+                      onMouseDown={() => handleCatSelect(c)}
+                    >
+                      <span>{getCategoryEmoji ? getCategoryEmoji(c) : "🗂️"}</span> {c}
+                      {usedCategories.includes(c) && !CATEGORIES[mode]?.[form.type]?.includes(c) && (
+                        <span className="txform__cat-used">Pernah dipakai</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {isSampleFlow && (
+              <p className="txform__hint txform__hint--tight">
+                🧪 Mode Sample/Marketing: pilih produk di bawah, stok bahan bakunya otomatis kepakai sesuai resep, tapi nominalnya dihitung dari biaya produksi (HPP) — BUKAN harga jual, dan tidak dianggap sebagai penjualan.
+              </p>
+            )}
+          </div>
+
           {showProdukPicker && (
             <div className="txform__field">
               <label className="txform__label">Pilih dari Produk (opsional)</label>
@@ -283,7 +358,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
               ) : (
                 <select className={"txform__input txform__input--" + accent} value={selProdukId} onChange={e => handleSelectProduk(e.target.value)}>
                   <option value="">-- Pilih produk --</option>
-                  {produkList.map(p => <option key={p.id} value={p.id}>{p.nama} ({formatRupiah(p.hargaJual)})</option>)}
+                  {produkList.map(p => <option key={p.id} value={p.id}>{p.nama} ({formatRupiah(isSampleFlow ? (p.totalBiaya || 0) : p.hargaJual)})</option>)}
                 </select>
               )}
             </div>
@@ -291,7 +366,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
 
           {showProdukPicker && selProdukId && (
             <div className="txform__field">
-              <label className="txform__label">Jumlah Unit Terjual</label>
+              <label className="txform__label">{isSampleFlow ? "Jumlah Unit Dipakai" : "Jumlah Unit Terjual"}</label>
               <input className={"txform__input txform__input--" + accent} type="number" min="1"
                 value={jumlahUnit} onChange={e => handleJumlahUnitChange(e.target.value)} />
               <p className="txform__hint txform__hint--tight">Stok bahan baku akan otomatis berkurang sesuai resep × jumlah unit ini.</p>
@@ -352,55 +427,6 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
               </div>
             </div>
           )}
-
-          <div className="txform__field">
-            <label className="txform__label">Kategori</label>
-            <div className="txform__cat-wrap" style={{ position: "relative" }}>
-              <input
-                ref={catInputRef}
-                className={"txform__input txform__input--" + accent + (isCustomInput ? " txform__input--custom-cat" : "")}
-                type="text"
-                placeholder="Ketik atau pilih kategori..."
-                value={catQuery}
-                onChange={handleCatInput}
-                onFocus={() => setCatOpen(true)}
-                autoComplete="off"
-              />
-              {catQuery && (
-                <button className="txform__cat-clear" onClick={() => { setCatQuery(""); setForm(p => ({ ...p, category: "" })); setCatOpen(true); }}>✕</button>
-              )}
-              {isCustomInput && (
-                <span className="txform__cat-badge txform__cat-badge--new">Baru</span>
-              )}
-              {isExistingCat && catQuery.trim() !== "" && (
-                <span className="txform__cat-badge txform__cat-badge--exists">✓ Ada</span>
-              )}
-              {catOpen && catSuggestions.length > 0 && (
-                <div ref={catDropdownRef} className="txform__cat-dropdown">
-                  {isCustomInput && (
-                    <div
-                      className="txform__cat-option txform__cat-option--create"
-                      onMouseDown={() => handleCatSelect(catQuery.trim())}
-                    >
-                      <span>➕</span> Buat "<strong>{catQuery.trim()}</strong>"
-                    </div>
-                  )}
-                  {catSuggestions.map(c => (
-                    <div
-                      key={c}
-                      className={"txform__cat-option " + (c === form.category ? "txform__cat-option--active" : "")}
-                      onMouseDown={() => handleCatSelect(c)}
-                    >
-                      <span>{getCategoryEmoji ? getCategoryEmoji(c) : "🗂️"}</span> {c}
-                      {usedCategories.includes(c) && !CATEGORIES[mode]?.[form.type]?.includes(c) && (
-                        <span className="txform__cat-used">Pernah dipakai</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
 
           <div className="txform__field">
             <label className="txform__label">Tanggal</label>

@@ -4,9 +4,17 @@ import {
   genId,
   formatRupiah,
   hargaPerBase, nilaiStok, stokDisplay, hargaUnitLabel,
-  toBase, toBaseWithHasil, unitGroupOf, restokUnitOptions,
+  toBaseWithHasil, unitGroupOf, restokUnitOptions,
 } from "../utils/umkmCalc";
+import { addTransaction } from "../utils/storage";
 import "./BahanBaku.css";
+
+const KAS_PRESET = ["Kas Tunai", "Rekening Bank", "E-Wallet"];
+const KURANGI_KATEGORI = [
+  { value: "lainnya", label: "Lainnya (opname/selisih, dll)" },
+  { value: "rusak",   label: "Rusak / Gagal / Kadaluarsa" },
+  { value: "sample",  label: "Sample / Contoh Marketing" },
+];
 
 const emptyForm = { nama: "", jumlahBeli: "", satuanBeli: "kg", isiPerPack: "", hargaBeli: "", hasilPerUnit: "", hasilLabel: "" };
 
@@ -42,19 +50,26 @@ export default function BahanBaku() {
   const [restokJml,   setRestokJml]   = useState("");
   const [restokSat,   setRestokSat]   = useState("");
   const [restokHarga, setRestokHarga] = useState("");
+  const [restokKas,   setRestokKas]   = useState("Kas Tunai");
+  const [restokSupplierId, setRestokSupplierId] = useState("");
   const [restokErr,   setRestokErr]   = useState("");
+  const [supplierList, setSupplierList] = useState([]);
 
   // Modal − Kurangi Stok
   const [kurangiId,     setKurangiId]     = useState(null);
   const [kurangiJml,    setKurangiJml]    = useState("");
   const [kurangiSat,    setKurangiSat]    = useState("");
   const [kurangiAlasan, setKurangiAlasan] = useState("");
+  const [kurangiKategori, setKurangiKategori] = useState("lainnya");
   const [kurangiErr,    setKurangiErr]    = useState("");
 
   useEffect(() => {
     if (!user) return;
     apiFetch(`/api/umkm?table=bahan_baku`).then(r => {
       if (r.success) setList(r.data);
+    });
+    apiFetch(`/api/umkm?table=supplier`).then(r => {
+      if (r.success) setSupplierList(r.data);
     });
   }, [user]);
 
@@ -135,10 +150,15 @@ export default function BahanBaku() {
       });
       if (r.success) setList(p => p.map(b => b.id === editId ? r.data : b));
     } else {
-      // Tambah baru: "beli berapa" langsung jadi stok
+      // Tambah baru: "beli berapa" langsung jadi stok. Kalau bahan ini punya hasil
+      // custom (pin/cetakan), stok di-tracking dalam satuan hasil itu (lihat toBaseWithHasil).
+      const bahanUntukKonversi = {
+        satuanBeli, isiPerPack: isPack ? +isiPerPack : null,
+        ...yieldPayload,
+      };
       const stokBase = isPack
-        ? toBase(+jumlahBeli, "pack", +isiPerPack)
-        : toBase(+jumlahBeli, satuanBeli);
+        ? toBaseWithHasil(+jumlahBeli, "pack", bahanUntukKonversi)
+        : toBaseWithHasil(+jumlahBeli, satuanBeli, bahanUntukKonversi);
       const payload = {
         nama: nama.trim(), hargaBeli: +hargaBeli, jumlahBeli: +jumlahBeli,
         satuanBeli, isiPerPack: isPack ? +isiPerPack : null,
@@ -187,12 +207,15 @@ export default function BahanBaku() {
     setRestokJml("");
     setRestokSat(restokUnitOptions(b)[0]);
     setRestokHarga("");
+    setRestokKas("Kas Tunai");
+    setRestokSupplierId("");
     setRestokErr("");
   };
 
   const confirmRestok = async () => {
     if (!restokJml || +restokJml <= 0)     return setRestokErr("Isi jumlah beli yang valid.");
     if (!restokHarga || +restokHarga <= 0) return setRestokErr("Isi harga beli yang valid.");
+    if (!restokKas?.trim())                return setRestokErr("Pilih kas/wadah uang buat restock ini.");
     const bahan = list.find(b => b.id === restokId);
     if (!bahan) return;
 
@@ -208,9 +231,15 @@ export default function BahanBaku() {
     const nilaiTambahan = +restokHarga;
     const hargaPerBaseBaru = stokBaru > 0 ? (nilaiLama + nilaiTambahan) / stokBaru : 0;
 
+    // stokBaru ada dalam satuan TRACKING (bisa satuan hasil kayak "pin" kalau bahan ini
+    // punya hasilPerUnit). Buat rekonstruksi jumlahBeli (dicatat dalam satuan beli fisik,
+    // misal "pack"/"kg"), stok itu harus dibagi hasilPerUnit dulu biar balik ke fisik.
+    const hasilBahan = parseFloat(bahan.hasilPerUnit) || 0;
+    const stokBaruFisik = hasilBahan > 1 ? stokBaru / hasilBahan : stokBaru;
+
     const isPackBahan = !!bahan.satuanUnit;
     const isKiloan = bahan.satuanBeli === "kg" || bahan.satuanBeli === "liter";
-    const jumlahBeliBaru = isPackBahan ? stokBaru / (bahan.isiPerPack || 1) : (isKiloan ? stokBaru / 1000 : stokBaru);
+    const jumlahBeliBaru = isPackBahan ? stokBaruFisik / (bahan.isiPerPack || 1) : (isKiloan ? stokBaruFisik / 1000 : stokBaruFisik);
     const hargaBeliBaru = hargaPerBaseBaru * stokBaru;
 
     const r = await apiFetch(`/api/umkm?table=bahan_baku`, {
@@ -224,14 +253,26 @@ export default function BahanBaku() {
     });
     if (r.success) {
       setList(p => p.map(b => b.id === restokId ? r.data : b));
+      const supplierNama = restokSupplierId ? supplierList.find(s => s.id === restokSupplierId)?.nama : null;
       await apiFetch(`/api/umkm?table=stok_history`, {
         method: "POST",
         body: JSON.stringify({
           id: genId(), bahanId: restokId, tipe: "tambah", sumber: "manual_tambah",
-          jumlah: +restokJml, satuanLabel: restokSat, alasan: null, createdAt: Date.now(),
+          jumlah: +restokJml, satuanLabel: restokSat, alasan: null,
+          supplierId: restokSupplierId || null, createdAt: Date.now(),
         }),
       });
+      // Restock = pengeluaran, otomatis kecatat di Keuangan biar nggak dobel input manual.
+      await addTransaction(user.id, "umkm", {
+        type: "pengeluaran",
+        amount: +restokHarga,
+        category: "Bahan Baku / HPP",
+        description: `Restock ${bahan.nama}${supplierNama ? ` — dari ${supplierNama}` : ""}`,
+        date: new Date().toISOString().slice(0, 10),
+        kas: restokKas.trim(),
+      });
       window.dispatchEvent(new CustomEvent("bahanBakuUpdated"));
+      window.dispatchEvent(new CustomEvent("transactionsUpdated"));
       if (detailId === restokId) fetchHistory(restokId);
     }
     setRestokId(null);
@@ -243,6 +284,7 @@ export default function BahanBaku() {
     setKurangiJml("");
     setKurangiSat(restokUnitOptions(b)[0]);
     setKurangiAlasan("");
+    setKurangiKategori("lainnya");
     setKurangiErr("");
   };
 
@@ -261,13 +303,31 @@ export default function BahanBaku() {
     });
     if (r.success) {
       setList(p => p.map(b => b.id === kurangiId ? r.data : b));
+      const sumber = kurangiKategori === "rusak" ? "manual_kurang_rusak"
+        : kurangiKategori === "sample" ? "manual_kurang_sample"
+        : "manual_kurang_lain";
       await apiFetch(`/api/umkm?table=stok_history`, {
         method: "POST",
         body: JSON.stringify({
-          id: genId(), bahanId: kurangiId, tipe: "kurang", sumber: "manual_kurang",
+          id: genId(), bahanId: kurangiId, tipe: "kurang", sumber,
           jumlah: +kurangiJml, satuanLabel: kurangiSat, alasan: kurangiAlasan.trim(), createdAt: Date.now(),
         }),
       });
+      // Rusak/gagal & sample-marketing = kerugian/biaya yang harus kebaca di Keuangan —
+      // tapi BUKAN pemasukan penjualan. "Lainnya" (opname/selisih) sengaja tidak
+      // dicatat sebagai transaksi karena bukan kerugian nilai riil (misal koreksi hitung).
+      if (kurangiKategori !== "lainnya") {
+        const nilaiKerugian = hargaPerBase(bahan) * jumlahBase;
+        await addTransaction(user.id, "umkm", {
+          type: "pengeluaran",
+          amount: Math.round(nilaiKerugian),
+          category: kurangiKategori === "rusak" ? "Kerugian Stok (Rusak/Gagal)" : "Sample & Marketing",
+          description: `${bahan.nama} — ${kurangiAlasan.trim()}`,
+          date: new Date().toISOString().slice(0, 10),
+          kas: "Non-Kas (Kerugian Stok)",
+        });
+        window.dispatchEvent(new CustomEvent("transactionsUpdated"));
+      }
       window.dispatchEvent(new CustomEvent("bahanBakuUpdated"));
       if (detailId === kurangiId) fetchHistory(kurangiId);
     }
@@ -280,7 +340,12 @@ export default function BahanBaku() {
   const preview = previewHarga();
   const detailBahan = detailId ? list.find(b => b.id === detailId) : null;
 
-  const historyBadgeLabel = (h) => h.sumber === "transaksi" ? "Otomatis" : "Manual";
+  const historyBadgeLabel = (h) => {
+    if (h.sumber === "transaksi") return "Otomatis";
+    if (h.sumber === "manual_kurang_rusak") return "Rusak/Gagal";
+    if (h.sumber === "manual_kurang_sample") return "Sample/Marketing";
+    return "Manual";
+  };
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -344,7 +409,7 @@ export default function BahanBaku() {
                         </p>
                       </div>
                       <div className="bahanbaku__history-meta">
-                        <span className={"bahanbaku__history-badge bahanbaku__history-badge--" + h.sumber}>
+                        <span className={"bahanbaku__history-badge bahanbaku__history-badge--" + (h.sumber === "transaksi" ? "transaksi" : (h.sumber === "manual_tambah" ? "manual_tambah" : "manual_kurang"))}>
                           {historyBadgeLabel(h)}
                         </span>
                         <span className="bahanbaku__history-date">
@@ -535,8 +600,31 @@ export default function BahanBaku() {
                   min="0"
                 />
               </div>
+              <div className="bahanbaku__field" style={{ marginBottom: "1rem" }}>
+                <label className="bahanbaku__label">Bayar Pakai Kas</label>
+                <select
+                  className="bahanbaku__input"
+                  value={restokKas}
+                  onChange={e => setRestokKas(e.target.value)}
+                >
+                  {KAS_PRESET.map(k => <option key={k} value={k}>{k}</option>)}
+                </select>
+              </div>
+              {supplierList.length > 0 && (
+                <div className="bahanbaku__field" style={{ marginBottom: "1rem" }}>
+                  <label className="bahanbaku__label">Beli dari Supplier (opsional)</label>
+                  <select
+                    className="bahanbaku__input"
+                    value={restokSupplierId}
+                    onChange={e => setRestokSupplierId(e.target.value)}
+                  >
+                    <option value="">-- Tidak dicatat --</option>
+                    {supplierList.map(s => <option key={s.id} value={s.id}>{s.nama}</option>)}
+                  </select>
+                </div>
+              )}
               <p className="bahanbaku__hpp-hint">
-                💡 Kalau harganya beda dari sebelumnya, sistem otomatis hitung rata-ratanya — kamu nggak perlu mikir apa-apa lagi.
+                💡 Kalau harganya beda dari sebelumnya, sistem otomatis hitung rata-ratanya — kamu nggak perlu mikir apa-apa lagi. Pengeluaran ini juga otomatis kecatat di Keuangan.
               </p>
               {restokErr && <p className="bahanbaku__error">{restokErr}</p>}
               <div className="bahanbaku__modal-actions">
@@ -577,6 +665,16 @@ export default function BahanBaku() {
                 </select>
               </div>
               <div className="bahanbaku__field" style={{ marginBottom: "1rem" }}>
+                <label className="bahanbaku__label">Kategori Pengurangan</label>
+                <select
+                  className="bahanbaku__input"
+                  value={kurangiKategori}
+                  onChange={e => setKurangiKategori(e.target.value)}
+                >
+                  {KURANGI_KATEGORI.map(k => <option key={k.value} value={k.value}>{k.label}</option>)}
+                </select>
+              </div>
+              <div className="bahanbaku__field" style={{ marginBottom: "1rem" }}>
                 <label className="bahanbaku__label">
                   Alasan Pengurangan <span className="bahanbaku__label-required">*wajib</span>
                 </label>
@@ -587,6 +685,11 @@ export default function BahanBaku() {
                   onChange={e => { setKurangiAlasan(e.target.value); setKurangiErr(""); }}
                 />
               </div>
+              {kurangiKategori !== "lainnya" && (
+                <p className="bahanbaku__hpp-hint">
+                  💡 Nilai bahan yang dikurangi otomatis kecatat sebagai pengeluaran/kerugian di Keuangan (bukan penjualan).
+                </p>
+              )}
               {kurangiErr && <p className="bahanbaku__error">{kurangiErr}</p>}
               <div className="bahanbaku__modal-actions">
                 <button className="bahanbaku__btn-sec" onClick={() => setKurangiId(null)}>Batal</button>

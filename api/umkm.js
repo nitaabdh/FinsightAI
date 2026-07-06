@@ -13,7 +13,7 @@ function verifyToken(req) {
   catch { return null; }
 }
 
-const VALID_TABLES = ["bahan_baku", "produk", "aset_usaha", "utang_piutang", "biaya_operasional", "stok_history"];
+const VALID_TABLES = ["bahan_baku", "produk", "aset_usaha", "utang_piutang", "biaya_operasional", "stok_history", "supplier"];
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -158,11 +158,12 @@ function buildPayload(body, table, userId, isUpdate = false) {
       ...base,
       bahan_id:     body.bahanId,
       tipe:         body.tipe,          // "tambah" | "kurang"
-      sumber:       body.sumber,        // "manual_tambah" | "manual_kurang" | "transaksi"
+      sumber:       body.sumber,        // "manual_tambah" | "manual_kurang_rusak" | "manual_kurang_sample" | "manual_kurang_lain" | "transaksi"
       jumlah:       body.jumlah,
       satuan_label: body.satuanLabel,
       alasan:       body.alasan || null,
       transaksi_id: body.transaksiId || null,
+      supplier_id:  body.supplierId || null,
     };
   }
 
@@ -187,6 +188,17 @@ function buildPayload(body, table, userId, isUpdate = false) {
       jatuh_tempo: body.jatuhTempo || null,
       catatan:     body.catatan || "",
       lunas:       body.lunas || false,
+    };
+  }
+
+  if (table === "supplier") {
+    return {
+      ...base,
+      nama:             body.nama,
+      kontak_wa:        body.kontakWa || "",
+      link_marketplace: body.linkMarketplace || "",
+      kategori:         body.kategori || "",
+      catatan:          body.catatan || "",
     };
   }
 
@@ -219,6 +231,7 @@ function normalize(row, table) {
       satuanLabel: row.satuan_label,
       alasan:      row.alasan,
       transaksiId: row.transaksi_id,
+      supplierId:  row.supplier_id,
     };
   }
 
@@ -228,6 +241,10 @@ function normalize(row, table) {
 
   if (table === "utang_piutang") {
     return { ...base, jenis: row.jenis, nama: row.nama, nominal: row.nominal, jatuhTempo: row.jatuh_tempo, catatan: row.catatan, lunas: row.lunas };
+  }
+
+  if (table === "supplier") {
+    return { ...base, nama: row.nama, kontakWa: row.kontak_wa, linkMarketplace: row.link_marketplace, kategori: row.kategori, catatan: row.catatan };
   }
 
   return row;

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { genId, formatRupiah } from "../utils/umkmCalc";
+import { addTransaction } from "../utils/storage";
 import RupiahInput from "./RupiahInput";
 import "./AsetUsaha.css";
 
@@ -10,11 +11,12 @@ const KONDISI_OPTIONS = [
   { value: "rusakRingan", label: "Rusak Ringan" },
   { value: "rusakBerat",  label: "Rusak Berat" },
 ];
+const KAS_PRESET = ["Kas Tunai", "Rekening Bank", "E-Wallet"];
 
 const emptyForm = {
   nama: "", kategori: "", kategoriCustom: "",
   tanggalBeli: new Date().toISOString().slice(0, 10),
-  hargaBeli: "", kondisi: "baik", catatan: "",
+  hargaBeli: "", kondisi: "baik", catatan: "", kas: "Kas Tunai",
 };
 
 async function apiFetch(url, options = {}) {
@@ -53,10 +55,11 @@ export default function AsetUsaha() {
   };
 
   const handleSubmit = async () => {
-    const { nama, kategori, kategoriCustom, tanggalBeli, hargaBeli, kondisi, catatan } = form;
+    const { nama, kategori, kategoriCustom, tanggalBeli, hargaBeli, kondisi, catatan, kas } = form;
     if (!nama.trim())    return setError("Nama alat tidak boleh kosong.");
     if (!kategori)       return setError("Pilih kategori terlebih dahulu.");
     if (!hargaBeli || +hargaBeli < 0) return setError("Harga beli tidak valid.");
+    if (!editId && +hargaBeli > 0 && !kas?.trim()) return setError("Pilih kas/wadah uang buat beli aset ini.");
 
     const kategoriAkhir = kategori === "lainnya" ? kategoriCustom.trim() : kategori;
     if (!kategoriAkhir)  return setError("Tulis nama kategori terlebih dahulu.");
@@ -71,6 +74,7 @@ export default function AsetUsaha() {
     };
 
     if (editId) {
+      // Edit = koreksi data aset, BUKAN transaksi pembelian baru — kas tidak disentuh lagi.
       const r = await apiFetch(`/api/umkm?table=aset_usaha`, {
         method: "PUT",
         body: JSON.stringify({ id: editId, ...payloadData }),
@@ -81,7 +85,21 @@ export default function AsetUsaha() {
         method: "POST",
         body: JSON.stringify({ id: genId(), ...payloadData, createdAt: Date.now() }),
       });
-      if (r.success) setList(p => [r.data, ...p]);
+      if (r.success) {
+        setList(p => [r.data, ...p]);
+        // Beli aset = pengeluaran, dipisah kategorinya dari bahan baku/operasional biasa.
+        if (+hargaBeli > 0) {
+          await addTransaction(user.id, "umkm", {
+            type: "pengeluaran",
+            amount: +hargaBeli,
+            category: "Pembelian Aset Usaha",
+            description: `Beli aset: ${nama.trim()}`,
+            date: tanggalBeli,
+            kas: kas?.trim() || "Kas Tunai",
+          });
+          window.dispatchEvent(new CustomEvent("transactionsUpdated"));
+        }
+      }
     }
     resetForm();
   };
@@ -96,6 +114,7 @@ export default function AsetUsaha() {
       hargaBeli: String(it.hargaBeli),
       kondisi: it.kondisi,
       catatan: it.catatan || "",
+      kas: "Kas Tunai",
     });
     setEditId(it.id);
     setError("");
@@ -173,6 +192,14 @@ export default function AsetUsaha() {
               {KONDISI_OPTIONS.map(k => <option key={k.value} value={k.value}>{k.label}</option>)}
             </select>
           </div>
+          {!editId && (
+            <div className="asetusaha__field">
+              <label className="asetusaha__label">Bayar Pakai Kas</label>
+              <select className="asetusaha__input" name="kas" value={form.kas} onChange={handleChange}>
+                {KAS_PRESET.map(k => <option key={k} value={k}>{k}</option>)}
+              </select>
+            </div>
+          )}
         </div>
         <div className="asetusaha__field">
           <label className="asetusaha__label">Catatan (opsional)</label>

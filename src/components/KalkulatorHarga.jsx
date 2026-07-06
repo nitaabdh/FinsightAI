@@ -133,7 +133,7 @@ export default function KalkulatorHarga() {
   const handlePilihBahan = (id) => {
     setSelBahan(id);
     const b = bahanMap[id];
-    setSelSatuan(b ? validUsageUnits(b.satuanBeli)[0] : "");
+    setSelSatuan(b ? validUsageUnits(b.satuanBeli, b.satuanUnit, b.hasilPerUnit, b.hasilLabel)[0] : "");
   };
 
   const handleTambahItem = () => {
@@ -291,7 +291,12 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
                 value={selJumlah} onChange={e => setSelJumlah(e.target.value)} min="0" />
               <select className="kalkharga__input kalkharga__input--unit" value={selSatuan}
                 onChange={e => setSelSatuan(e.target.value)} disabled={!selBahan}>
-                {selBahan && validUsageUnits(bahanMap[selBahan]?.satuanBeli).map(u => <option key={u} value={u}>{u}</option>)}
+                {selBahan && validUsageUnits(
+                  bahanMap[selBahan]?.satuanBeli,
+                  bahanMap[selBahan]?.satuanUnit,
+                  bahanMap[selBahan]?.hasilPerUnit,
+                  bahanMap[selBahan]?.hasilLabel
+                ).map(u => <option key={u} value={u}>{u}</option>)}
               </select>
               <button className="kalkharga__addbtn" onClick={handleTambahItem}>+ Tambah</button>
             </div>
