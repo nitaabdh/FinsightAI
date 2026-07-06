@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import TransactionForm from "../components/TransactionForm";
 import { getTransactions, addTransaction, deleteTransaction, editTransaction, calcSummary, formatRupiah, formatDate } from "../utils/storage";
-import { applyStokDelta } from "../utils/umkmCalc";
+import { applyStokDelta, genId, baseUnitLabel } from "../utils/umkmCalc";
 import "./TransaksiPage.css";
 
 async function apiFetch(url, options = {}) {
@@ -41,21 +41,51 @@ export default function TransaksiPage() {
   useEffect(() => { load(true); }, [user]);
 
   // ── Stok: kurangi/kembalikan berdasarkan resep produk yang di-snapshot di transaksi ──
+  // Sekalian catat histori otomatis per bahan yang berubah, biar kelihatan di halaman
+  // Detail Bahan Baku ("Otomatis dari penjualan produk").
   const applyStokUntukTransaksi = async (tx, arah) => {
     if (mode !== "umkm" || !tx?.items?.length) return;
     // Ambil bahan terbaru dari Supabase
     const r = await apiFetch(`/api/umkm?table=bahan_baku`);
     if (!r.success) return;
     const updated = applyStokDelta(r.data, tx.items, tx.jumlahUnit || 1, arah);
-    // Update setiap bahan yang berubah
+
+    // Cari bahan yang beneran berubah stoknya
+    const changed = updated
+      .map((b, i) => ({ b, before: r.data[i] }))
+      .filter(({ b, before }) => b.stok !== before?.stok);
+
+    // Update stok bahan di Supabase
     await Promise.all(
-      updated
-        .filter((b, i) => b.stok !== r.data[i]?.stok)
-        .map(b => apiFetch(`/api/umkm?table=bahan_baku`, {
-          method: "PUT",
-          body: JSON.stringify(b),
-        }))
+      changed.map(({ b }) => apiFetch(`/api/umkm?table=bahan_baku`, {
+        method: "PUT",
+        body: JSON.stringify(b),
+      }))
     );
+
+    // Catat histori otomatis per bahan yang berubah
+    await Promise.all(
+      changed.map(({ b, before }) => {
+        const delta = Math.abs((parseFloat(b.stok) || 0) - (parseFloat(before?.stok) || 0));
+        return apiFetch(`/api/umkm?table=stok_history`, {
+          method: "POST",
+          body: JSON.stringify({
+            id: genId(),
+            bahanId: b.id,
+            tipe: arah < 0 ? "kurang" : "tambah",
+            sumber: "transaksi",
+            jumlah: delta,
+            satuanLabel: baseUnitLabel(b),
+            alasan: arah < 0
+              ? `Terjual: ${tx.description || "Produk"} (${tx.jumlahUnit || 1}x)`
+              : `Dikembalikan — transaksi "${tx.description || "Produk"}" diedit/dihapus`,
+            transaksiId: tx.id || null,
+            createdAt: Date.now(),
+          }),
+        });
+      })
+    );
+
     window.dispatchEvent(new CustomEvent("bahanBakuUpdated"));
   };
 
