@@ -44,6 +44,21 @@ export const validUsageUnits = (satuanBeli, satuanUnit, hasilPerUnit, hasilLabel
   return UNIT_GROUPS[g]?.units || ["pcs"];
 };
 
+// Satuan yang valid untuk restock (+ Stok / − Kurangi Stok) suatu bahan.
+// Beda dari validUsageUnits: restock selalu dalam satuan beli/kemasan fisik,
+// TIDAK dibatasi ke hasilLabel walau bahan itu punya hasilPerUnit (karena yang
+// ditambah/dikurangi adalah stok fisiknya, bukan pemakaian per resep).
+export const restokUnitOptions = (bahan) => {
+  if (!bahan) return ["pcs"];
+  if (bahan.satuanUnit) {
+    return [bahan.satuanUnit, bahan.satuanBeli].filter(
+      (v, i, a) => v && a.indexOf(v) === i
+    );
+  }
+  const g = unitGroupOf(bahan.satuanBeli);
+  return UNIT_GROUPS[g]?.units || ["pcs"];
+};
+
 // Konversi angka ke base unit (gram / ml / pcs / unit-terkecil)
 // Untuk satuan kemasan (pack/dus/karton/dll), base = satuanUnit (pcs/lembar/botol/dll)
 export const toBase = (value, unit, isiPerPack = 1) => {
