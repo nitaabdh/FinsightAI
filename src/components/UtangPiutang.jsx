@@ -20,6 +20,7 @@ export default function UtangPiutang() {
   // Tab dalam tab: "piutang" | "utang", dan toggle riwayat (lunas) per sisi
   const [sisi, setSisi]           = useState("piutang");
   const [showRiwayat, setShowRiwayat] = useState(false);
+  const [showForm, setShowForm]   = useState(false);
 
  // Tambah di atas component
 const apiFetch = async (url, options = {}) => {
@@ -37,7 +38,7 @@ useEffect(() => {
 }, [user]);
 
 
-  const resetForm = () => { setForm({ ...emptyForm, jenis: sisi }); setEditId(null); setError(""); };
+  const resetForm = () => { setForm({ ...emptyForm, jenis: sisi }); setEditId(null); setError(""); setShowForm(false); };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -68,6 +69,7 @@ const handleSubmit = async () => {
     setEditId(it.id);
     setSisi(it.jenis);
     setError("");
+    setShowForm(true);
   };
 
   // handleDel
@@ -123,7 +125,16 @@ const toggleLunas = async (id) => {
         <span className="utangpiutang__total-value">{formatRupiah(totalAktif)}</span>
       </div>
 
-      {/* Form tambah/edit */}
+      {/* Form tambah/edit — collapsible kayak Aset Usaha */}
+      {!showForm ? (
+        <button
+          className={"utangpiutang__btn-primary utangpiutang__btn-primary--" + sisi}
+          style={{ alignSelf: "flex-start" }}
+          onClick={() => setShowForm(true)}
+        >
+          {sisi === "piutang" ? "+ Catat Piutang Baru" : "+ Catat Utang Baru"}
+        </button>
+      ) : (
       <div className="utangpiutang__form">
         <h3 className="utangpiutang__form-title">
           {editId ? "✏️ Edit Catatan" : sisi === "piutang" ? "+ Catat Piutang Baru" : "+ Catat Utang Baru"}
@@ -165,12 +176,13 @@ const toggleLunas = async (id) => {
         {error && <p className="utangpiutang__error">⚠️ {error}</p>}
 
         <div className="utangpiutang__form-actions">
-          {editId && <button className="utangpiutang__btn-sec" onClick={resetForm}>Batal</button>}
+          <button className="utangpiutang__btn-sec" onClick={resetForm}>Batal</button>
           <button className={"utangpiutang__btn-primary utangpiutang__btn-primary--" + sisi} onClick={handleSubmit}>
             {editId ? "Simpan Perubahan" : "+ Simpan Catatan"}
           </button>
         </div>
       </div>
+      )}
 
       {/* List header + toggle riwayat */}
       <div className="utangpiutang__list-header">

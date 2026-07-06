@@ -92,6 +92,7 @@ export default function CatatanPage() {
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [noteForm,      setNoteForm]      = useState({ title:"", body:"", color:"yellow", category:"umum" });
   const [editNoteId,    setEditNoteId]    = useState(null);
+  const [draftToastMsg, setDraftToastMsg] = useState("");
   const [deleteConfirm,   setDeleteConfirm]   = useState(null);
   const [openNote,        setOpenNote]        = useState(null);
   const [openNoteTitle,   setOpenNoteTitle]   = useState("");
@@ -174,25 +175,48 @@ export default function CatatanPage() {
     setShowForm(true);
   };
 
+  const persistCalNote = async (data) => {
+    const existing = calNotes.filter(n => n.date === popupDate);
+    if (!editCalId && existing.length >= 3) return false;
+    if (editCalId) {
+      const r = await apiFetch(`/api/notes?table=cal_notes`, {
+        method: "PUT",
+        body: JSON.stringify({ id: editCalId, ...data, date: popupDate }),
+      });
+      if (r.success) setCalNotes(p => p.map(n => n.id === editCalId ? r.data : n));
+      return r.success;
+    } else {
+      const r = await apiFetch(`/api/notes?table=cal_notes`, {
+        method: "POST",
+        body: JSON.stringify({ id: genId(), mode, date: popupDate, ...data }),
+      });
+      if (r.success) { setCalNotes(p => [...p, r.data]); setEditCalId(r.data.id); }
+      return r.success;
+    }
+  };
+
   const saveCalNote = async () => {
-  if (!calForm.title.trim()) return;
-  const existing = calNotes.filter(n => n.date === popupDate);
-  if (!editCalId && existing.length >= 3) return;
-  if (editCalId) {
-    const r = await apiFetch(`/api/notes?table=cal_notes`, {
-      method: "PUT",
-      body: JSON.stringify({ id: editCalId, ...calForm, date: popupDate }),
-    });
-    if (r.success) setCalNotes(p => p.map(n => n.id === editCalId ? r.data : n));
-  } else {
-    const r = await apiFetch(`/api/notes?table=cal_notes`, {
-      method: "POST",
-      body: JSON.stringify({ id: genId(), mode, date: popupDate, ...calForm }),
-    });
-    if (r.success) setCalNotes(p => [...p, r.data]);
-  }
-  setShowForm(false); setEditCalId(null); setCalForm({ title:"", body:"", category:"umum" });
-};
+    if (!calForm.title.trim()) return;
+    const ok = await persistCalNote(calForm);
+    if (ok !== false) { setShowForm(false); setEditCalId(null); setCalForm({ title:"", body:"", category:"umum" }); }
+  };
+
+  // Klik overlay / ✕ pas lagi ngisi form acara = kemungkinan besar nggak sengaja.
+  // Auto-save dulu sebagai draft (judul default kalau kosong) biar nggak hilang percuma.
+  const attemptClosePopup = async () => {
+    if (showForm) {
+      const hasContent = calForm.title.trim() || calForm.body.trim();
+      if (hasContent) {
+        const existing = calNotes.filter(n => n.date === popupDate);
+        const isFull = existing.length >= 3 && !editCalId;
+        if (!isFull) {
+          await persistCalNote({ ...calForm, title: calForm.title.trim() || "Draft tanpa judul" });
+          setDraftToastMsg("📝 Draf acara otomatis tersimpan");
+        }
+      }
+    }
+    closePopup();
+  };
 
   const deleteCalNote = async (id) => {
   await apiFetch(`/api/notes?table=cal_notes&id=${id}`, { method: "DELETE" });
@@ -211,29 +235,58 @@ export default function CatatanPage() {
     : sortedCalNotes;
 
   // ── Notes helpers ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!draftToastMsg) return;
+    const t = setTimeout(() => setDraftToastMsg(""), 2500);
+    return () => clearTimeout(t);
+  }, [draftToastMsg]);
+
   const openNoteModal = (note=null) => {
     if (note) { setNoteForm({ title:note.title, body:note.body||"", color:note.color, category:note.category }); setEditNoteId(note.id); }
     else      { setNoteForm({ title:"", body:"", color:"yellow", category:"umum" }); setEditNoteId(null); }
     setShowNoteModal(true);
   };
 
+  const persistNote = async (data) => {
+    if (editNoteId) {
+      const r = await apiFetch(`/api/notes?table=notes`, {
+        method: "PUT",
+        body: JSON.stringify({ id: editNoteId, mode, ...data }),
+      });
+      if (r.success) setNotes(p => p.map(n => n.id === editNoteId ? r.data : n));
+      return r.success;
+    } else {
+      const r = await apiFetch(`/api/notes?table=notes`, {
+        method: "POST",
+        body: JSON.stringify({ id: genId(), mode, ...data }),
+      });
+      if (r.success) {
+        setNotes(p => [r.data, ...p]);
+        // Kunci ke id yg baru dibuat, biar kalau modal ini auto-save lagi
+        // (misal ke-klik di luar 2x), nggak nyipta note duplikat.
+        setEditNoteId(r.data.id);
+      }
+      return r.success;
+    }
+  };
+
   const saveNote = async () => {
-  if (!noteForm.title.trim()) return;
-  if (editNoteId) {
-    const r = await apiFetch(`/api/notes?table=notes`, {
-      method: "PUT",
-      body: JSON.stringify({ id: editNoteId, mode, ...noteForm }),
-    });
-    if (r.success) setNotes(p => p.map(n => n.id === editNoteId ? r.data : n));
-  } else {
-    const r = await apiFetch(`/api/notes?table=notes`, {
-      method: "POST",
-      body: JSON.stringify({ id: genId(), mode, ...noteForm }),
-    });
-    if (r.success) setNotes(p => [r.data, ...p]);
-  }
-  setShowNoteModal(false);
-};
+    if (!noteForm.title.trim()) return;
+    await persistNote(noteForm);
+    setShowNoteModal(false);
+  };
+
+  // Klik di luar modal / tombol ✕ = kemungkinan besar nggak sengaja, BUKAN "Batal" yang
+  // disengaja. Daripada catatan yang udah diketik ilang percuma, auto-save dulu sebagai
+  // draft (judul default "Draft tanpa judul" kalau kosong), baru modal ditutup.
+  const attemptCloseNoteModal = async () => {
+    const hasContent = noteForm.title.trim() || noteForm.body.trim();
+    if (!hasContent) { setShowNoteModal(false); return; }
+    const dataToSave = { ...noteForm, title: noteForm.title.trim() || "Draft tanpa judul" };
+    await persistNote(dataToSave);
+    setShowNoteModal(false);
+    setDraftToastMsg("📝 Draf catatan otomatis tersimpan");
+  };
 
   const deleteNote = async (id) => {
   await apiFetch(`/api/notes?table=notes&id=${id}`, { method: "DELETE" });
@@ -572,14 +625,14 @@ const updateOpenNoteMeta = async (field, value) => {
     const isFull     = existing.length >= 3 && !editCalId;
 
     return (
-      <div className="cn-overlay" onClick={closePopup}>
+      <div className="cn-overlay" onClick={attemptClosePopup}>
         <div className="cn-modal" onClick={e=>e.stopPropagation()}>
           <div className="cn-modal-header">
             <div>
               <h3>📅 {label}</h3>
               {isPastDate && <span className="popup-past-badge">Tanggal sudah lewat</span>}
             </div>
-            <button className="cn-close" onClick={closePopup}>✕</button>
+            <button className="cn-close" onClick={attemptClosePopup}>✕</button>
           </div>
 
           {/* List acara yang sudah ada */}
@@ -659,11 +712,11 @@ const updateOpenNoteMeta = async (field, value) => {
 
   // ── Modal: Note Form ──────────────────────────────────────────────────────────
   const renderNoteModal = () => (
-    <div className="cn-overlay" onClick={()=>setShowNoteModal(false)}>
+    <div className="cn-overlay" onClick={attemptCloseNoteModal}>
       <div className="cn-modal cn-modal--note" onClick={e=>e.stopPropagation()}>
         <div className="cn-modal-header">
           <h3>{editNoteId ? "✏️ Edit Catatan" : "📝 Catatan Baru"}</h3>
-          <button className="cn-close" onClick={()=>setShowNoteModal(false)}>✕</button>
+          <button className="cn-close" onClick={attemptCloseNoteModal}>✕</button>
         </div>
         <div className="cn-form">
           <div className="cn-field">
@@ -862,6 +915,19 @@ const updateOpenNoteMeta = async (field, value) => {
         {openNote        && renderNotePopup()}
         {deleteCalConfirm && renderDeleteCal()}
         {deleteConfirm    && renderDeleteNote()}
+
+        {draftToastMsg && (
+          <div
+            style={{
+              position: "fixed", bottom: "24px", left: "50%", transform: "translateX(-50%)",
+              background: "#1f2937", color: "#fff", padding: "10px 18px", borderRadius: "10px",
+              fontSize: "0.9rem", boxShadow: "0 4px 14px rgba(0,0,0,0.25)", zIndex: 9999,
+              pointerEvents: "none",
+            }}
+          >
+            {draftToastMsg}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

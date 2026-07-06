@@ -7,6 +7,7 @@ import {
   toBaseWithHasil, unitGroupOf, restokUnitOptions,
 } from "../utils/umkmCalc";
 import { addTransaction } from "../utils/storage";
+import RupiahInput from "./RupiahInput";
 import "./BahanBaku.css";
 
 const KAS_PRESET = ["Kas Tunai", "Rekening Bank", "E-Wallet"];
@@ -124,9 +125,12 @@ export default function BahanBaku() {
   const handleSubmit = async () => {
     const { nama, hargaBeli, jumlahBeli, satuanBeli, isiPerPack, hasilPerUnit, hasilLabel } = form;
 
-    if (!nama.trim())                    return setError("Nama bahan belum diisi.");
-    if (!jumlahBeli || +jumlahBeli <= 0) return setError("Jumlah beli harus lebih dari 0.");
-    if (!hargaBeli || +hargaBeli <= 0)   return setError("Harga belum diisi.");
+    if (!nama.trim())                  return setError("Nama bahan belum diisi.");
+    if (+jumlahBeli < 0)               return setError("Jumlah beli nggak boleh minus.");
+    if (+hargaBeli < 0)                return setError("Harga nggak boleh minus.");
+    // jumlahBeli & hargaBeli BOLEH 0 — dipakai buat daftarin bahan dulu sebagai
+    // master data/katalog (stok masih 0), nanti stok & biayanya baru keisi
+    // beneran pas restock lewat "+ Stok".
     if (isPack && (!isiPerPack || +isiPerPack <= 0))
       return setError("Isi 1 pack jadi berapa pcs dulu ya.");
     if (showYield && hasilPerUnit && +hasilPerUnit > 1 && !hasilLabel.trim())
@@ -462,8 +466,9 @@ export default function BahanBaku() {
           </div>
           <div className="bahanbaku__field">
             <label className="bahanbaku__label">Harga Totalnya (Rp)</label>
-            <input className="bahanbaku__input" type="number" name="hargaBeli"
-              placeholder="Contoh: 60000" value={form.hargaBeli} onChange={handleChange} min="0" />
+            <RupiahInput className="bahanbaku__input" name="hargaBeli"
+              placeholder="Contoh: 60.000" value={form.hargaBeli}
+              onChange={(v) => { setForm(p => ({ ...p, hargaBeli: v })); setError(""); }} />
           </div>
         </div>
 
@@ -592,12 +597,11 @@ export default function BahanBaku() {
               </div>
               <div className="bahanbaku__field" style={{ marginBottom: "1rem" }}>
                 <label className="bahanbaku__label">Harga totalnya berapa (Rp)?</label>
-                <input
-                  className="bahanbaku__input" type="number"
-                  placeholder="Contoh: 22000"
+                <RupiahInput
+                  className="bahanbaku__input"
+                  placeholder="Contoh: 22.000"
                   value={restokHarga}
-                  onChange={e => { setRestokHarga(e.target.value); setRestokErr(""); }}
-                  min="0"
+                  onChange={(v) => { setRestokHarga(v); setRestokErr(""); }}
                 />
               </div>
               <div className="bahanbaku__field" style={{ marginBottom: "1rem" }}>
