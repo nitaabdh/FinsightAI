@@ -4,7 +4,7 @@ import {
   genId,
   formatRupiah,
   hargaPerBase, nilaiStok, stokDisplay, hargaUnitLabel,
-  toBase, unitGroupOf, restokUnitOptions,
+  toBase, toBaseWithHasil, unitGroupOf, restokUnitOptions,
 } from "../utils/umkmCalc";
 import "./BahanBaku.css";
 
@@ -196,8 +196,9 @@ export default function BahanBaku() {
     const bahan = list.find(b => b.id === restokId);
     if (!bahan) return;
 
-    // Stok tambahan dalam base unit — mengikuti satuan yang DIPILIH user, bisa pack ATAU pcs
-    const stokTambahan = toBase(+restokJml, restokSat, bahan.isiPerPack || 1);
+    // Stok tambahan dalam base unit — mengikuti satuan yang DIPILIH user, bisa pack,
+    // pcs, ATAU satuan hasil custom (cetakan/pin/dll, otomatis dikonversi balik ke base).
+    const stokTambahan = toBaseWithHasil(+restokJml, restokSat, bahan);
 
     const stokLama = parseFloat(bahan.stok) || 0;
     const stokBaru = stokLama + stokTambahan;
@@ -251,7 +252,7 @@ export default function BahanBaku() {
     const bahan = list.find(b => b.id === kurangiId);
     if (!bahan) return;
 
-    const jumlahBase = toBase(+kurangiJml, kurangiSat, bahan.isiPerPack || 1);
+    const jumlahBase = toBaseWithHasil(+kurangiJml, kurangiSat, bahan);
     const stokBaru = (parseFloat(bahan.stok) || 0) - jumlahBase;
 
     const r = await apiFetch(`/api/umkm?table=bahan_baku`, {

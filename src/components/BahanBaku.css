@@ -375,3 +375,225 @@
   flex-shrink: 0;
 }
 .bahanbaku__yield-close:hover { color: #f87171; }
+
+/* ── Halaman Detail Bahan ─────────────────────────────────────────────────
+   Class-class ini tadinya belum ada sama sekali di stylesheet, jadi elemennya
+   jatuh ke default browser (putih/tidak jelas). Sekarang distyle konsisten
+   dengan tema gelap yang sama seperti bagian lain. */
+
+.bahanbaku__detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.bahanbaku__detail-back {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0.4rem 0;
+  transition: var(--transition);
+}
+.bahanbaku__detail-back:hover { color: var(--accent-umkm); }
+
+.bahanbaku__detail-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.bahanbaku__detail-nama {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.bahanbaku__detail-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  padding: 1rem 1.1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 640px) {
+  .bahanbaku__detail-stats { grid-template-columns: 1fr; }
+}
+
+.bahanbaku__detail-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.bahanbaku__detail-stat-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.bahanbaku__detail-stat-value {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+.bahanbaku__detail-stat-value--minus { color: #f87171; }
+
+.bahanbaku__detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+/* Tombol Tambah/Kurangi/Edit/Hapus di halaman detail dibikin lebih besar &
+   jelas daripada versi mini yang di daftar list */
+.bahanbaku__detail-actions .bahanbaku__item-restok,
+.bahanbaku__detail-actions .bahanbaku__item-kurangi,
+.bahanbaku__detail-actions .bahanbaku__btn-sec,
+.bahanbaku__detail-actions .bahanbaku__btn-danger {
+  font-size: 13px;
+  padding: 0.65rem 1.1rem;
+}
+
+/* Versi "− Kurangi Stok" (belum ada sebelumnya, makanya putih polos) */
+.bahanbaku__item-kurangi {
+  background: rgba(239,68,68,0.1);
+  color: #f87171;
+  border: 1px solid rgba(239,68,68,0.25);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.bahanbaku__item-kurangi:hover { background: rgba(239,68,68,0.18); }
+
+/* ── Riwayat Keluar-Masuk Stok ────────────────────────────────────────────── */
+
+.bahanbaku__history {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+}
+
+.bahanbaku__history-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.9rem;
+}
+
+.bahanbaku__history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bahanbaku__history-item {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.bahanbaku__history-item--tambah { border-left: 3px solid #34d399; }
+.bahanbaku__history-item--kurang { border-left: 3px solid #f87171; }
+
+.bahanbaku__history-icon {
+  flex-shrink: 0;
+  width: 1.6rem;
+  height: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg-card);
+  font-size: 12px;
+}
+.bahanbaku__history-item--tambah .bahanbaku__history-icon { color: #34d399; }
+.bahanbaku__history-item--kurang .bahanbaku__history-icon { color: #f87171; }
+
+.bahanbaku__history-info { flex: 1; min-width: 0; }
+
+.bahanbaku__history-jumlah {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+}
+
+.bahanbaku__history-alasan {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+.bahanbaku__history-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.bahanbaku__history-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.bahanbaku__history-badge--transaksi {
+  background: rgba(129,140,248,0.15);
+  color: var(--accent-ai, #818cf8);
+}
+.bahanbaku__history-badge--manual_tambah,
+.bahanbaku__history-badge--manual_kurang {
+  background: var(--accent-umkm-dim);
+  color: var(--accent-umkm);
+}
+
+.bahanbaku__history-date {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Tombol "Detail →" di daftar list — juga belum ada sebelumnya */
+.bahanbaku__item-detail {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.bahanbaku__item-detail:hover { color: var(--accent-umkm); border-color: rgba(245,158,11,0.3); }
+
+/* Label "*wajib" di form Kurangi Stok — juga belum ada sebelumnya */
+.bahanbaku__label-required {
+  color: #f87171;
+  font-weight: 700;
+  font-size: 11px;
+}

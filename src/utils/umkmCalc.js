@@ -45,18 +45,23 @@ export const validUsageUnits = (satuanBeli, satuanUnit, hasilPerUnit, hasilLabel
 };
 
 // Satuan yang valid untuk restock (+ Stok / − Kurangi Stok) suatu bahan.
-// Beda dari validUsageUnits: restock selalu dalam satuan beli/kemasan fisik,
-// TIDAK dibatasi ke hasilLabel walau bahan itu punya hasilPerUnit (karena yang
-// ditambah/dikurangi adalah stok fisiknya, bukan pemakaian per resep).
+// Selain satuan beli/kemasan fisik, kalau bahan punya hasilPerUnit (misal 1
+// lembar = 17 cetakan), satuan hasil custom itu (cetakan/pin/dll) juga
+// dimasukkan sebagai opsi pertama — biar bisa restock langsung pakai satuan
+// yang lebih natural buat user (lihat toBaseWithHasil untuk konversinya).
 export const restokUnitOptions = (bahan) => {
   if (!bahan) return ["pcs"];
-  if (bahan.satuanUnit) {
-    return [bahan.satuanUnit, bahan.satuanBeli].filter(
-      (v, i, a) => v && a.indexOf(v) === i
-    );
+  const opts = [];
+  if (bahan.hasilPerUnit && +bahan.hasilPerUnit > 1) {
+    opts.push(bahan.hasilLabel || "hasil");
   }
-  const g = unitGroupOf(bahan.satuanBeli);
-  return UNIT_GROUPS[g]?.units || ["pcs"];
+  if (bahan.satuanUnit) {
+    opts.push(bahan.satuanUnit, bahan.satuanBeli);
+  } else {
+    const g = unitGroupOf(bahan.satuanBeli);
+    opts.push(...(UNIT_GROUPS[g]?.units || ["pcs"]));
+  }
+  return opts.filter((v, i, a) => v && a.indexOf(v) === i);
 };
 
 // Konversi angka ke base unit (gram / ml / pcs / unit-terkecil)
@@ -69,6 +74,20 @@ export const toBase = (value, unit, isiPerPack = 1) => {
     return v * (parseFloat(isiPerPack) || 1);
   }
   return v;
+};
+
+// Konversi angka ke base unit, dengan dukungan satuan hasil custom (cetakan/pin/dll).
+// Dipakai khusus untuk restock (+ Stok / − Kurangi Stok) di BahanBaku.jsx, karena di sana
+// user bisa pilih satuan hasil (dari restokUnitOptions) alih-alih satuan beli biasa.
+// Kalau unit yang dipilih = hasilLabel bahan itu, jumlahnya dibagi hasilPerUnit dulu
+// supaya balik ke base unit fisik (misal: 5 cetakan ÷ 17 cetakan/lembar = 5/17 lembar).
+export const toBaseWithHasil = (value, unit, bahan) => {
+  const hasil = parseFloat(bahan?.hasilPerUnit) || 0;
+  if (hasil > 1 && unit === (bahan.hasilLabel || "hasil")) {
+    const v = parseFloat(value) || 0;
+    return v / hasil;
+  }
+  return toBase(value, unit, bahan?.isiPerPack || 1);
 };
 
 // Konversi dari base unit kembali ke satuan display (untuk tampil di UI)
