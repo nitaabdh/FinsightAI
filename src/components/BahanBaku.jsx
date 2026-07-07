@@ -17,7 +17,7 @@ const KURANGI_KATEGORI = [
   { value: "sample",  label: "Sample / Contoh Marketing" },
 ];
 
-const emptyForm = { nama: "", jumlahBeli: "", satuanBeli: "kg", isiPerPack: "", hargaBeli: "", hasilPerUnit: "", hasilLabel: "" };
+const emptyForm = { nama: "", jumlahBeli: "", satuanBeli: "kg", isiPerPack: "", hargaBeli: "", hasilPerUnit: "", hasilLabel: "", kas: "Kas Tunai" };
 
 async function apiFetch(url, options = {}) {
   const token = localStorage.getItem("finsight_token");
@@ -37,6 +37,7 @@ export default function BahanBaku() {
   const [list,      setList]      = useState([]);
   const [form,      setForm]      = useState(emptyForm);
   const [editId,    setEditId]    = useState(null); // koreksi data, bukan restock
+  const [editLocked, setEditLocked] = useState(false); // true kalau bahan ini sudah pernah "dibeli" (jumlahBeli & hargaBeli > 0), jadi field pembelian awal dikunci
   const [error,     setError]     = useState("");
   const [delId,     setDelId]     = useState(null);
   const [showYield, setShowYield] = useState(false);
@@ -88,7 +89,7 @@ export default function BahanBaku() {
 
   const isPack = form.satuanBeli === "pack";
 
-  const resetForm = () => { setForm(emptyForm); setEditId(null); setError(""); setShowYield(false); };
+  const resetForm = () => { setForm(emptyForm); setEditId(null); setEditLocked(false); setError(""); setShowYield(false); };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -135,6 +136,8 @@ export default function BahanBaku() {
       return setError("Isi 1 pack jadi berapa pcs dulu ya.");
     if (showYield && hasilPerUnit && +hasilPerUnit > 1 && !hasilLabel.trim())
       return setError("Kasih nama hasilnya dulu (misal: cetakan, gantungan kunci).");
+    if (!editId && +jumlahBeli > 0 && +hargaBeli > 0 && !form.kas?.trim())
+      return setError("Pilih kas/wadah uang buat pembelian bahan ini.");
 
     const yieldPayload = (showYield && hasilPerUnit && +hasilPerUnit > 1)
       ? { hasilPerUnit: +hasilPerUnit, hasilLabel: hasilLabel.trim() }
@@ -174,7 +177,30 @@ export default function BahanBaku() {
         method: "POST",
         body: JSON.stringify({ id: genId(), ...payload }),
       });
-      if (r.success) setList(p => [r.data, ...p]);
+      if (r.success) {
+        setList(p => [r.data, ...p]);
+        // Kalau langsung ada stok awal beneran (jumlah & harga > 0), ini sama posisinya
+        // kayak restock: kecatat sebagai riwayat stok + pengeluaran di Keuangan.
+        if (+jumlahBeli > 0 && +hargaBeli > 0) {
+          await apiFetch(`/api/umkm?table=stok_history`, {
+            method: "POST",
+            body: JSON.stringify({
+              id: genId(), bahanId: r.data.id, tipe: "tambah", sumber: "manual_tambah",
+              jumlah: +jumlahBeli, satuanLabel: satuanBeli, alasan: null,
+              supplierId: null, createdAt: Date.now(),
+            }),
+          });
+          await addTransaction(user.id, "umkm", {
+            type: "pengeluaran",
+            amount: +hargaBeli,
+            category: "Bahan Baku / HPP",
+            description: `Pembelian awal ${nama.trim()}`,
+            date: new Date().toISOString().slice(0, 10),
+            kas: form.kas.trim(),
+          });
+          window.dispatchEvent(new CustomEvent("transactionsUpdated"));
+        }
+      }
     }
 
     resetForm();
@@ -190,9 +216,16 @@ export default function BahanBaku() {
       hargaBeli: String(b.hargaBeli),
       hasilPerUnit: b.hasilPerUnit ? String(b.hasilPerUnit) : "",
       hasilLabel: b.hasilLabel || "",
+      kas: "Kas Tunai",
     });
     setShowYield(!!b.hasilPerUnit);
     setEditId(b.id);
+    // Kalau bahan ini sudah punya pembelian riil (jumlah & harga > 0), field pembelian
+    // awalnya dikunci — soalnya itu udah kepakai buat stok & sudah kecatat sebagai
+    // transaksi pengeluaran. Kalau boleh diubah bebas, angkanya jadi nggak nyambung lagi
+    // sama transaksi yang sudah tercatat di Keuangan. Mau nambah/kurangi stok atau koreksi
+    // harga? Pakai tombol "+ Stok" / "− Kurangi Stok" di halaman detail, itu jalurnya benar.
+    setEditLocked(+b.jumlahBeli > 0 && +b.hargaBeli > 0);
     setError("");
   };
 
@@ -441,6 +474,15 @@ export default function BahanBaku() {
           </p>
         )}
 
+        {editLocked && (
+          <p className="bahanbaku__example" style={{ background: "var(--warning-bg, #fff3cd)" }}>
+            🔒 Data pembelian (jumlah, satuan, harga) sudah tercatat sebagai stok & transaksi di Keuangan,
+            jadi tidak bisa diubah dari sini. Kamu masih bisa ubah <strong>nama bahan</strong>.
+            Untuk nambah/kurangi stok atau kalau harga belinya berubah, pakai tombol{" "}
+            <strong>+ Stok</strong> / <strong>− Kurangi Stok</strong> di halaman detail bahan ini.
+          </p>
+        )}
+
         <div className="bahanbaku__grid">
           <div className="bahanbaku__field bahanbaku__field--wide">
             <label className="bahanbaku__label">Nama Bahan</label>
@@ -451,11 +493,13 @@ export default function BahanBaku() {
           <div className="bahanbaku__field">
             <label className="bahanbaku__label">Beli Berapa?</label>
             <input className="bahanbaku__input" type="number" name="jumlahBeli"
-              placeholder="Contoh: 3" value={form.jumlahBeli} onChange={handleChange} min="0" />
+              placeholder="Contoh: 3" value={form.jumlahBeli} onChange={handleChange} min="0"
+              disabled={editLocked} />
           </div>
           <div className="bahanbaku__field">
             <label className="bahanbaku__label">Satuannya</label>
-            <select className="bahanbaku__input" name="satuanBeli" value={form.satuanBeli} onChange={handleChange}>
+            <select className="bahanbaku__input" name="satuanBeli" value={form.satuanBeli} onChange={handleChange}
+              disabled={editLocked}>
               <option value="kg">kg</option>
               <option value="gram">gram</option>
               <option value="liter">liter</option>
@@ -468,8 +512,17 @@ export default function BahanBaku() {
             <label className="bahanbaku__label">Harga Totalnya (Rp)</label>
             <RupiahInput className="bahanbaku__input" name="hargaBeli"
               placeholder="Contoh: 60.000" value={form.hargaBeli}
-              onChange={(v) => { setForm(p => ({ ...p, hargaBeli: v })); setError(""); }} />
+              onChange={(v) => { setForm(p => ({ ...p, hargaBeli: v })); setError(""); }}
+              disabled={editLocked} />
           </div>
+          {!editId && +form.jumlahBeli > 0 && +form.hargaBeli > 0 && (
+            <div className="bahanbaku__field">
+              <label className="bahanbaku__label">Bayar Pakai Kas</label>
+              <select className="bahanbaku__input" name="kas" value={form.kas} onChange={handleChange}>
+                {KAS_PRESET.map(k => <option key={k} value={k}>{k}</option>)}
+              </select>
+            </div>
+          )}
         </div>
 
         {isPack && (
@@ -477,12 +530,12 @@ export default function BahanBaku() {
             <label className="bahanbaku__label">1 pack itu jadi berapa pcs?</label>
             <input className="bahanbaku__input" type="number" name="isiPerPack"
               placeholder="Contoh: 50 (buat packaging) atau 20 (buat kertas foto)"
-              value={form.isiPerPack} onChange={handleChange} min="1" />
+              value={form.isiPerPack} onChange={handleChange} min="1" disabled={editLocked} />
           </div>
         )}
 
         {!showYield ? (
-          <button type="button" className="bahanbaku__yield-toggle" onClick={() => setShowYield(true)}>
+          <button type="button" className="bahanbaku__yield-toggle" onClick={() => setShowYield(true)} disabled={editLocked}>
             + Rata-rata 1 {satuanKecilSaatIni()} bisa jadi beberapa hasil? (opsional)
           </button>
         ) : (
@@ -492,15 +545,16 @@ export default function BahanBaku() {
                 Rata-rata 1 {satuanKecilSaatIni()} bisa jadi berapa hasil/produk?
               </label>
               <button type="button" className="bahanbaku__yield-close"
-                onClick={() => { setShowYield(false); setForm(p => ({ ...p, hasilPerUnit: "", hasilLabel: "" })); }}>
+                onClick={() => { setShowYield(false); setForm(p => ({ ...p, hasilPerUnit: "", hasilLabel: "" })); }}
+                disabled={editLocked}>
                 Batal
               </button>
             </div>
             <div className="bahanbaku__kemasan-row">
               <input className="bahanbaku__input" type="number" name="hasilPerUnit"
-                placeholder="Contoh: 17" value={form.hasilPerUnit} onChange={handleChange} min="1" />
+                placeholder="Contoh: 17" value={form.hasilPerUnit} onChange={handleChange} min="1" disabled={editLocked} />
               <input className="bahanbaku__input" type="text" name="hasilLabel"
-                placeholder="Nama hasilnya, misal: cetakan" value={form.hasilLabel} onChange={handleChange} />
+                placeholder="Nama hasilnya, misal: cetakan" value={form.hasilLabel} onChange={handleChange} disabled={editLocked} />
             </div>
             <p className="bahanbaku__hint-small">
               Contoh: 1 lembar kertas foto rata-rata jadi 17 cetakan gantungan kunci → harga otomatis dihitung per cetakan, bukan per lembar.

@@ -34,6 +34,7 @@ export default function AsetUsaha() {
   const [list, setList]     = useState([]);
   const [form, setForm]     = useState(emptyForm);
   const [editId, setEditId] = useState(null);
+  const [editHargaLocked, setEditHargaLocked] = useState(false); // true kalau aset ini sudah kebeli beneran (hargaBeli > 0 saat dibuat), jadi hargaBeli dikunci
   const [error, setError]   = useState("");
   const [delId, setDelId]   = useState(null);
   const [filterKategori, setFilterKategori] = useState("semua");
@@ -46,7 +47,7 @@ export default function AsetUsaha() {
     apiFetch(`/api/umkm?table=aset_usaha`).then(r => { if (r.success) setList(r.data); });
   }, [user]);
 
-  const resetForm = () => { setForm(emptyForm); setEditId(null); setError(""); setShowForm(false); };
+  const resetForm = () => { setForm(emptyForm); setEditId(null); setEditHargaLocked(false); setError(""); setShowForm(false); };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -117,6 +118,10 @@ export default function AsetUsaha() {
       kas: "Kas Tunai",
     });
     setEditId(it.id);
+    // Kalau aset ini sudah pernah kebeli beneran (hargaBeli > 0), harga belinya dikunci —
+    // soalnya sudah kecatat sebagai transaksi pengeluaran di Keuangan. Diedit di sini nggak
+    // akan mengubah transaksi yang sudah tercatat, jadi malah bikin datanya nggak nyambung.
+    setEditHargaLocked(+it.hargaBeli > 0);
     setError("");
     setShowForm(true);
     setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
@@ -154,6 +159,11 @@ export default function AsetUsaha() {
       ) : (
       <div className="asetusaha__form" ref={formRef}>
         <h3 className="asetusaha__form-title">{editId ? "✏️ Edit Aset" : "+ Tambah Aset Usaha"}</h3>
+        {editHargaLocked && (
+          <p className="asetusaha__error" style={{ background: "var(--warning-bg, #fff3cd)", color: "inherit" }}>
+            🔒 Harga beli aset ini sudah tercatat sebagai transaksi pengeluaran di Keuangan, jadi tidak bisa diubah dari sini.
+          </p>
+        )}
         <div className="asetusaha__grid">
           <div className="asetusaha__field asetusaha__field--wide">
             <label className="asetusaha__label">Nama Alat</label>
@@ -184,7 +194,8 @@ export default function AsetUsaha() {
             <label className="asetusaha__label">Harga Beli (Rp)</label>
             <RupiahInput className="asetusaha__input"
               placeholder="Contoh: 1.500.000" value={form.hargaBeli}
-              onChange={v => { setForm(p => ({ ...p, hargaBeli: v })); setError(""); }} />
+              onChange={v => { setForm(p => ({ ...p, hargaBeli: v })); setError(""); }}
+              disabled={editHargaLocked} />
           </div>
           <div className="asetusaha__field">
             <label className="asetusaha__label">Kondisi</label>
