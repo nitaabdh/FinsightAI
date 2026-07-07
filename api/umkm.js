@@ -101,7 +101,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, message: "Method tidak diizinkan." });
   } catch (err) {
     console.error(`[umkm/${table}] error:`, err);
-    return res.status(500).json({ success: false, message: "Terjadi kesalahan server." });
+    return res.status(500).json({ success: false, message: err.message || "Terjadi kesalahan server." });
   }
 }
 
