@@ -247,6 +247,10 @@
   .du { gap: 0.85rem; }
   .du__greeting { font-size: 18px; }
   .du__metrics { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  /* Kalau jumlah kartu ganjil (misal 5), kartu terakhir bakal sendirian di
+     baris paling bawah — daripada nyisain kotak kosong di sebelahnya,
+     lebarin aja kartu itu penuh 1 baris. */
+  .du__metrics > *:last-child:nth-child(odd) { grid-column: 1 / -1; }
   .du__metric-value { font-size: 14px; }
   .du__row2 { grid-template-columns: 1fr; }
   .du__tren { padding: 0.9rem 0.85rem; }
