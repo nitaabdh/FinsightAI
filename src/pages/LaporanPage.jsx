@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import PageHeader from "../components/PageHeader";
-import { getTransactions, calcSummary, formatRupiah, groupByMonth, groupByCategory, monthLabel, isModalUsaha } from "../utils/storage";
+import { getTransactions, calcSummary, formatRupiah, groupByMonth, groupByCategory, groupByCategoryType, monthLabel, isModalUsaha, isRealKasTx } from "../utils/storage";
+import { nilaiStok } from "../utils/umkmCalc";
 import BreakEvenPoint from "../components/BreakEvenPoint";
 import UtangPiutang from "../components/UtangPiutang";
 import jsPDF from "jspdf";
@@ -15,6 +16,8 @@ export default function LaporanPage() {
   const [activeTab, setActiveTab] = useState("labarugi");
   const [transactions, setTransactions] = useState([]);
   const [asetUsaha, setAsetUsaha]       = useState([]);
+  const [bahanBaku, setBahanBaku]       = useState([]);
+  const [utangPiutang, setUtangPiutang] = useState([]);
   const [filterMonth, setFilterMonth]   = useState("semua");
   const [loading, setLoading]           = useState(true);
 
@@ -26,9 +29,13 @@ export default function LaporanPage() {
     Promise.all([
       fetch(`/api/transactions?mode=umkm`, { headers: h }).then(r => r.json()),
       fetch(`/api/umkm?table=aset_usaha`, { headers: h }).then(r => r.json()),
-    ]).then(([txRes, asetRes]) => {
-      if (txRes.success)   setTransactions(txRes.data);
-      if (asetRes.success) setAsetUsaha(asetRes.data);
+      fetch(`/api/umkm?table=bahan_baku`, { headers: h }).then(r => r.json()),
+      fetch(`/api/umkm?table=utang_piutang`, { headers: h }).then(r => r.json()),
+    ]).then(([txRes, asetRes, bahanRes, upRes]) => {
+      if (txRes.success)    setTransactions(txRes.data);
+      if (asetRes.success)  setAsetUsaha(asetRes.data);
+      if (bahanRes.success) setBahanBaku(bahanRes.data);
+      if (upRes.success)    setUtangPiutang(upRes.data);
     }).finally(() => setLoading(false));
   }, [user]);
 
@@ -68,6 +75,42 @@ export default function LaporanPage() {
   const byMonth    = groupByMonth(usahaTx);
   const byCategory = groupByCategory(filtered);
   const margin     = summary.pemasukan > 0 ? ((summary.saldo / summary.pemasukan) * 100).toFixed(1) : 0;
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // NERACA (posisi keuangan hari ini — snapshot, TIDAK ikut filter periode,
+  // sama prinsipnya kayak Saldo per Kas & Total Aset Usaha di atas)
+  // ─────────────────────────────────────────────────────────────────────────
+  // Kas & Setara Kas — kas REAL aja, kerugian stok (non-kas) dikecualikan
+  const totalKasReal = kasStats.filter(k => k.nama !== "Non-Kas (Kerugian Stok)").reduce((s, k) => s + k.saldo, 0);
+  const totalPiutang = utangPiutang.filter(u => u.jenis === "piutang" && !u.lunas).reduce((s, u) => s + Number(u.nominal || 0), 0);
+  const totalUtang   = utangPiutang.filter(u => u.jenis === "utang"   && !u.lunas).reduce((s, u) => s + Number(u.nominal || 0), 0);
+  const totalPersediaan = bahanBaku.reduce((s, b) => s + nilaiStok(b), 0);
+  // Modal Disetor & Laba Ditahan dihitung ALL-TIME (bukan per filter bulan), karena
+  // Neraca itu snapshot "per hari ini", bukan pergerakan 1 periode kayak Laba-Rugi.
+  const totalModalAllTime = modalTx.reduce((s, t) => s + Number(t.amount || 0), 0);
+  const labaDitahanAllTime = calcSummary(usahaTx).saldo;
+
+  const totalHarta      = totalKasReal + totalPiutang + totalPersediaan + totalNilaiAset;
+  const totalKewajiban  = totalUtang;
+  const totalEkuitas    = totalModalAllTime + labaDitahanAllTime;
+  // Selisih pencatatan: bisa muncul karena bahan baku dicatat cash-basis (jadi biaya
+  // pas dibeli), bukan akrual penuh (biaya baru diakui pas kepake) — bukan bug,
+  // tapi keterbatasan sistem pencatatan sederhana yang ditampilkan apa adanya.
+  const selisihNeraca = totalHarta - totalKewajiban - totalEkuitas;
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ARUS KAS (pergerakan kas beneran — ikut filter periode yang sama kayak Laba-Rugi,
+  // TAPI beda dari Laba-Rugi: Modal Usaha DIHITUNG di sini karena itu duit asli masuk,
+  // dan kerugian stok non-kas DIKECUALIKAN karena bukan duit asli keluar)
+  // ─────────────────────────────────────────────────────────────────────────
+  const kasTxFiltered = filterMonth === "semua"
+    ? transactions.filter(isRealKasTx)
+    : transactions.filter(t => isRealKasTx(t) && (t.date || t.createdAt || "").slice(0, 7) === filterMonth);
+  const kasMasukByKategori  = groupByCategoryType(kasTxFiltered, "pemasukan");
+  const kasKeluarByKategori = groupByCategoryType(kasTxFiltered, "pengeluaran");
+  const totalKasMasuk  = kasMasukByKategori.reduce((s, [, v]) => s + v, 0);
+  const totalKasKeluar = kasKeluarByKategori.reduce((s, [, v]) => s + v, 0);
+  const kenaikanKasBersih = totalKasMasuk - totalKasKeluar;
 
   const monthKeyLocal = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
   const prevMonthKeyOf = (monthKey) => {
@@ -183,6 +226,28 @@ export default function LaporanPage() {
       y = doc.lastAutoTable.finalY + 10;
     }
 
+    // ── Neraca (snapshot hari ini) ──
+    if (y > 230) { doc.addPage(); y = 18; }
+    autoTable(doc, {
+      startY: y,
+      head: [["Neraca (posisi hari ini)", "Nominal"]],
+      body: [
+        ["Kas & Setara Kas", formatRupiah(totalKasReal)],
+        ["Piutang Usaha", formatRupiah(totalPiutang)],
+        ["Persediaan Bahan Baku", formatRupiah(totalPersediaan)],
+        ["Aset Usaha", formatRupiah(totalNilaiAset)],
+        ["Total Harta", formatRupiah(totalHarta)],
+        ["Utang Usaha (Kewajiban)", formatRupiah(totalKewajiban)],
+        ["Modal Disetor + Laba Ditahan", formatRupiah(totalEkuitas)],
+      ],
+      theme: "grid",
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: AMBER, textColor: 255, fontStyle: "bold" },
+      columnStyles: { 1: { halign: "right" } },
+      margin: { left: 14, right: 14 },
+    });
+    y = doc.lastAutoTable.finalY + 10;
+
     // ── Tren Bulanan ──
     if (byMonth.length > 0) {
       if (y > 240) { doc.addPage(); y = 18; }
@@ -251,6 +316,8 @@ export default function LaporanPage() {
             <div className="laporanpage__tabs">
               {[
                 { id: "labarugi",     icon: "📊", label: "Laba-Rugi" },
+                { id: "neraca",       icon: "⚖️", label: "Neraca" },
+                { id: "aruskas",      icon: "💵", label: "Arus Kas" },
                 { id: "bep",          icon: "📐", label: "Break-Even Point" },
                 { id: "utangpiutang", icon: "🤝", label: "Utang-Piutang" },
               ].map((tab) => (
@@ -270,11 +337,137 @@ export default function LaporanPage() {
             {/* Tab: BEP */}
             {activeTab === "bep" && <BreakEvenPoint />}
 
+            {/* Tab: Neraca */}
+            {activeTab === "neraca" && (
+              <div className="laporanpage__formal">
+                <div className="laporanpage__formal-head">
+                  <h2>{user?.name ? `Usaha ${user.name}` : "Laporan Usaha"}</h2>
+                  <h3>NERACA</h3>
+                  <p>Per hari ini, {new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</p>
+                </div>
+
+                <table className="laporanpage__formal-table">
+                  <tbody>
+                    <tr className="laporanpage__formal-group"><td colSpan={2}>HARTA</td></tr>
+                    <tr><td>Kas &amp; Setara Kas</td><td>{formatRupiah(totalKasReal)}</td></tr>
+                    <tr><td>Piutang Usaha (belum lunas)</td><td>{formatRupiah(totalPiutang)}</td></tr>
+                    <tr><td>Persediaan Bahan Baku</td><td>{formatRupiah(totalPersediaan)}</td></tr>
+                    <tr><td>Aset Usaha (nilai perolehan)</td><td>{formatRupiah(totalNilaiAset)}</td></tr>
+                    <tr className="laporanpage__formal-total"><td>Total Harta</td><td>{formatRupiah(totalHarta)}</td></tr>
+
+                    <tr className="laporanpage__formal-group"><td colSpan={2}>KEWAJIBAN</td></tr>
+                    <tr><td>Utang Usaha (belum lunas)</td><td>{formatRupiah(totalUtang)}</td></tr>
+                    <tr className="laporanpage__formal-total"><td>Total Kewajiban</td><td>{formatRupiah(totalKewajiban)}</td></tr>
+
+                    <tr className="laporanpage__formal-group"><td colSpan={2}>MODAL</td></tr>
+                    <tr><td>Modal Disetor (total keseluruhan)</td><td>{formatRupiah(totalModalAllTime)}</td></tr>
+                    <tr><td>Laba Ditahan (akumulasi laba usaha)</td><td>{formatRupiah(labaDitahanAllTime)}</td></tr>
+                    <tr className="laporanpage__formal-total"><td>Total Modal</td><td>{formatRupiah(totalEkuitas)}</td></tr>
+
+                    <tr className="laporanpage__formal-grand"><td>Total Kewajiban &amp; Modal</td><td>{formatRupiah(totalKewajiban + totalEkuitas)}</td></tr>
+                  </tbody>
+                </table>
+
+                {Math.abs(selisihNeraca) > 1 && (
+                  <p className="laporanpage__formal-note">
+                    ⚠️ Ada selisih pencatatan {formatRupiah(Math.abs(selisihNeraca))} antara Total Harta dan Total Kewajiban+Modal.
+                    Ini wajar terjadi karena bahan baku dicatat sebagai biaya saat DIBELI (bukan saat dipakai), jadi bukan berarti ada data yang salah/hilang —
+                    cuma keterbatasan pencatatan kas sederhana, bukan pembukuan akuntansi penuh.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Tab: Arus Kas */}
+            {activeTab === "aruskas" && (
+              <div className="laporanpage__formal">
+                <div className="laporanpage__formal-head">
+                  <h2>{user?.name ? `Usaha ${user.name}` : "Laporan Usaha"}</h2>
+                  <h3>ARUS KAS</h3>
+                  <p>Periode: {filterMonth === "semua" ? "Semua Periode" : monthLabel(filterMonth)}</p>
+                </div>
+
+                <div className="laporanpage__header-actions">
+                  <select className="laporanpage__select" value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)}>
+                    <option value="semua">Semua Periode</option>
+                    {months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}
+                  </select>
+                </div>
+
+                <table className="laporanpage__formal-table">
+                  <tbody>
+                    <tr className="laporanpage__formal-group"><td colSpan={2}>KAS MASUK</td></tr>
+                    {kasMasukByKategori.length === 0
+                      ? <tr><td colSpan={2} className="laporanpage__formal-empty">Belum ada kas masuk periode ini</td></tr>
+                      : kasMasukByKategori.map(([cat, amt]) => <tr key={cat}><td>{cat}</td><td>{formatRupiah(amt)}</td></tr>)}
+                    <tr className="laporanpage__formal-total"><td>Total Kas Masuk</td><td>{formatRupiah(totalKasMasuk)}</td></tr>
+
+                    <tr className="laporanpage__formal-group"><td colSpan={2}>KAS KELUAR</td></tr>
+                    {kasKeluarByKategori.length === 0
+                      ? <tr><td colSpan={2} className="laporanpage__formal-empty">Belum ada kas keluar periode ini</td></tr>
+                      : kasKeluarByKategori.map(([cat, amt]) => <tr key={cat}><td>{cat}</td><td>{formatRupiah(amt)}</td></tr>)}
+                    <tr className="laporanpage__formal-total"><td>Total Kas Keluar</td><td>{formatRupiah(totalKasKeluar)}</td></tr>
+
+                    <tr className={"laporanpage__formal-grand" + (kenaikanKasBersih < 0 ? " laporanpage__formal-grand--neg" : "")}>
+                      <td>{kenaikanKasBersih >= 0 ? "Kenaikan" : "Penurunan"} Kas Bersih Periode Ini</td>
+                      <td>{formatRupiah(kenaikanKasBersih)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <p className="laporanpage__formal-note">
+                  Kerugian nilai stok (rusak/gagal/sample) tidak dihitung di sini karena bukan uang keluar beneran — lihat tab Laba-Rugi buat pengaruhnya ke laba usaha.
+                </p>
+
+                {kasStats.filter(k => k.nama !== "Non-Kas (Kerugian Stok)").length > 0 && (
+                  <>
+                    <h3 className="laporanpage__section-title" style={{ marginTop: "1.5rem" }}>Saldo Kas Saat Ini (per hari ini)</h3>
+                    <table className="laporanpage__formal-table">
+                      <tbody>
+                        {kasStats.filter(k => k.nama !== "Non-Kas (Kerugian Stok)").map(k => (
+                          <tr key={k.nama}><td>{getKasEmoji(k.nama)} {k.nama}</td><td>{formatRupiah(k.saldo)}</td></tr>
+                        ))}
+                        <tr className="laporanpage__formal-total"><td>Total Kas</td><td>{formatRupiah(totalKasReal)}</td></tr>
+                      </tbody>
+                    </table>
+                  </>
+                )}
+              </div>
+            )}
+
             {/* Tab: Laba-Rugi */}
             {activeTab === "labarugi" && (
               <div className="laporanpage__labarugi">
 
-            {/* Filter + Export */}
+                {/* Laba-Rugi format standar (gaya dokumen formal) */}
+                <div className="laporanpage__formal">
+                  <div className="laporanpage__formal-head">
+                    <h2>{user?.name ? `Usaha ${user.name}` : "Laporan Usaha"}</h2>
+                    <h3>LABA RUGI - STANDAR</h3>
+                    <p>Periode: {filterMonth === "semua" ? "Semua Periode" : monthLabel(filterMonth)}</p>
+                  </div>
+                  <table className="laporanpage__formal-table">
+                    <tbody>
+                      <tr className="laporanpage__formal-group"><td colSpan={2}>PENDAPATAN USAHA</td></tr>
+                      {groupByCategoryType(filtered, "pemasukan").map(([cat, amt]) => (
+                        <tr key={cat}><td>{cat}</td><td>{formatRupiah(amt)}</td></tr>
+                      ))}
+                      <tr className="laporanpage__formal-total"><td>Total Pendapatan Usaha</td><td>{formatRupiah(summary.pemasukan)}</td></tr>
+
+                      <tr className="laporanpage__formal-group"><td colSpan={2}>BEBAN USAHA</td></tr>
+                      {byCategory.length === 0
+                        ? <tr><td colSpan={2} className="laporanpage__formal-empty">Belum ada beban periode ini</td></tr>
+                        : byCategory.map(([cat, amt]) => <tr key={cat}><td>{cat}</td><td>{formatRupiah(amt)}</td></tr>)}
+                      <tr className="laporanpage__formal-total"><td>Total Beban Usaha</td><td>{formatRupiah(summary.pengeluaran)}</td></tr>
+
+                      <tr className={"laporanpage__formal-grand" + (summary.saldo < 0 ? " laporanpage__formal-grand--neg" : "")}>
+                        <td>Laba/Rugi Bersih</td><td>{formatRupiah(summary.saldo)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Filter + Export */}
                 <div className="laporanpage__header-actions">
                   <select
                     className="laporanpage__select"

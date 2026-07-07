@@ -141,6 +141,21 @@ export const groupByCategory = (transactions) => {
   return Object.entries(cats).sort(([, a], [, b]) => b - a);
 };
 
+// Generalisasi groupByCategory — bisa buat "pemasukan" atau "pengeluaran".
+// Dipakai di Laporan Arus Kas (butuh breakdown kategori pemasukan juga, bukan cuma pengeluaran).
+export const groupByCategoryType = (transactions, type) => {
+  const cats = {};
+  transactions
+    .filter((t) => t.type === type)
+    .forEach((t) => { cats[t.category || "Lainnya"] = (cats[t.category || "Lainnya"] || 0) + t.amount; });
+  return Object.entries(cats).sort(([, a], [, b]) => b - a);
+};
+
+// Kas non-fisik — dipakai buat catat kerugian nilai stok (rusak/sample) yang BUKAN
+// uang keluar beneran, jadi harus dikecualikan dari perhitungan Arus Kas & Saldo Kas.
+export const NON_KAS_LABEL = "Non-Kas (Kerugian Stok)";
+export const isRealKasTx = (t) => (t.kas || "Kas Tunai") !== NON_KAS_LABEL;
+
 // ── Format ────────────────────────────────────────────────────────────────────
 export const formatRupiah = (amount) => {
   if (!amount && amount !== 0) return "Rp 0";

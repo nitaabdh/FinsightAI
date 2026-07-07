@@ -441,3 +441,114 @@
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 0.85rem;
 }
+
+/* ── Tampilan dokumen formal (Laba-Rugi Standar, Neraca, Arus Kas) ──────────
+   Dibikin mirip cetakan laporan akuntansi: kop di tengah, tabel bergaris,
+   grup section huruf kapital, baris total ditebalkan. */
+
+.laporanpage__formal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.laporanpage__formal-head {
+  text-align: center;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid var(--text-primary);
+}
+.laporanpage__formal-head h2 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 0.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.laporanpage__formal-head h3 {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent-umkm);
+  margin: 0 0 0.3rem;
+  letter-spacing: 0.05em;
+}
+.laporanpage__formal-head p {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.laporanpage__formal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.laporanpage__formal-table td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+}
+.laporanpage__formal-table td:last-child {
+  text-align: right;
+  font-family: var(--font-display);
+  white-space: nowrap;
+}
+.laporanpage__formal-table tr:last-child td { border-bottom: none; }
+
+.laporanpage__formal-group td {
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--accent-umkm);
+  background: var(--accent-umkm-dim);
+  border-bottom: 1px solid rgba(245,158,11,0.25);
+  padding-top: 0.7rem;
+  padding-bottom: 0.35rem;
+}
+.laporanpage__formal-group:first-child td { padding-top: 0.5rem; }
+
+.laporanpage__formal-total td {
+  font-weight: 700;
+  border-top: 1px solid var(--text-secondary);
+  border-bottom: 2px solid var(--border);
+}
+
+.laporanpage__formal-grand {
+  background: rgba(245,158,11,0.08);
+}
+.laporanpage__formal-grand td {
+  font-weight: 800;
+  font-size: 14.5px;
+  color: var(--accent-umkm);
+  border-top: 2px solid var(--accent-umkm);
+  border-bottom: none;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+.laporanpage__formal-grand--neg td { color: #f87171; border-top-color: #f87171; }
+
+.laporanpage__formal-empty {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 12.5px;
+  text-align: left !important;
+}
+
+.laporanpage__formal-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 1rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+  .laporanpage__formal { padding: 1rem; }
+  .laporanpage__formal-table { font-size: 12.5px; }
+  .laporanpage__formal-table td { padding: 0.4rem 0.4rem; }
+}
