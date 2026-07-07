@@ -136,7 +136,7 @@ function buildPayload(body, table, userId, isUpdate = false) {
       ...base,
       nama:              body.nama,
       items:             body.items || [],
-      ops_items:         body.opsItems || [],
+      ops_items:         body.biayaOperasionalItems || [],
       biaya_operasional: body.biayaOperasional || 0,
       target_untung:     body.targetUntung || 0,
       biaya_bahan:       body.biayaBahan || 0,
@@ -214,7 +214,7 @@ function normalize(row, table) {
   }
 
   if (table === "produk") {
-    return { ...base, nama: row.nama, items: row.items || [], opsItems: row.ops_items || [], biayaOperasional: row.biaya_operasional, targetUntung: row.target_untung, biayaBahan: row.biaya_bahan, totalBiaya: row.total_biaya, hargaJual: row.harga_jual };
+    return { ...base, nama: row.nama, items: row.items || [], biayaOperasionalItems: row.ops_items || [], biayaOperasional: row.biaya_operasional, targetUntung: row.target_untung, biayaBahan: row.biaya_bahan, totalBiaya: row.total_biaya, hargaJual: row.harga_jual };
   }
 
   if (table === "biaya_operasional") {

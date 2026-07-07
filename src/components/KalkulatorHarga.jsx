@@ -173,24 +173,32 @@ export default function KalkulatorHarga() {
       hargaJual: Math.round(hargaJual),
     };
 
-    if (editId) {
-      const r = await apiFetch(`/api/umkm?table=produk`, {
-        method: "PUT",
-        body: JSON.stringify({ id: editId, ...payload }),
-      });
-      if (r.success) {
-        setProdukList(p => p.map(x => x.id === editId ? r.data : x));
-        window.dispatchEvent(new CustomEvent("produkUpdated"));
+    try {
+      if (editId) {
+        const r = await apiFetch(`/api/umkm?table=produk`, {
+          method: "PUT",
+          body: JSON.stringify({ id: editId, ...payload }),
+        });
+        if (r.success) {
+          setProdukList(p => p.map(x => x.id === editId ? r.data : x));
+          window.dispatchEvent(new CustomEvent("produkUpdated"));
+        } else {
+          return setError(r.message || "Gagal menyimpan perubahan produk. Coba lagi.");
+        }
+      } else {
+        const r = await apiFetch(`/api/umkm?table=produk`, {
+          method: "POST",
+          body: JSON.stringify({ id: genId(), ...payload, createdAt: Date.now() }),
+        });
+        if (r.success) {
+          setProdukList(p => [r.data, ...p]);
+          window.dispatchEvent(new CustomEvent("produkUpdated"));
+        } else {
+          return setError(r.message || "Gagal menyimpan produk. Coba lagi.");
+        }
       }
-    } else {
-      const r = await apiFetch(`/api/umkm?table=produk`, {
-        method: "POST",
-        body: JSON.stringify({ id: genId(), ...payload, createdAt: Date.now() }),
-      });
-      if (r.success) {
-        setProdukList(p => [r.data, ...p]);
-        window.dispatchEvent(new CustomEvent("produkUpdated"));
-      }
+    } catch (err) {
+      return setError("Gagal menghubungi server: " + (err.message || "Coba lagi."));
     }
     resetForm();
   };
