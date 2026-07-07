@@ -50,10 +50,27 @@
 }
 
 .float-calc__drag-hint {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-muted);
-  letter-spacing: 0.05em;
+  cursor: grab;
 }
+
+.float-calc__label-btn {
+  background: var(--bg-hover, #e5e7eb);
+  border: none;
+  border-radius: 6px;
+  width: 26px; height: 26px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.12s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.float-calc__label-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+@media (hover: hover) { .float-calc__label-btn:not(:disabled):hover { background: rgba(99,102,241,0.15); color: #6366f1; } }
 
 .float-calc__close {
   background: var(--bg-hover, #e5e7eb);
@@ -260,6 +277,11 @@
   font-size: 16px;
 }
 
+.calc-btn--zero {
+  grid-column: span 2;
+  justify-content: center;
+}
+
 .calc-btn--label {
   font-size: 11px;
   font-weight: 700;
@@ -448,3 +470,35 @@
 }
 
 .fc-btn-sec:hover { background: var(--bg-hover, #e5e7eb); }
+
+/* ── Responsif di layar kecil (HP) — tombol dibikin lebih besar & empuk
+   biar kerasa kayak kalkulator fisik/HP, bukan versi mini desktop ───────── */
+@media (max-width: 480px) {
+  .float-calc {
+    width: min(94vw, 340px);
+  }
+
+  .calc-btn {
+    height: 58px;
+    font-size: 17px;
+    border-radius: 12px;
+  }
+
+  .calc-btn--op,
+  .calc-btn--eq {
+    font-size: 19px;
+  }
+
+  .float-calc__value {
+    font-size: 2rem;
+  }
+
+  .float-calc__row {
+    gap: 8px;
+  }
+
+  .float-calc__buttons {
+    padding: 12px;
+    gap: 8px;
+  }
+}

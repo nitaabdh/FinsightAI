@@ -352,26 +352,33 @@
 }
 
 .sticky-card {
-  background: var(--nc, #FDE68A);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 13px;
+  padding: 0 13px 13px;
   display: flex;
   flex-direction: column;
   gap: 7px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08), 2px 3px 0 rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+  overflow: hidden;
 }
 
 .sticky-card:hover {
-  transform: translateY(-3px) rotate(-0.4deg);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12), 2px 3px 0 rgba(0,0,0,0.05);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
 }
 
 .sticky-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background: var(--nc, #FDE68A);
+  margin: 0 -13px 6px;
+  padding: 9px 13px;
 }
+
+[data-theme="dark"] .sticky-header { filter: brightness(0.85) saturate(0.85); }
 
 .sticky-cat {
   font-size: 11px;
@@ -406,7 +413,7 @@
 .sticky-title {
   font-size: 14px;
   font-weight: 700;
-  color: rgba(0,0,0,0.82);
+  color: var(--text-primary);
   margin: 0;
   line-height: 1.35;
   word-break: break-word;
@@ -414,7 +421,7 @@
 
 .sticky-body {
   font-size: 12px;
-  color: rgba(0,0,0,0.62);
+  color: var(--text-muted);
   margin: 0;
   line-height: 1.5;
   display: -webkit-box;
@@ -427,10 +434,10 @@
 .sticky-footer {
   margin-top: auto;
   padding-top: 7px;
-  border-top: 1px solid rgba(0,0,0,0.1);
+  border-top: 1px solid var(--border);
 }
 
-.sticky-date { font-size: 11px; color: rgba(0,0,0,0.42); font-weight: 500; }
+.sticky-date { font-size: 11px; color: var(--text-muted); font-weight: 500; }
 
 /* ── List View ───────────────────────────────────────────────────────────── */
 .notes-list { display: flex; flex-direction: column; gap: 6px; }
@@ -772,7 +779,7 @@
 }
 
 /* ── Dark mode tweak ─────────────────────────────────────────────────────── */
-[data-theme="dark"] .sticky-card { filter: brightness(0.85) saturate(0.8); }
+/* Dark-mode dimming untuk strip warna sudah dipindah ke .sticky-header (lihat atas) */
 
 /* ═══════════════════════════════════════════════
    REVISI KALENDER — Cards & Popup
@@ -1267,7 +1274,7 @@
 }
 
 .note-popup {
-  background: var(--nc, #FDE68A);
+  background: var(--bg-card);
   border-radius: 16px;
   width: 100%;
   max-width: 580px;
@@ -1279,16 +1286,18 @@
   overflow: hidden;
 }
 
-[data-theme="dark"] .note-popup { filter: brightness(0.85) saturate(0.8); }
-
-/* Header */
+/* Header — cuma header ini yang pakai warna catatan (--nc) sebagai penanda,
+   badan/isi catatan di bawah tetap ikut warna tema umum */
 .note-popup__header {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 16px 16px 10px;
+  background: var(--nc, #FDE68A);
   border-bottom: 1px solid rgba(0,0,0,0.1);
 }
+
+[data-theme="dark"] .note-popup__header { filter: brightness(0.85) saturate(0.85); }
 
 .note-popup__title-input {
   flex: 1;
@@ -1329,11 +1338,11 @@
 .note-popup__del-btn:hover  { background: rgba(220,38,38,0.2); }
 .note-popup__close:hover    { background: rgba(0,0,0,0.15); }
 
-/* Meta panel */
+/* Meta panel — sudah di luar header berwarna, jadi ikut tema umum */
 .note-popup__meta-panel {
   padding: 12px 16px;
-  background: rgba(0,0,0,0.05);
-  border-bottom: 1px solid rgba(0,0,0,0.08);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1344,7 +1353,7 @@
 .note-popup__meta-label {
   font-size: 11px;
   font-weight: 700;
-  color: rgba(0,0,0,0.5);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   width: 60px;
@@ -1352,39 +1361,31 @@
 }
 
 .note-popup__meta-panel .cat-chip {
-  background: rgba(0,0,0,0.07);
-  border-color: rgba(0,0,0,0.12);
-  color: rgba(0,0,0,0.65);
   font-size: 11px;
   padding: 3px 9px;
 }
 
-.note-popup__meta-panel .cat-chip.active {
-  background: rgba(0,0,0,0.25);
-  border-color: transparent;
-  color: rgba(0,0,0,0.85);
-}
-
 .note-popup__meta-panel .color-swatch { width: 22px; height: 22px; }
 
-/* Cat badge */
+/* Cat badge — ikut tema umum juga */
 .note-popup__cat-badge {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 6px 16px 4px;
   font-size: 11px;
-  color: rgba(0,0,0,0.45);
+  color: var(--text-muted);
   font-weight: 600;
 }
 
 .note-popup__updated { font-style: italic; font-weight: 400; }
 
-/* Body / editor area */
+/* Body / editor area — ikut tema umum, supaya teks editor (var(--text-primary))
+   selalu kontras dengan latarnya, baik tema terang maupun gelap */
 .note-popup__body {
   flex: 1;
   overflow-y: auto;
-  background: rgba(255,255,255,0.35);
+  background: var(--bg-card);
   display: flex;
   flex-direction: column;
 }

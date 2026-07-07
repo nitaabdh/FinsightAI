@@ -27,6 +27,7 @@ export default function FloatingCalculator({ userId, onClose }) {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveTitle,  setSaveTitle]  = useState("");
   const [justCalced, setJustCalced] = useState(false);
+  const [lastCalcEntries, setLastCalcEntries] = useState([]); // snapshot lengkap entries pas terakhir "=" ditekan, dipakai buat Simpan Perhitungan
 
   // ── Drag state ──────────────────────────────────────────────────────────────
   const [pos,      setPos]      = useState({ x: window.innerWidth - 340, y: 80 });
@@ -38,6 +39,18 @@ export default function FloatingCalculator({ userId, onClose }) {
   useEffect(() => {
     setHistory(loadData(CALC_HISTORY_KEY(userId)));
   }, [userId]);
+
+  // ── Jaga posisi tetap di dalam layar kalau ukuran layar berubah
+  //    (misal HP diputar, atau jendela browser di-resize) ──────────────────────
+  useEffect(() => {
+    const clampToViewport = () => {
+      const maxX = window.innerWidth  - (floatRef.current?.offsetWidth  || 320);
+      const maxY = window.innerHeight - (floatRef.current?.offsetHeight || 500);
+      setPos(p => ({ x: Math.max(0, Math.min(p.x, maxX)), y: Math.max(0, Math.min(p.y, maxY)) }));
+    };
+    window.addEventListener("resize", clampToViewport);
+    return () => window.removeEventListener("resize", clampToViewport);
+  }, []);
 
   // ── Drag handlers ─────────────────────────────────────────────────────────────
   const onMouseDown = (e) => {
@@ -119,7 +132,7 @@ export default function FloatingCalculator({ userId, onClose }) {
 
   const handleClear = () => {
     setEntries([]); setCurrent(""); setCurrentOp("+");
-    setResult(null); setJustCalced(false);
+    setResult(null); setJustCalced(false); setLastCalcEntries([]);
   };
 
   const handleEquals = () => {
@@ -142,6 +155,13 @@ export default function FloatingCalculator({ userId, onClose }) {
     setResult(total);
     setJustCalced(true);
     setCurrent(String(total));
+    setLastCalcEntries(allEntries);
+    // PENTING: kosongkan entries setelah selesai dihitung. Kalau tidak, entries lama
+    // masih "nyangkut" di state — jadi pas lanjut hitung (misal tekan operator lagi
+    // setelah dapat hasil), angka-angka lama ikut kehitung ulang bareng hasil barunya
+    // dan totalnya jadi salah/gak nyambung. Hasil sekarang (current) jadi titik awal
+    // yang baru buat perhitungan berikutnya.
+    setEntries([]);
 
     // Simpan ke history
     const expr = allEntries.map((e,i) => {
@@ -182,18 +202,12 @@ export default function FloatingCalculator({ userId, onClose }) {
   };
 
   const confirmSave = () => {
-    const allEntries = [...entries];
-    if (current !== "" && !justCalced) {
-      const val = parseFloat(current);
-      if (!isNaN(val)) allEntries.push({ value: val, label: "", op: currentOp });
-    }
-
     const savedKey  = CALC_SAVED_KEY(userId);
     const existing  = loadData(savedKey);
     const newSaved  = [{
       id:        genId(),
       title:     saveTitle.trim() || `Perhitungan ${new Date().toLocaleDateString("id-ID")}`,
-      entries:   allEntries,
+      entries:   lastCalcEntries,
       result:    result,
       createdAt: Date.now(),
     }, ...existing];
@@ -211,7 +225,7 @@ export default function FloatingCalculator({ userId, onClose }) {
     ["7", "8", "9", "×"],
     ["4", "5", "6", "-"],
     ["1", "2", "3", "+"],
-    ["+label", "0", ".", "="],
+    ["0", ".", "="],
   ];
 
   const getClass = (btn) => {
@@ -291,7 +305,15 @@ export default function FloatingCalculator({ userId, onClose }) {
       <div className="float-calc__header">
         <span className="float-calc__title">🧮 Kalkulator</span>
         <div className="float-calc__header-actions">
-          <span className="float-calc__drag-hint">⠿ drag</span>
+          <button
+            className="float-calc__label-btn"
+            onClick={handleAddLabel}
+            disabled={current === ""}
+            title="Kasih label ke angka ini"
+          >
+            🏷️
+          </button>
+          <span className="float-calc__drag-hint">⠿</span>
           <button className="float-calc__close" onClick={onClose} title="Tutup">✕</button>
         </div>
       </div>
@@ -339,7 +361,7 @@ export default function FloatingCalculator({ userId, onClose }) {
             {row.map(btn => (
               <button
                 key={btn}
-                className={getClass(btn)}
+                className={getClass(btn) + (btn === "0" && row.length === 3 ? " calc-btn--zero" : "")}
                 onClick={() => handleBtn(btn)}
               >
                 {btn === "backspace" ? "⌫" : btn}
