@@ -54,6 +54,7 @@ export const addTransaction = async (userId, mode, data) => {
       jumlah_unit: data.jumlahUnit || 1,
       produk_id: data.produkId || null,
       kas: data.kas || null,
+      kas_tujuan: data.kasTujuan || null,
     }),
   });
   if (!result.success) throw new Error(result.message);
@@ -75,6 +76,7 @@ export const editTransaction = async (userId, mode, updatedTx) => {
       jumlah_unit: updatedTx.jumlahUnit || 1,
       produk_id: updatedTx.produkId || null,
       kas: updatedTx.kas || null,
+      kas_tujuan: updatedTx.kasTujuan || null,
     }),
   });
   if (!result.success) throw new Error(result.message);
@@ -105,6 +107,7 @@ function normalizeTransaction(tx) {
     jumlahUnit:  tx.jumlah_unit || 1,
     produkId:    tx.produk_id || null,
     kas:         tx.kas || null,
+    kasTujuan:   tx.kas_tujuan || null,
     createdAt:   tx.created_at,
   };
 }
@@ -113,6 +116,42 @@ function normalizeTransaction(tx) {
 // Transaksi kategori "Modal Usaha" adalah setoran modal, bukan pendapatan usaha,
 // jadi harus dikeluarkan dari perhitungan Omzet/Laba supaya laporan keuangan akurat.
 export const isModalUsaha = (t) => t.type === "pemasukan" && t.category === "Modal Usaha";
+
+// Emoji per nama kas/dompet — dipakai bareng computeKasStats di beberapa halaman
+const KAS_EMOJI = { "kas tunai": "💵", "rekening bank": "🏦", "e-wallet": "📱", "qris": "🇮🇩" };
+export const getKasEmoji = (k) => KAS_EMOJI[(k || "").toLowerCase().trim()] || "💳";
+
+// ── Saldo per Kas/Dompet (dipakai di Dashboard UMKM & Laporan) ────────────────
+// Dipusatkan di sini biar nggak ada logic ganda yang bisa saling beda kalau salah
+// satu diedit tapi yang lain kelewat (pernah kejadian sebelumnya).
+// - pemasukan  → nambah saldo kas
+// - pengeluaran → ngurangin saldo kas
+// - transfer    → ngurangin saldo kas ASAL, nambah saldo kas TUJUAN (bukan pemasukan/
+//   pengeluaran baru, cuma pindah antar dompet — misal saldo QRIS dicairkan ke bank)
+// Grouping case-insensitive ("BCA" & "bca" dianggap kas yang sama, pakai nama pertama muncul).
+export const computeKasStats = (transactions) => {
+  const map = {};
+  const touch = (nama) => {
+    const key = (nama || "Kas Tunai").toLowerCase().trim();
+    if (!(key in map)) map[key] = { nama: nama || "Kas Tunai", saldo: 0, count: 0 };
+    return map[key];
+  };
+  transactions.forEach((tx) => {
+    const amount = Number(tx.amount || 0);
+    if (tx.type === "transfer" && tx.kasTujuan) {
+      touch(tx.kas).saldo -= amount;
+      touch(tx.kas).count += 1;
+      touch(tx.kasTujuan).saldo += amount;
+      touch(tx.kasTujuan).count += 1;
+      return;
+    }
+    const entry = touch(tx.kas);
+    entry.saldo += tx.type === "pemasukan" ? amount : -amount;
+    entry.count += 1;
+  });
+  // Urutan: paling sering dipakai dulu, kalau seri baru dilihat dari saldo terbesar (absolut)
+  return Object.values(map).sort((a, b) => b.count - a.count || Math.abs(b.saldo) - Math.abs(a.saldo));
+};
 
 // ── Kalkulasi (tidak berubah, pure function) ──────────────────────────────────
 export const calcSummary = (transactions) => {

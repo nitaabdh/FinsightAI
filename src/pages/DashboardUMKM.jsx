@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import { BarChart, Bar, ResponsiveContainer, Tooltip, CartesianGrid, XAxis, YAxis } from "recharts";
-import { calcSummary, formatRupiah, groupByCategory, isModalUsaha } from "../utils/storage";
+import { calcSummary, formatRupiah, groupByCategory, isModalUsaha, computeKasStats, getKasEmoji } from "../utils/storage";
 import { labelJatuhTempo, selisihHari } from "../utils/umkmCalc";
 import "./Dashboard.css";
 import "./DashboardUMKM.css";
@@ -120,23 +120,10 @@ export default function DashboardUMKM() {
   const totalNilaiAset = asetUsaha.reduce((s, it) => s + Number(it.hargaBeli || 0), 0);
 
   // ── Saldo per Kas/Wadah Uang ───────────────────────────────────────────────
-  // Pakai SEMUA transaksi (termasuk setoran modal) — kas fisik memang kena efeknya juga.
-  // Grouping case-insensitive ("BCA" & "bca" dianggap kas yang sama, pakai nama pertama yang muncul).
-  const KAS_EMOJI = { "kas tunai": "💵", "rekening bank": "🏦", "e-wallet": "📱" };
-  const getKasEmoji = (k) => KAS_EMOJI[(k || "").toLowerCase().trim()] || "💳";
-
-  const kasStats = (() => {
-    const map = {};
-    transactions.forEach(tx => {
-      const nama = tx.kas || "Kas Tunai";
-      const key  = nama.toLowerCase().trim();
-      if (!(key in map)) map[key] = { nama, saldo: 0, count: 0 };
-      map[key].saldo += tx.type === "pemasukan" ? Number(tx.amount || 0) : -Number(tx.amount || 0);
-      map[key].count += 1;
-    });
-    // Urutan: paling sering dipakai dulu, kalau seri baru dilihat dari saldo terbesar (absolut)
-    return Object.values(map).sort((a, b) => b.count - a.count || Math.abs(b.saldo) - Math.abs(a.saldo));
-  })();
+  // Pakai SEMUA transaksi (termasuk setoran modal & transfer antar dompet) — kas
+  // fisik memang kena efeknya juga. Logic-nya dipusatkan di storage.js
+  // (computeKasStats) biar nggak ada versi ganda yang bisa saling beda.
+  const kasStats = computeKasStats(transactions);
 
   const kasVisible = showAllKas ? kasStats : kasStats.slice(0, 4);
 

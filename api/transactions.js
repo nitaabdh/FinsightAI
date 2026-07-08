@@ -43,10 +43,18 @@ export default async function handler(req, res) {
 
     // ── POST: tambah transaksi baru ──────────────────────────────────────────
     if (req.method === "POST") {
-      const { mode, type, amount, category, description, date, items, jumlah_unit, produk_id, kas } = req.body;
+      const { mode, type, amount, category, description, date, items, jumlah_unit, produk_id, kas, kas_tujuan } = req.body;
 
       if (!mode || !type || !amount) {
         return res.status(400).json({ success: false, message: "Field mode, type, amount wajib diisi." });
+      }
+      if (type === "transfer") {
+        if (!kas || !kas_tujuan) {
+          return res.status(400).json({ success: false, message: "Transfer wajib punya dompet asal & dompet tujuan." });
+        }
+        if (kas.trim().toLowerCase() === kas_tujuan.trim().toLowerCase()) {
+          return res.status(400).json({ success: false, message: "Dompet asal dan tujuan tidak boleh sama." });
+        }
       }
 
       const { data, error } = await supabase
@@ -63,6 +71,7 @@ export default async function handler(req, res) {
           jumlah_unit: jumlah_unit || 1,
           produk_id: produk_id || null,
           kas: mode === "umkm" ? (kas || "Kas Tunai") : null,
+          kas_tujuan: mode === "umkm" && type === "transfer" ? kas_tujuan : null,
         })
         .select()
         .single();
@@ -73,13 +82,21 @@ export default async function handler(req, res) {
 
     // ── PUT: edit transaksi ──────────────────────────────────────────────────
     if (req.method === "PUT") {
-      const { id, type, amount, category, description, date, items, jumlah_unit, produk_id, kas } = req.body;
+      const { id, type, amount, category, description, date, items, jumlah_unit, produk_id, kas, kas_tujuan } = req.body;
 
       if (!id) return res.status(400).json({ success: false, message: "ID transaksi wajib diisi." });
+      if (type === "transfer") {
+        if (!kas || !kas_tujuan) {
+          return res.status(400).json({ success: false, message: "Transfer wajib punya dompet asal & dompet tujuan." });
+        }
+        if (kas.trim().toLowerCase() === kas_tujuan.trim().toLowerCase()) {
+          return res.status(400).json({ success: false, message: "Dompet asal dan tujuan tidak boleh sama." });
+        }
+      }
 
       const { data, error } = await supabase
         .from("transactions")
-        .update({ type, amount, category, description, date, items, jumlah_unit, produk_id, kas })
+        .update({ type, amount, category, description, date, items, jumlah_unit, produk_id, kas, kas_tujuan: type === "transfer" ? kas_tujuan : null })
         .eq("id", id)
         .eq("user_id", userId) // pastikan hanya bisa edit milik sendiri
         .select()

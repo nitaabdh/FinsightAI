@@ -175,6 +175,7 @@ export default function TransaksiPage() {
             <option value="semua">Semua Tipe</option>
             <option value="pemasukan">Pemasukan</option>
             <option value="pengeluaran">Pengeluaran</option>
+            <option value="transfer">Transfer Antar Dompet</option>
           </select>
           <select className="txpage__select" value={filterCat} onChange={e => setFilterCat(e.target.value)}>
             <option value="semua">Semua Kategori</option>
@@ -213,9 +214,13 @@ export default function TransaksiPage() {
           ) : (
             filtered.map(tx => (
               <div key={tx.id} className="txpage__item">
-                <div className={"txpage__item-dot txpage__item-dot--" + (tx.type === "pemasukan" ? "income" : "expense")} />
+                <div className={"txpage__item-dot txpage__item-dot--" + (tx.type === "pemasukan" ? "income" : tx.type === "transfer" ? "transfer" : "expense")} />
                 <div className="txpage__item-info">
-                  <p className="txpage__item-desc">{tx.description || tx.category || "-"}</p>
+                  <p className="txpage__item-desc">
+                    {tx.type === "transfer"
+                      ? `${tx.kas} → ${tx.kasTujuan}`
+                      : (tx.description || tx.category || "-")}
+                  </p>
                   <div className="txpage__item-meta">
                     <span className={"txpage__item-cat txpage__item-cat--" + accent}>{tx.category}</span>
                     <span>·</span>
@@ -225,8 +230,8 @@ export default function TransaksiPage() {
                     )}
                   </div>
                 </div>
-                <span className={"txpage__item-amount " + (tx.type === "pemasukan" ? "txpage__item-amount--income" : "txpage__item-amount--expense")}>
-                  {tx.type === "pemasukan" ? "+" : "-"}{formatRupiah(tx.amount)}
+                <span className={"txpage__item-amount " + (tx.type === "pemasukan" ? "txpage__item-amount--income" : tx.type === "transfer" ? "txpage__item-amount--transfer" : "txpage__item-amount--expense")}>
+                  {tx.type === "pemasukan" ? "+" : tx.type === "transfer" ? "🔄 " : "-"}{formatRupiah(tx.amount)}
                 </span>
                 <div className="txpage__item-actions">
                   <button className="txpage__item-edit" onClick={() => openEdit(tx)} title="Edit">✏️</button>

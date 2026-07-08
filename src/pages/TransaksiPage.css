@@ -150,6 +150,7 @@
 
 .txpage__item-dot--income  { background: #10b981; }
 .txpage__item-dot--expense { background: #ef4444; }
+.txpage__item-dot--transfer { background: #3b82f6; }
 
 .txpage__item-info { flex: 1; min-width: 0; overflow: hidden; }
 
@@ -191,6 +192,7 @@
 
 .txpage__item-amount--income  { color: #10b981; }
 .txpage__item-amount--expense { color: #f87171; }
+.txpage__item-amount--transfer { color: #3b82f6; }
 
 /* Delete confirm */
 .txpage__confirm-overlay {

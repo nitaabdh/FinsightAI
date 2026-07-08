@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import PageHeader from "../components/PageHeader";
-import { getTransactions, calcSummary, formatRupiah, groupByMonth, groupByCategory, groupByCategoryType, monthLabel, isModalUsaha, isRealKasTx } from "../utils/storage";
+import { getTransactions, calcSummary, formatRupiah, groupByMonth, groupByCategory, groupByCategoryType, monthLabel, isModalUsaha, isRealKasTx, computeKasStats, getKasEmoji } from "../utils/storage";
 import { nilaiStok } from "../utils/umkmCalc";
 import BreakEvenPoint from "../components/BreakEvenPoint";
 import UtangPiutang from "../components/UtangPiutang";
@@ -56,20 +56,8 @@ export default function LaporanPage() {
 
   // ── Saldo per Kas — posisi kas SAAT INI, sengaja TIDAK ikut filter periode ───
   // (sama prinsipnya kayak Total Aset Usaha: ini snapshot hari ini, bukan pergerakan per bulan)
-  const KAS_EMOJI = { "kas tunai": "💵", "rekening bank": "🏦", "e-wallet": "📱" };
-  const getKasEmoji = (k) => KAS_EMOJI[(k || "").toLowerCase().trim()] || "💳";
-
-  const kasStats = (() => {
-    const map = {};
-    transactions.forEach(tx => {
-      const nama = tx.kas || "Kas Tunai";
-      const key  = nama.toLowerCase().trim();
-      if (!(key in map)) map[key] = { nama, saldo: 0, count: 0 };
-      map[key].saldo += tx.type === "pemasukan" ? Number(tx.amount || 0) : -Number(tx.amount || 0);
-      map[key].count += 1;
-    });
-    return Object.values(map).sort((a, b) => b.count - a.count || Math.abs(b.saldo) - Math.abs(a.saldo));
-  })();
+  // Logic dipusatkan di storage.js (computeKasStats) biar konsisten dengan Dashboard.
+  const kasStats = computeKasStats(transactions);
 
   const summary    = calcSummary(filtered);
   const byMonth    = groupByMonth(usahaTx);
@@ -111,6 +99,9 @@ export default function LaporanPage() {
   const totalKasMasuk  = kasMasukByKategori.reduce((s, [, v]) => s + v, 0);
   const totalKasKeluar = kasKeluarByKategori.reduce((s, [, v]) => s + v, 0);
   const kenaikanKasBersih = totalKasMasuk - totalKasKeluar;
+  // Transfer antar dompet — TIDAK dihitung ke kas masuk/keluar (bukan uang baru),
+  // tapi tetap ditampilkan terpisah biar kelihatan riwayat mutasinya.
+  const transferPeriodeIni = kasTxFiltered.filter(t => t.type === "transfer" && t.kasTujuan);
 
   const monthKeyLocal = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
   const prevMonthKeyOf = (monthKey) => {
@@ -418,6 +409,22 @@ export default function LaporanPage() {
                 <p className="laporanpage__formal-note">
                   Kerugian nilai stok (rusak/gagal/sample) tidak dihitung di sini karena bukan uang keluar beneran — lihat tab Laba-Rugi buat pengaruhnya ke laba usaha.
                 </p>
+
+                {transferPeriodeIni.length > 0 && (
+                  <>
+                    <h3 className="laporanpage__section-title" style={{ marginTop: "1.5rem" }}>🔄 Transfer Antar Dompet (tidak dihitung kas masuk/keluar)</h3>
+                    <table className="laporanpage__formal-table">
+                      <tbody>
+                        {transferPeriodeIni.map(t => (
+                          <tr key={t.id}>
+                            <td>{getKasEmoji(t.kas)} {t.kas} → {getKasEmoji(t.kasTujuan)} {t.kasTujuan}</td>
+                            <td>{formatRupiah(t.amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>
+                )}
 
                 {kasStats.filter(k => k.nama !== "Non-Kas (Kerugian Stok)").length > 0 && (
                   <>

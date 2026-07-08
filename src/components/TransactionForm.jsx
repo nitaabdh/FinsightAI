@@ -10,6 +10,9 @@ const KATEGORI_PRODUK = "Penjualan Produk";
 // Kategori khusus: bikin produk buat sample/contoh marketing — stok bahan tetap kepakai
 // sesuai resep, TAPI ini pengeluaran (biaya), BUKAN pemasukan penjualan.
 const KATEGORI_SAMPLE = "Sample & Marketing";
+// Kategori tetap buat transfer antar dompet — bukan pemasukan/pengeluaran beneran,
+// cuma perpindahan uang antar kas (misal saldo QRIS dicairkan ke rekening bank).
+const KATEGORI_TRANSFER = "Transfer Antar Dompet";
 
 // Preset kas/wadah uang bawaan — selalu muncul di dropdown, bisa ditambah custom sendiri
 const KAS_PRESET = ["Kas Tunai", "Rekening Bank", "E-Wallet"];
@@ -50,6 +53,8 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
   const catDropdownRef = useRef(null);
   const kasInputRef = useRef(null);
   const kasDropdownRef = useRef(null);
+  const kasTujuanInputRef = useRef(null);
+  const kasTujuanDropdownRef = useRef(null);
 
   const showKas = mode === "umkm";
 
@@ -59,7 +64,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
     category:    editData?.category    || "",
     description: editData?.description || "",
     date:        editData?.date        || new Date().toISOString().slice(0, 10),
-    ...(showKas ? { kas: editData?.kas || "Kas Tunai" } : {}),
+    ...(showKas ? { kas: editData?.kas || "Kas Tunai", kasTujuan: editData?.kasTujuan || "" } : {}),
   });
   const [error, setError] = useState("");
 
@@ -73,6 +78,10 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
   const [kasOpen,  setKasOpen]  = useState(false);
   const [usedKas,  setUsedKas]  = useState([]);
 
+  // Smart dompet TUJUAN — cuma dipakai kalau type === "transfer"
+  const [kasTujuanQuery, setKasTujuanQuery] = useState(editData?.kasTujuan || "");
+  const [kasTujuanOpen,  setKasTujuanOpen]  = useState(false);
+
   const [produkList,  setProdukList]  = useState([]);
   const [selProdukId, setSelProdukId] = useState(editData?.produkId || "");
   const [jumlahUnit,  setJumlahUnit]  = useState(editData?.jumlahUnit ? String(editData.jumlahUnit) : "1");
@@ -80,6 +89,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
 
   const showProdukPicker = mode === "umkm" && (form.type === "pemasukan" || (form.type === "pengeluaran" && form.category === KATEGORI_SAMPLE));
   const isSampleFlow = form.type === "pengeluaran" && form.category === KATEGORI_SAMPLE;
+  const isTransferFlow = form.type === "transfer";
 
   useEffect(() => {
     if (user) {
@@ -109,6 +119,10 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
       if (kasDropdownRef.current && !kasDropdownRef.current.contains(e.target) &&
           kasInputRef.current && !kasInputRef.current.contains(e.target)) {
         setKasOpen(false);
+      }
+      if (kasTujuanDropdownRef.current && !kasTujuanDropdownRef.current.contains(e.target) &&
+          kasTujuanInputRef.current && !kasTujuanInputRef.current.contains(e.target)) {
+        setKasTujuanOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -169,6 +183,13 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
   const isExistingKas = kasOptions.some(k => k.toLowerCase() === kasQuery.toLowerCase().trim());
   const isCustomKasInput = kasQuery.trim() !== "" && !isExistingKas;
 
+  // Dompet tujuan (transfer) — pakai daftar kasOptions yang sama, cuma query beda
+  const kasTujuanSuggestions = kasTujuanQuery.trim() === ""
+    ? kasOptions
+    : kasOptions.filter(k => k.toLowerCase().includes(kasTujuanQuery.toLowerCase()));
+  const isExistingKasTujuan = kasOptions.some(k => k.toLowerCase() === kasTujuanQuery.toLowerCase().trim());
+  const isCustomKasTujuanInput = kasTujuanQuery.trim() !== "" && !isExistingKasTujuan;
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value, ...(name === "type" ? { category: "" } : {}) }));
@@ -216,6 +237,22 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
     setError("");
   };
 
+  // Handler dompet tujuan — pola sama persis dengan kas asal
+  const handleKasTujuanSelect = (kas) => {
+    setForm(prev => ({ ...prev, kasTujuan: kas }));
+    setKasTujuanQuery(kas);
+    setKasTujuanOpen(false);
+    setError("");
+  };
+
+  const handleKasTujuanInput = (e) => {
+    const val = e.target.value;
+    setKasTujuanQuery(val);
+    setForm(prev => ({ ...prev, kasTujuan: val }));
+    setKasTujuanOpen(true);
+    setError("");
+  };
+
   const handleSelectProduk = (produkId) => {
     setSelProdukId(produkId);
     if (!produkId) { setSelItems(null); return; }
@@ -251,8 +288,17 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
 
   const handleSubmit = () => {
     if (!form.amount || isNaN(form.amount) || Number(form.amount) <= 0) { setError("Masukkan nominal yang valid."); return; }
-    if (!form.category) { setError("Pilih kategori terlebih dahulu."); return; }
-    if (showKas && !form.kas?.trim()) { setError("Pilih atau isi kas/wadah uangnya terlebih dahulu."); return; }
+
+    if (isTransferFlow) {
+      if (!form.kas?.trim())        { setError("Pilih dompet asal (uang keluar dari mana)."); return; }
+      if (!form.kasTujuan?.trim())  { setError("Pilih dompet tujuan (uang masuk ke mana)."); return; }
+      if (form.kas.trim().toLowerCase() === form.kasTujuan.trim().toLowerCase()) {
+        setError("Dompet asal dan tujuan nggak boleh sama."); return;
+      }
+    } else {
+      if (!form.category) { setError("Pilih kategori terlebih dahulu."); return; }
+      if (showKas && !form.kas?.trim()) { setError("Pilih atau isi kas/wadah uangnya terlebih dahulu."); return; }
+    }
     if (selProdukId && (!jumlahUnit || isNaN(jumlahUnit) || Number(jumlahUnit) <= 0)) { setError("Masukkan jumlah unit yang valid."); return; }
 
     // Kalau kas yang diketik cocok (case-insensitive) sama yang udah ada, pakai casing yang lama
@@ -262,11 +308,17 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
       const match = kasOptions.find(k => k.toLowerCase() === kasFinal.toLowerCase());
       if (match) kasFinal = match;
     }
+    let kasTujuanFinal = form.kasTujuan?.trim();
+    if (isTransferFlow && kasTujuanFinal) {
+      const match = kasOptions.find(k => k.toLowerCase() === kasTujuanFinal.toLowerCase());
+      if (match) kasTujuanFinal = match;
+    }
 
     const data = {
       ...form,
       amount: Number(form.amount),
       ...(showKas ? { kas: kasFinal } : {}),
+      ...(isTransferFlow ? { kasTujuan: kasTujuanFinal, category: KATEGORI_TRANSFER } : {}),
       ...(selProdukId
         ? { produkId: selProdukId, items: selItems || [], jumlahUnit: Number(jumlahUnit) || 1 }
         : { produkId: null, items: [], jumlahUnit: null }),
@@ -284,18 +336,23 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
           <button className="txform__close" onClick={onClose}>✕</button>
         </div>
 
-        <div className="txform__type-toggle">
-          {["pemasukan", "pengeluaran"].map(t => (
+        <div className="txform__type-toggle" style={!showKas ? { gridTemplateColumns: "1fr 1fr" } : undefined}>
+          {(showKas ? ["pemasukan", "pengeluaran", "transfer"] : ["pemasukan", "pengeluaran"]).map(t => (
             <button key={t}
               className={`txform__type-btn ${form.type === t ? "txform__type-btn--active txform__type-btn--" + t : ""}`}
-              onClick={() => { setForm(p => ({ ...p, type: t, category: "" })); if (t !== "pemasukan") { setSelProdukId(""); setSelItems(null); setJumlahUnit("1"); } }}
+              onClick={() => {
+                setForm(p => ({ ...p, type: t, category: t === "transfer" ? KATEGORI_TRANSFER : "" }));
+                setCatQuery(t === "transfer" ? KATEGORI_TRANSFER : "");
+                if (t !== "pemasukan") { setSelProdukId(""); setSelItems(null); setJumlahUnit("1"); }
+              }}
             >
-              {t === "pemasukan" ? "⬆ Pemasukan" : "⬇ Pengeluaran"}
+              {t === "pemasukan" ? "⬆ Pemasukan" : t === "pengeluaran" ? "⬇ Pengeluaran" : "🔄 Transfer"}
             </button>
           ))}
         </div>
 
         <div className="txform__fields">
+          {!isTransferFlow && (
           <div className="txform__field">
             <label className="txform__label">Kategori</label>
             <div className="txform__cat-wrap" style={{ position: "relative" }}>
@@ -349,6 +406,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
               </p>
             )}
           </div>
+          )}
 
           {showProdukPicker && (
             <div className="txform__field">
@@ -379,10 +437,16 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
               placeholder="Contoh: 150.000" value={form.amount} onChange={handleAmountChange} />
           </div>
 
+          {isTransferFlow && (
+            <p className="txform__hint txform__hint--tight">
+              🔄 Transfer nggak dihitung sebagai omzet/pengeluaran baru — cuma mindahin saldo antar dompet (misal saldo QRIS yang dicairkan ke rekening bank).
+            </p>
+          )}
+
           {/* Kas / Wadah Uang — cuma tampil di mode UMKM */}
           {showKas && (
             <div className="txform__field">
-              <label className="txform__label">{form.type === "pemasukan" ? "Uang Masuk ke Kas" : "Uang Keluar dari Kas"}</label>
+              <label className="txform__label">{isTransferFlow ? "Dari Dompet" : form.type === "pemasukan" ? "Uang Masuk ke Kas" : "Uang Keluar dari Kas"}</label>
               <div className="txform__cat-wrap" style={{ position: "relative" }}>
                 <input
                   ref={kasInputRef}
@@ -415,6 +479,54 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
                         key={k}
                         className={"txform__cat-option " + (k === form.kas ? "txform__cat-option--active" : "")}
                         onMouseDown={() => handleKasSelect(k)}
+                      >
+                        <span>{getKasEmoji(k)}</span> {k}
+                        {!KAS_PRESET.includes(k) && (
+                          <span className="txform__cat-used">Pernah dipakai</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {showKas && isTransferFlow && (
+            <div className="txform__field">
+              <label className="txform__label">Ke Dompet</label>
+              <div className="txform__cat-wrap" style={{ position: "relative" }}>
+                <input
+                  ref={kasTujuanInputRef}
+                  className={"txform__input txform__input--" + accent + (isCustomKasTujuanInput ? " txform__input--custom-cat" : "")}
+                  type="text"
+                  placeholder="Ketik atau pilih dompet tujuan..."
+                  value={kasTujuanQuery}
+                  onChange={handleKasTujuanInput}
+                  onFocus={() => setKasTujuanOpen(true)}
+                  autoComplete="off"
+                />
+                {isCustomKasTujuanInput && (
+                  <span className="txform__cat-badge txform__cat-badge--new">Baru</span>
+                )}
+                {isExistingKasTujuan && kasTujuanQuery.trim() !== "" && (
+                  <span className="txform__cat-badge txform__cat-badge--exists">✓ Ada</span>
+                )}
+                {kasTujuanOpen && kasTujuanSuggestions.length > 0 && (
+                  <div ref={kasTujuanDropdownRef} className="txform__cat-dropdown">
+                    {isCustomKasTujuanInput && (
+                      <div
+                        className="txform__cat-option txform__cat-option--create"
+                        onMouseDown={() => handleKasTujuanSelect(kasTujuanQuery.trim())}
+                      >
+                        <span>➕</span> Buat "<strong>{kasTujuanQuery.trim()}</strong>"
+                      </div>
+                    )}
+                    {kasTujuanSuggestions.map(k => (
+                      <div
+                        key={k}
+                        className={"txform__cat-option " + (k === form.kasTujuan ? "txform__cat-option--active" : "")}
+                        onMouseDown={() => handleKasTujuanSelect(k)}
                       >
                         <span>{getKasEmoji(k)}</span> {k}
                         {!KAS_PRESET.includes(k) && (
