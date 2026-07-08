@@ -13,7 +13,7 @@ function verifyToken(req) {
   catch { return null; }
 }
 
-const VALID_TABLES = ["bahan_baku", "produk", "aset_usaha", "utang_piutang", "biaya_operasional", "stok_history", "supplier"];
+const VALID_TABLES = ["bahan_baku", "produk", "aset_usaha", "utang_piutang", "biaya_operasional", "stok_history", "supplier", "dompet"];
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -202,6 +202,15 @@ function buildPayload(body, table, userId, isUpdate = false) {
     };
   }
 
+  if (table === "dompet") {
+    return {
+      ...base,
+      nama:    body.nama,
+      jenis:   body.jenis || "Lainnya", // Tunai / Bank / E-Wallet / QRIS / Lainnya — buat pilih ikon
+      catatan: body.catatan || "",
+    };
+  }
+
   return null;
 }
 
@@ -245,6 +254,10 @@ function normalize(row, table) {
 
   if (table === "supplier") {
     return { ...base, nama: row.nama, kontakWa: row.kontak_wa, linkMarketplace: row.link_marketplace, kategori: row.kategori, catatan: row.catatan };
+  }
+
+  if (table === "dompet") {
+    return { ...base, nama: row.nama, jenis: row.jenis, catatan: row.catatan };
   }
 
   return row;

@@ -94,15 +94,20 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
   useEffect(() => {
     if (user) {
       const token = localStorage.getItem("finsight_token");
-      fetch(`/api/transactions?mode=${mode}`, {
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      }).then(r => r.json()).then(r => {
-        if (r.success) {
-          const cats = [...new Set(r.data.map(tx => tx.category).filter(Boolean))];
+      const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+      Promise.all([
+        fetch(`/api/transactions?mode=${mode}`, { headers }).then(r => r.json()),
+        // Dompet yang udah didaftarin manual di halaman Laporan > Dompet — biar dompet baru
+        // (misal "QRIS" yang saldonya masih 0) tetap muncul di sini walau belum pernah dipakai transaksi.
+        showKas ? fetch(`/api/umkm?table=dompet`, { headers }).then(r => r.json()) : Promise.resolve({ success: false }),
+      ]).then(([txRes, dompetRes]) => {
+        if (txRes.success) {
+          const cats = [...new Set(txRes.data.map(tx => tx.category).filter(Boolean))];
           setUsedCategories(cats);
           if (showKas) {
-            const kasHist = [...new Set(r.data.map(tx => tx.kas).filter(Boolean))];
-            setUsedKas(kasHist);
+            const kasHist = txRes.data.map(tx => tx.kas).filter(Boolean);
+            const dompetTerdaftar = dompetRes.success ? dompetRes.data.map(d => d.nama) : [];
+            setUsedKas([...new Set([...kasHist, ...dompetTerdaftar])]);
           }
         }
       });
