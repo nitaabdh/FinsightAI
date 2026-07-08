@@ -90,7 +90,24 @@ export default function TransaksiPage() {
   };
 
   const handleAdd = async (data) => {
-    await addTransaction(user.id, mode, data);
+    const { _adminFee, ...txData } = data;
+    await addTransaction(user.id, mode, txData);
+    // Penjualan online: bikin transaksi pengeluaran terpisah buat potongan admin
+    // marketplace, pakai dompet yang SAMA biar saldo dompet itu otomatis kepotong
+    // (persis kayak kenyataannya — uang yang cair emang udah bersih dari platform).
+    if (_adminFee && _adminFee.amount > 0) {
+      await addTransaction(user.id, mode, {
+        type: "pengeluaran",
+        amount: _adminFee.amount,
+        category: "Biaya Admin Marketplace",
+        description: _adminFee.description,
+        date: txData.date,
+        kas: txData.kas,
+        items: [],
+        jumlahUnit: null,
+        produkId: null,
+      });
+    }
     if (data.items?.length) await applyStokUntukTransaksi(data, -1);
     load(false);
   };

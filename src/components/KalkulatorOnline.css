@@ -1,0 +1,177 @@
+.komarket { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.komarket__form {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.komarket__form-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.komarket__hint { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+.komarket__hint--tight { margin-top: -0.4rem; font-style: italic; }
+
+.komarket__field { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.komarket__label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.komarket__input {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.85rem;
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: var(--transition);
+  width: 100%;
+}
+.komarket__input option { background: var(--bg-card); }
+.komarket__input::placeholder { color: var(--text-muted); }
+.komarket__input:focus { border-color: var(--accent-umkm); box-shadow: 0 0 0 3px var(--accent-umkm-dim); }
+
+/* Platform toggle */
+.komarket__platform-toggle { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.komarket__platform-btn {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.komarket__platform-btn:hover { color: var(--text-primary); }
+.komarket__platform-btn--active {
+  background: var(--accent-umkm-dim);
+  color: var(--accent-umkm);
+  border-color: rgba(245,158,11,0.35);
+}
+
+/* Fee rows */
+.komarket__fee-rows { display: flex; flex-direction: column; gap: 0.5rem; }
+.komarket__fee-row {
+  display: grid;
+  grid-template-columns: 1fr 70px 110px auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+.komarket__input--tipe { padding: 0.6rem 0.4rem; text-align: center; }
+.komarket__input--nilai { text-align: right; }
+.komarket__input--nama { min-width: 0; }
+
+@media (max-width: 560px) {
+  .komarket__fee-row { grid-template-columns: 1fr 60px 90px auto; gap: 0.35rem; }
+  .komarket__input { padding: 0.55rem 0.6rem; font-size: 13px; }
+}
+
+.komarket__fee-remove {
+  background: rgba(239,68,68,0.1);
+  color: #f87171;
+  border-radius: var(--radius-sm);
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--transition);
+}
+.komarket__fee-remove:hover { background: rgba(239,68,68,0.2); }
+
+.komarket__empty-fee { font-size: 13px; color: var(--text-muted); font-style: italic; padding: 0.5rem 0; }
+
+.komarket__addfee {
+  align-self: flex-start;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-umkm);
+  background: var(--accent-umkm-dim);
+  border: 1px solid rgba(245,158,11,0.3);
+  transition: var(--transition);
+}
+.komarket__addfee:hover { background: rgba(245,158,11,0.18); }
+
+/* Mode toggle (dipakai 2x: mode utama & target mundur) */
+.komarket__mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  background: var(--bg-secondary);
+  padding: 0.3rem;
+  border-radius: var(--radius-md);
+}
+.komarket__mode-btn {
+  padding: 0.55rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: transparent;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.komarket__mode-btn:hover:not(:disabled) { color: var(--text-secondary); }
+.komarket__mode-btn--active { background: var(--bg-card); color: var(--accent-umkm); box-shadow: 0 0 0 1px var(--accent-umkm); }
+.komarket__mode-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+@media (max-width: 480px) {
+  .komarket__mode-btn { font-size: 11px; padding: 0.5rem 0.3rem; }
+}
+
+/* Summary */
+.komarket__summary {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.komarket__sum-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary); gap: 0.75rem; }
+.komarket__sum-row span:last-child { font-family: var(--font-display); white-space: nowrap; }
+
+.komarket__sum-row--sub {
+  border-top: 1px dashed var(--border);
+  padding-top: 0.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.komarket__sum-row--final {
+  border-top: 2px solid var(--accent-umkm);
+  padding-top: 0.6rem;
+  margin-top: 0.2rem;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--accent-umkm);
+}
+.komarket__sum-row--final.komarket__sum-row--neg { color: #f87171; border-top-color: #f87171; }
+
+.komarket__error {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.25);
+  color: #f87171;
+  font-size: 13px;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-sm);
+  line-height: 1.6;
+}

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { CATEGORIES } from "../utils/storage";
 import { formatRupiah } from "../utils/umkmCalc";
+import { PLATFORM_PRESETS, buatFeeRowsDariPreset, genFeeId, hitungDanaBersih } from "../utils/marketplaceCalc";
 import RupiahInput from "./RupiahInput";
 import "./TransactionForm.css";
 import "./TransactionForm.smartcat.css";
@@ -90,6 +91,22 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
   const showProdukPicker = mode === "umkm" && (form.type === "pemasukan" || (form.type === "pengeluaran" && form.category === KATEGORI_SAMPLE));
   const isSampleFlow = form.type === "pengeluaran" && form.category === KATEGORI_SAMPLE;
   const isTransferFlow = form.type === "transfer";
+
+  // ── Penjualan Online / Marketplace — cuma relevan pas mode UMKM & tipe Pemasukan ──
+  const [isOnlineSale, setIsOnlineSale]   = useState(false);
+  const [onlinePlatform, setOnlinePlatform] = useState("shopee");
+  const [onlineFeeRows, setOnlineFeeRows] = useState(buatFeeRowsDariPreset("shopee"));
+
+  const handlePilihOnlinePlatform = (key) => {
+    setOnlinePlatform(key);
+    setOnlineFeeRows(buatFeeRowsDariPreset(key));
+  };
+  const updateOnlineFeeRow = (id, field, value) =>
+    setOnlineFeeRows(rows => rows.map(r => (r.id === id ? { ...r, [field]: value } : r)));
+  const addOnlineFeeRow = () => setOnlineFeeRows(rows => [...rows, { id: genFeeId(), nama: "", tipe: "persen", nilai: 0 }]);
+  const removeOnlineFeeRow = (id) => setOnlineFeeRows(rows => rows.filter(r => r.id !== id));
+
+  const onlineCalc = isOnlineSale ? hitungDanaBersih(form.amount, onlineFeeRows) : null;
 
   useEffect(() => {
     if (user) {
@@ -327,6 +344,12 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
       ...(selProdukId
         ? { produkId: selProdukId, items: selItems || [], jumlahUnit: Number(jumlahUnit) || 1 }
         : { produkId: null, items: [], jumlahUnit: null }),
+      ...(isOnlineSale && onlineCalc && onlineCalc.totalPotongan > 0
+        ? { _adminFee: {
+              amount: Math.round(onlineCalc.totalPotongan),
+              description: `Potongan ${PLATFORM_PRESETS[onlinePlatform]?.label || "Marketplace"} - ${form.description || "penjualan online"}`,
+            } }
+        : {}),
     };
 
     if (isEdit) { onEdit({ ...editData, ...data }); } else { onAdd(data); }
@@ -348,7 +371,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
               onClick={() => {
                 setForm(p => ({ ...p, type: t, category: t === "transfer" ? KATEGORI_TRANSFER : "" }));
                 setCatQuery(t === "transfer" ? KATEGORI_TRANSFER : "");
-                if (t !== "pemasukan") { setSelProdukId(""); setSelItems(null); setJumlahUnit("1"); }
+                if (t !== "pemasukan") { setSelProdukId(""); setSelItems(null); setJumlahUnit("1"); setIsOnlineSale(false); }
               }}
             >
               {t === "pemasukan" ? "⬆ Pemasukan" : t === "pengeluaran" ? "⬇ Pengeluaran" : "🔄 Transfer"}
@@ -446,6 +469,55 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
             <p className="txform__hint txform__hint--tight">
               🔄 Transfer nggak dihitung sebagai omzet/pengeluaran baru — cuma mindahin saldo antar dompet (misal saldo QRIS yang dicairkan ke rekening bank).
             </p>
+          )}
+
+          {showKas && form.type === "pemasukan" && (
+            <div className="txform__field">
+              <label className="txform__online-toggle">
+                <input type="checkbox" checked={isOnlineSale} onChange={e => setIsOnlineSale(e.target.checked)} />
+                🛒 Ini penjualan online/marketplace (ada potongan admin)?
+              </label>
+            </div>
+          )}
+
+          {isOnlineSale && (
+            <div className="txform__online-box">
+              <p className="txform__hint txform__hint--tight">
+                Nominal di atas tetap dicatat PENUH sebagai Penjualan (Omzet nggak keliru berkurang).
+                Potongan di bawah ini otomatis kecatat sebagai pengeluaran terpisah kategori "Biaya Admin Marketplace",
+                pakai dompet yang sama kayak yang kamu pilih di bawah.
+              </p>
+              <div className="txform__online-platform">
+                {Object.entries(PLATFORM_PRESETS).map(([key, p]) => (
+                  <button key={key} type="button"
+                    className={"txform__online-platform-btn" + (onlinePlatform === key ? " txform__online-platform-btn--active" : "")}
+                    onClick={() => handlePilihOnlinePlatform(key)}>
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              {onlineFeeRows.map(row => (
+                <div key={row.id} className="txform__online-fee-row">
+                  <input className="txform__input" type="text" placeholder="Nama potongan"
+                    value={row.nama} onChange={e => updateOnlineFeeRow(row.id, "nama", e.target.value)} />
+                  <select className="txform__input" value={row.tipe} onChange={e => updateOnlineFeeRow(row.id, "tipe", e.target.value)}>
+                    <option value="persen">%</option>
+                    <option value="nominal">Rp</option>
+                  </select>
+                  <input className="txform__input" type="number" placeholder="0"
+                    value={row.nilai} onChange={e => updateOnlineFeeRow(row.id, "nilai", e.target.value)} />
+                  <button type="button" className="txform__online-fee-remove" onClick={() => removeOnlineFeeRow(row.id)}>✕</button>
+                </div>
+              ))}
+              <button type="button" className="txform__online-addfee" onClick={addOnlineFeeRow}>+ Tambah Potongan</button>
+
+              {onlineCalc && (
+                <div className="txform__online-summary">
+                  <div className="txform__online-sum-row"><span>Total Potongan</span><span>− {formatRupiah(onlineCalc.totalPotongan)}</span></div>
+                  <div className="txform__online-sum-row txform__online-sum-row--final"><span>Dana Bersih (masuk ke dompet)</span><span>{formatRupiah(onlineCalc.danaBersih)}</span></div>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Kas / Wadah Uang — cuma tampil di mode UMKM */}

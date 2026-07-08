@@ -163,3 +163,87 @@
 @media (max-width: 360px) {
   .txform__type-btn { font-size: 10.5px; padding: 0.45rem 0.2rem; }
 }
+
+/* ── Penjualan Online / Marketplace ──────────────────────────────────────── */
+
+.txform__online-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.txform__online-toggle input { width: 16px; height: 16px; accent-color: var(--accent-umkm); cursor: pointer; }
+
+.txform__online-box {
+  background: rgba(59,130,246,0.06);
+  border: 1px solid rgba(59,130,246,0.25);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.txform__online-platform { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.txform__online-platform-btn {
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.txform__online-platform-btn--active {
+  background: rgba(59,130,246,0.15);
+  color: #3b82f6;
+  border-color: rgba(59,130,246,0.4);
+}
+
+.txform__online-fee-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 90px auto;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.txform__online-fee-remove {
+  background: rgba(239,68,68,0.1);
+  color: #f87171;
+  border-radius: var(--radius-sm);
+  width: 30px; height: 30px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.txform__online-fee-remove:hover { background: rgba(239,68,68,0.2); }
+
+.txform__online-addfee {
+  align-self: flex-start;
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 700;
+  color: #3b82f6;
+  background: rgba(59,130,246,0.1);
+  border: 1px solid rgba(59,130,246,0.3);
+}
+.txform__online-addfee:hover { background: rgba(59,130,246,0.18); }
+
+.txform__online-summary {
+  border-top: 1px dashed rgba(59,130,246,0.3);
+  padding-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.txform__online-sum-row { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--text-secondary); }
+.txform__online-sum-row--final { font-weight: 800; color: #3b82f6; font-size: 13.5px; }
+
+@media (max-width: 420px) {
+  .txform__online-fee-row { grid-template-columns: 1fr 50px 75px auto; gap: 0.3rem; }
+}
