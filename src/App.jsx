@@ -15,6 +15,7 @@ import LaporanPage        from "./pages/LaporanPage";
 import ProfilePage        from "./pages/ProfilePage";
 import CatatanPage        from "./pages/CatatanPage";
 import ProduksiPage       from "./pages/ProduksiPage";
+import DompetPage         from "./pages/DompetPage";
 import FloatingCalcWrapper from "./components/FloatingCalcWrapper";
 
 function U({ children }) { return <ProtectedRoute requiredMode="umkm">{children}</ProtectedRoute>; }
@@ -51,6 +52,7 @@ export default function App() {
             <Route path="/dashboard/personal"           element={<P><DashboardPersonal /></P>} />
             <Route path="/dashboard/personal/transaksi" element={<P><TransaksiPage /></P>} />
             <Route path="/dashboard/personal/target"    element={<P><TargetPage /></P>} />
+            <Route path="/dashboard/personal/dompet"    element={<P><DompetPage /></P>} />
             <Route path="/dashboard/personal/ai"        element={<P><AIAgentPage /></P>} />
             <Route path="/dashboard/personal/profile"   element={<P><ProfilePage /></P>} />
             <Route path="/dashboard/personal/catatan"   element={<P><CatatanPage /></P>} />

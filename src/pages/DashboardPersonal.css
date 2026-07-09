@@ -177,14 +177,32 @@
   pointer-events: none;
 }
 .dp2__hero-left { flex: 1; min-width: 0; }
+.dp2__hero-label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.3rem;
+}
 .dp2__hero-label {
   font-size: 12px;
   color: rgba(255,255,255,0.55);
   font-family: var(--font-body);
-  margin-bottom: 0.3rem;
+  margin-bottom: 0;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+.dp2__wallet-select {
+  font-size: 11px;
+  color: rgba(255,255,255,0.75);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-family: var(--font-body);
+  cursor: pointer;
+  max-width: 140px;
+}
+.dp2__wallet-select:focus { outline: none; border-color: #10b981; }
 .dp2__hero-saldo-row {
   display: flex;
   align-items: center;
@@ -251,7 +269,38 @@
 .dp2__toggle--on .dp2__toggle-knob { left: 19px; }
 
 /* Visual Kartu */
-.dp2__card-visual { flex-shrink: 0; }
+.dp2__card-visual {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+.dp2__card-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+.dp2__card-action-btn {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  white-space: nowrap;
+  padding: 0.4rem 0.5rem;
+  border-radius: 8px;
+  background: #10b981;
+  color: #fff;
+  border: 1px solid rgba(16,185,129,0.4);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.dp2__card-action-btn:hover { background: #0ea371; }
+.dp2__card-action-btn--sec {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.85);
+  border-color: rgba(255,255,255,0.15);
+}
+.dp2__card-action-btn--sec:hover { background: rgba(255,255,255,0.14); }
 .dp2__card {
   width: 150px; height: 95px;
   border-radius: 10px;
@@ -751,6 +800,8 @@
   .dp2__hero { padding: 1.1rem 1.1rem; gap: 0.75rem; }
   .dp2__hero-saldo { font-size: 20px; }
   .dp2__card { width: 120px; height: 76px; }
+  .dp2__card-action-btn { font-size: 9px; padding: 0.35rem 0.3rem; }
+  .dp2__wallet-select { max-width: 110px; font-size: 10px; }
   .dp2__card-brand { font-size: 8px; }
   .dp2__card-number { font-size: 7px; }
   .dp2__metrics { grid-template-columns: 1fr 1fr; gap: 0.5rem; }

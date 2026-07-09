@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, Tooltip, CartesianGrid, XAxis, YAxis } from "recharts";
-import { calcSummary, formatRupiah, groupByCategory } from "../utils/storage";
+import { calcSummary, formatRupiah, groupByCategory, computeKasStats, getKasEmoji } from "../utils/storage";
 import "./Dashboard.css";
 import "./DashboardPersonal.css";
 
@@ -62,6 +62,7 @@ export default function DashboardPersonal() {
   const [loading,      setLoading]      = useState(true);
   const [showSaldo,    setShowSaldo]    = useState(true);
   const [menuOpen,     setMenuOpen]     = useState(false);
+  const [walletFilter, setWalletFilter] = useState("semua"); // "semua" | nama dompet spesifik
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -91,6 +92,13 @@ export default function DashboardPersonal() {
   }, [user]);
 
   const summary           = calcSummary(transactions);
+  // Saldo per dompet (kas tunai, rekening bank, e-wallet, dll) — dihitung dari
+  // histori transaksi mode personal, pakai logic yang sama kayak Dompet UMKM biar konsisten.
+  const kasStats           = computeKasStats(transactions);
+  const displaySaldoLabel  = walletFilter === "semua" ? "Semua Saldo" : `${getKasEmoji(walletFilter)} ${walletFilter}`;
+  const displaySaldo       = walletFilter === "semua"
+    ? summary.saldo
+    : (kasStats.find(k => k.nama.toLowerCase().trim() === walletFilter.toLowerCase().trim())?.saldo || 0);
   const topCategories     = groupByCategory(transactions.filter(tx => tx.type === "pengeluaran")).slice(0, 5);
   const recentTx          = [...transactions].sort((a,b) => new Date(b.date||b.createdAt) - new Date(a.date||a.createdAt)).slice(0, 5);
   const budgetPersen      = summary.pemasukan > 0 ? Math.min((summary.pengeluaran / summary.pemasukan) * 100, 100) : 0;
@@ -222,17 +230,30 @@ export default function DashboardPersonal() {
         {/* ── HERO CARD SALDO ── */}
         <div className="dp2__hero">
           <div className="dp2__hero-left">
-            <p className="dp2__hero-label">Saldo Saat Ini</p>
+            <div className="dp2__hero-label-row">
+              <p className="dp2__hero-label">Saldo</p>
+              <select
+                className="dp2__wallet-select"
+                value={walletFilter}
+                onChange={e => setWalletFilter(e.target.value)}
+                title="Filter dompet"
+              >
+                <option value="semua">Semua Saldo</option>
+                {kasStats.map(k => (
+                  <option key={k.nama} value={k.nama}>{getKasEmoji(k.nama)} {k.nama}</option>
+                ))}
+              </select>
+            </div>
             <div className="dp2__hero-saldo-row">
               <h2 className="dp2__hero-saldo">
-                {showSaldo ? formatRupiah(summary.saldo) : "Rp ••••••"}
+                {showSaldo ? formatRupiah(displaySaldo) : "Rp ••••••"}
               </h2>
               <button className="dp2__hero-toggle" onClick={() => setShowSaldo(p => !p)}>
                 {showSaldo ? "👁️" : "🙈"}
               </button>
             </div>
             <div className="dp2__hero-meta">
-              <span className="dp2__hero-type">Debet</span>
+              <span className="dp2__hero-type">{displaySaldoLabel}</span>
               <span className="dp2__hero-type">Digital Card</span>
             </div>
             <label className="dp2__hero-nominal-toggle">
@@ -255,6 +276,14 @@ export default function DashboardPersonal() {
                 <span className="dp2__card-number">•••• •••• •••• 5678</span>
                 <span className="dp2__card-visa">VISA</span>
               </div>
+            </div>
+            <div className="dp2__card-actions">
+              <button className="dp2__card-action-btn" onClick={() => navigate("/dashboard/personal/transaksi")}>
+                + Catat Transaksi
+              </button>
+              <button className="dp2__card-action-btn dp2__card-action-btn--sec" onClick={() => navigate("/dashboard/personal/dompet")}>
+                👛 Dompet
+              </button>
             </div>
           </div>
         </div>

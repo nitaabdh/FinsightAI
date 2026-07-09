@@ -16,6 +16,7 @@ const menuPersonal = [
   { path: "/dashboard/personal",           icon: "📊", label: "Dashboard" },
   { path: "/dashboard/personal/transaksi", icon: "💳", label: "Transaksi" },
   { path: "/dashboard/personal/target",    icon: "🎯", label: "Target" },
+  { path: "/dashboard/personal/dompet",    icon: "👛", label: "Dompet" },
   { path: `/dashboard/personal/catatan`, icon: "📋", label: "Catatan" },
   { path: "/dashboard/personal/ai",        icon: "🤖", label: "AI Agent" },
 ];

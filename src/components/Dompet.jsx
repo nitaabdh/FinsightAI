@@ -24,7 +24,7 @@ async function apiFetch(url, options = {}) {
 // 1. Supaya bisa DAFTARIN dompet baru (misal "QRIS") SEBELUM pernah dipakai transaksi apapun —
 //    biar langsung muncul di dropdown pilihan kas pas nyatet transaksi/transfer.
 // 2. Tempat ngasih catatan per dompet (misal nomor rekening, link akun e-wallet, dll).
-export default function Dompet() {
+export default function Dompet({ mode = "umkm" }) {
   const { user } = useAuth();
   const formRef = useRef(null);
   const [list, setList]         = useState([]); // dompet yang terdaftar (dari tabel dompet)
@@ -40,13 +40,15 @@ export default function Dompet() {
     if (!user) return;
     setLoading(true);
     Promise.all([
+      // Daftar dompet TIDAK dipisah per mode dengan sengaja — dompet fisik (misal
+      // rekening BCA) bisa aja dipakai buat nyatet transaksi usaha & pribadi sekaligus.
       apiFetch(`/api/umkm?table=dompet`),
-      apiFetch(`/api/transactions?mode=umkm`),
+      apiFetch(`/api/transactions?mode=${mode}`),
     ]).then(([dompetRes, txRes]) => {
       if (dompetRes.success) setList(dompetRes.data);
       if (txRes.success)     setTransactions(txRes.data);
     }).finally(() => setLoading(false));
-  }, [user]);
+  }, [user, mode]);
 
   const resetForm = () => { setForm(emptyForm); setEditId(null); setError(""); setShowForm(false); };
 

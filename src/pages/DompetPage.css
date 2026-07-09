@@ -1,0 +1,14 @@
+.dompetpage {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+@media (max-width: 767px) {
+  .dompetpage {
+    padding: 1rem;
+  }
+}

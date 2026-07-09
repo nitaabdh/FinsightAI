@@ -27,13 +27,44 @@ const PENEMPATAN_CUSTOM = "__custom__";
 
 const QUICK_AMOUNTS = [50000, 100000, 200000, 500000, 1000000];
 
+// ── Konstanta khusus tab Utang & Cicilan ────────────────────────────────────
+const JENIS_UTANG = [
+  { id: "utang",    label: "Utang",    emoji: "📤" },
+  { id: "kredit",   label: "Kredit",   emoji: "💳" },
+  { id: "paylater", label: "Paylater", emoji: "🛍️" },
+];
+const jenisLabel = (j) => JENIS_UTANG.find(o => o.id === j)?.label || "Utang";
+const jenisEmoji = (j) => JENIS_UTANG.find(o => o.id === j)?.emoji || "📤";
+
+const emptyDebtForm = {
+  jenis: "utang", nama: "", tanggalMulai: "", tenor: "",
+  cicilanPerBulan: "", totalUtang: "", tanggalJatuhTempo: "", dompet: "", keterangan: "",
+};
+
+// Tanggal jatuh tempo berikutnya (bulan ini kalau belum lewat, kalau udah lewat bulan depan)
+function nextDueDate(tanggalJatuhTempo) {
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  let due = new Date(now.getFullYear(), now.getMonth(), tanggalJatuhTempo);
+  if (due < now) due = new Date(now.getFullYear(), now.getMonth() + 1, tanggalJatuhTempo);
+  return due;
+}
+
 export default function TargetPage() {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("tabungan"); // "tabungan" | "utang"
+
   const [targets, setTargets]   = useState([]);
   const [loading, setLoading]   = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [error, setError]       = useState("");
+
+  // ── State khusus Utang & Cicilan ─────────────────────────────────────────
+  const [debts, setDebts]             = useState([]);
+  const [showDebtForm, setShowDebtForm] = useState(false);
+  const [deleteDebtId, setDeleteDebtId] = useState(null);
+  const [debtError, setDebtError]       = useState("");
+  const [debtForm, setDebtForm]         = useState(emptyDebtForm);
 
   // Form state dengan field baru
   const [form, setForm] = useState({
@@ -49,9 +80,13 @@ export default function TargetPage() {
   useEffect(() => {
     if (!user) return;
     setLoading(true);
-    apiFetch("/api/targets")
-      .then((r) => { if (r.success) setTargets(r.data); })
-      .finally(() => setLoading(false));
+    Promise.all([
+      apiFetch("/api/targets"),
+      apiFetch("/api/debts"),
+    ]).then(([targetRes, debtRes]) => {
+      if (targetRes.success) setTargets(targetRes.data);
+      if (debtRes.success)   setDebts(debtRes.data);
+    }).finally(() => setLoading(false));
   }, [user]);
 
   const handleChange = (e) => {
@@ -89,7 +124,9 @@ export default function TargetPage() {
   }
 };
 
-  // Tambah nominal — bisa dari tombol cepat atau input bebas
+  // Tambah nominal — bisa dari tombol cepat atau input bebas.
+  // Setiap nambah tabungan otomatis dicatat sebagai transaksi PENGELUARAN juga —
+  // soalnya uang itu "pindah" dari saldo/dompet ke pos tabungan target.
   const handleTabung = async (id, tambah) => {
   if (!tambah || tambah <= 0) return;
   const t = targets.find((t) => t.id === id);
@@ -101,6 +138,19 @@ export default function TargetPage() {
   if (result.success) {
     setTargets((p) => p.map((t) => t.id === id ? result.data : t));
     setCustomAmount((p) => ({ ...p, [id]: "" }));
+    // Catat otomatis sebagai pengeluaran "Tabungan" biar saldo/dompet ikut kepotong
+    await apiFetch("/api/transactions", {
+      method: "POST",
+      body: JSON.stringify({
+        mode: "personal",
+        type: "pengeluaran",
+        amount: tambah,
+        category: "Tabungan",
+        description: `Nabung ke target: ${t.nama}`,
+        date: new Date().toISOString().slice(0, 10),
+        kas: t.penempatan || "Kas Tunai",
+      }),
+    });
   }
 };
 
@@ -109,6 +159,109 @@ export default function TargetPage() {
   setTargets((p) => p.filter((t) => t.id !== id));
   setDeleteId(null);
 };
+
+  // ── Handlers: Utang & Cicilan ─────────────────────────────────────────────
+  const handleDebtChange = (e) => {
+    setDebtForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+    setDebtError("");
+  };
+
+  // Upsert reminder kalender H-jatuh-tempo — coba PUT dulu (kalau reminder-nya
+  // udah ada dari sebelumnya), kalau belum ada (gagal) baru POST baru. Dengan
+  // id tetap `debt-{id}` biar nggak numpuk-numpuk tiap bulan, cuma geser tanggalnya.
+  const syncReminder = async (debt) => {
+    if (!debt.tanggalJatuhTempo) return;
+    const due = nextDueDate(debt.tanggalJatuhTempo);
+    const payload = {
+      id: `debt-${debt.id}`,
+      mode: "personal",
+      title: `${jenisEmoji(debt.jenis)} Bayar ${jenisLabel(debt.jenis)}: ${debt.nama}`,
+      body: `Cicilan ${formatRupiah(debt.cicilanPerBulan)}${debt.dompet ? " · " + debt.dompet : ""}`,
+      category: "tagihan",
+      date: due.toISOString().slice(0, 10),
+    };
+    const putRes = await apiFetch(`/api/notes?table=cal_notes`, { method: "PUT", body: JSON.stringify(payload) });
+    if (!putRes.success) {
+      await apiFetch(`/api/notes?table=cal_notes`, { method: "POST", body: JSON.stringify(payload) });
+    }
+  };
+
+  const removeReminder = async (debtId) => {
+    await apiFetch(`/api/notes?table=cal_notes&id=debt-${debtId}`, { method: "DELETE" });
+  };
+
+  const handleAddDebt = async () => {
+    if (!debtForm.nama.trim()) { setDebtError("Nama wajib diisi."); return; }
+    if (!debtForm.cicilanPerBulan || Number(debtForm.cicilanPerBulan) <= 0) {
+      setDebtError("Cicilan per bulan harus lebih dari 0."); return;
+    }
+    const result = await apiFetch("/api/debts", {
+      method: "POST",
+      body: JSON.stringify({
+        jenis:              debtForm.jenis,
+        nama:               debtForm.nama.trim(),
+        tanggalMulai:       debtForm.tanggalMulai || null,
+        tenor:              debtForm.tenor ? Number(debtForm.tenor) : null,
+        cicilanPerBulan:    Number(debtForm.cicilanPerBulan),
+        totalUtang:         debtForm.totalUtang ? Number(debtForm.totalUtang) : null,
+        tanggalJatuhTempo:  debtForm.tanggalJatuhTempo ? Number(debtForm.tanggalJatuhTempo) : null,
+        dompet:             debtForm.dompet || null,
+        keterangan:         debtForm.keterangan.trim(),
+      }),
+    });
+    if (result.success) {
+      setDebts((p) => [...p, result.data]);
+      setDebtForm(emptyDebtForm);
+      setShowDebtForm(false);
+      syncReminder(result.data);
+    } else {
+      setDebtError(result.message || "Gagal menyimpan. Coba lagi.");
+    }
+  };
+
+  // Bayar cicilan bulan ini — otomatis bikin transaksi pengeluaran +
+  // update progress utang + geser reminder kalender ke bulan berikutnya.
+  const handleBayarCicilan = async (id) => {
+    const d = debts.find((x) => x.id === id);
+    if (!d) return;
+    const amount = Number(d.cicilanPerBulan);
+
+    await apiFetch("/api/transactions", {
+      method: "POST",
+      body: JSON.stringify({
+        mode: "personal",
+        type: "pengeluaran",
+        amount,
+        category: `Cicilan ${jenisLabel(d.jenis)}`,
+        description: `Cicilan ${d.nama}`,
+        date: new Date().toISOString().slice(0, 10),
+        kas: d.dompet || "Kas Tunai",
+      }),
+    });
+
+    const newTerbayar      = Number(d.terbayar || 0) + amount;
+    const newBulanTerbayar = Number(d.bulanTerbayar || 0) + 1;
+    const newLunas = d.tenor
+      ? newBulanTerbayar >= d.tenor
+      : (d.totalUtang ? newTerbayar >= d.totalUtang : false);
+
+    const result = await apiFetch("/api/debts", {
+      method: "PUT",
+      body: JSON.stringify({ id, terbayar: newTerbayar, bulanTerbayar: newBulanTerbayar, lunas: newLunas }),
+    });
+    if (result.success) {
+      setDebts((p) => p.map((x) => (x.id === id ? result.data : x)));
+      if (newLunas) removeReminder(id);
+      else syncReminder(result.data);
+    }
+  };
+
+  const handleDeleteDebt = async (id) => {
+    await apiFetch(`/api/debts?id=${id}`, { method: "DELETE" });
+    setDebts((p) => p.filter((d) => d.id !== id));
+    setDeleteDebtId(null);
+    removeReminder(id);
+  };
 
   const getDaysLeft = (deadline) => {
     if (!deadline) return null;
@@ -122,20 +275,41 @@ export default function TargetPage() {
     return perBulan > 0 ? perBulan : 0;
   };
 
+  const activeDebts = debts.filter((d) => !d.lunas);
+
   return (
     <DashboardLayout>
       <div className="targetpage">
         <PageHeader
-          title="Target Tabungan"
-          subtitle={`${targets.length} target aktif`}
+          title={activeTab === "tabungan" ? "🎯 Target Tabungan" : "💳 Utang & Cicilan"}
+          subtitle={activeTab === "tabungan" ? `${targets.length} target aktif` : `${activeDebts.length} cicilan berjalan`}
         />
+
+        {/* ── Tab switcher: Target Tabungan / Utang & Cicilan ── */}
+        <div className="targetpage__tabs">
+          <button
+            className={"targetpage__tab" + (activeTab === "tabungan" ? " targetpage__tab--active" : "")}
+            onClick={() => setActiveTab("tabungan")}
+          >
+            🎯 Target Tabungan
+          </button>
+          <button
+            className={"targetpage__tab" + (activeTab === "utang" ? " targetpage__tab--active" : "")}
+            onClick={() => setActiveTab("utang")}
+          >
+            💳 Utang & Cicilan{activeDebts.length > 0 && <span className="targetpage__tab-badge">{activeDebts.length}</span>}
+          </button>
+        </div>
+
+        {activeTab === "tabungan" && (
         <div className="targetpage__toolbar">
           <button className="targetpage__add-btn" onClick={() => setShowForm(true)}>
             + Tambah Target
           </button>
         </div>
+        )}
 
-        {loading ? (
+        {activeTab === "tabungan" && (loading ? (
           <div className="dashboard__skeleton">
             <div className="targetpage__skeleton-grid">
               {[1,2,3].map(i => <div key={i} className="targetpage__skeleton-card skel" />)}
@@ -248,7 +422,7 @@ export default function TargetPage() {
               );
             })}
           </div>
-        )}
+        ))}
 
         {/* Form Modal */}
         {showForm && (
@@ -327,6 +501,175 @@ export default function TargetPage() {
               <div className="targetpage__confirm-actions">
                 <button onClick={() => setDeleteId(null)}>Batal</button>
                 <button className="targetpage__confirm-delete" onClick={() => handleDelete(deleteId)}>Hapus</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════════ TAB: UTANG & CICILAN ══════════════════ */}
+        {activeTab === "utang" && (
+        <div className="targetpage__toolbar">
+          <button className="targetpage__add-btn" onClick={() => setShowDebtForm(true)}>
+            + Tambah Utang/Kredit/Paylater
+          </button>
+        </div>
+        )}
+
+        {activeTab === "utang" && (loading ? (
+          <div className="dashboard__skeleton">
+            <div className="targetpage__skeleton-grid">
+              {[1,2,3].map(i => <div key={i} className="targetpage__skeleton-card skel" />)}
+            </div>
+          </div>
+        ) : debts.length === 0 ? (
+          <div className="targetpage__empty">
+            <p>💳</p>
+            <p>Belum ada utang, kredit, atau paylater tercatat.</p>
+            <button className="targetpage__add-btn" onClick={() => setShowDebtForm(true)}>
+              + Catat yang Pertama
+            </button>
+          </div>
+        ) : (
+          <div className="targetpage__grid">
+            {debts.map((d) => {
+              const persen = d.totalUtang
+                ? Math.min((d.terbayar / d.totalUtang) * 100, 100)
+                : (d.tenor ? Math.min((d.bulanTerbayar / d.tenor) * 100, 100) : 0);
+              const sisaTenor = d.tenor ? Math.max(d.tenor - d.bulanTerbayar, 0) : null;
+              const due = !d.lunas && d.tanggalJatuhTempo ? nextDueDate(d.tanggalJatuhTempo) : null;
+              const dueDays = due ? Math.ceil((due - new Date()) / (1000 * 60 * 60 * 24)) : null;
+
+              return (
+                <div key={d.id} className={"targetpage__card " + (d.lunas ? "targetpage__card--done" : "")}>
+                  {d.lunas && <div className="targetpage__done-badge">✅ Lunas!</div>}
+
+                  <div className="targetpage__card-header">
+                    <div>
+                      <h3 className="targetpage__card-nama">{jenisEmoji(d.jenis)} {d.nama}</h3>
+                      <span className="targetpage__card-penempatan">{jenisLabel(d.jenis)}{d.dompet ? " · dari " + d.dompet : ""}</span>
+                    </div>
+                    <button className="targetpage__card-delete" onClick={() => setDeleteDebtId(d.id)}>🗑</button>
+                  </div>
+
+                  {(d.totalUtang || d.tenor) && (
+                    <div>
+                      <div className="targetpage__progress-bar">
+                        <div className="targetpage__progress-fill" style={{ width: persen + "%" }} />
+                      </div>
+                      <div className="targetpage__progress-info">
+                        <span>{d.totalUtang ? formatRupiah(d.terbayar) : `${d.bulanTerbayar}x bayar`}</span>
+                        <span className="targetpage__persen">{persen.toFixed(0)}%</span>
+                        <span>{d.totalUtang ? formatRupiah(d.totalUtang) : `${d.tenor}x cicilan`}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="targetpage__info">
+                    <div className="targetpage__info-item">
+                      <span>Cicilan/bulan</span>
+                      <strong>{formatRupiah(d.cicilanPerBulan)}</strong>
+                    </div>
+                    {sisaTenor !== null && !d.lunas && (
+                      <div className="targetpage__info-item">
+                        <span>Sisa Tenor</span>
+                        <strong>{sisaTenor} bulan</strong>
+                      </div>
+                    )}
+                    {dueDays !== null && (
+                      <div className="targetpage__info-item">
+                        <span>Jatuh Tempo</span>
+                        <strong className={dueDays <= 7 ? "targetpage__urgent" : ""}>
+                          {dueDays === 0 ? "Hari ini" : dueDays > 0 ? `${dueDays} hari lagi` : "Terlewat"}
+                        </strong>
+                      </div>
+                    )}
+                  </div>
+
+                  {d.keterangan && <p className="targetpage__debt-keterangan">📝 {d.keterangan}</p>}
+
+                  {!d.lunas && (
+                    <button className="targetpage__submit" onClick={() => handleBayarCicilan(d.id)}>
+                      💸 Bayar Cicilan Bulan Ini ({formatRupiah(d.cicilanPerBulan)})
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+
+        {/* Form Modal: Tambah Utang/Kredit/Paylater */}
+        {showDebtForm && (
+          <div className="targetpage__overlay" onClick={() => setShowDebtForm(false)}>
+            <div className="targetpage__form animate-fadeUp" onClick={(e) => e.stopPropagation()}>
+              <div className="targetpage__form-header">
+                <h3>Tambah Utang/Kredit/Paylater</h3>
+                <button onClick={() => setShowDebtForm(false)}>✕</button>
+              </div>
+
+              <div className="targetpage__form-fields">
+                <div className="targetpage__field">
+                  <label>Jenis</label>
+                  <select name="jenis" value={debtForm.jenis} onChange={handleDebtChange}>
+                    {JENIS_UTANG.map(o => <option key={o.id} value={o.id}>{o.emoji} {o.label}</option>)}
+                  </select>
+                </div>
+                <div className="targetpage__field">
+                  <label>Nama</label>
+                  <input name="nama" placeholder="Misal: KTA Bank Jago, Kredivo, Cicilan HP"
+                    value={debtForm.nama} onChange={handleDebtChange} />
+                </div>
+                <div className="targetpage__field">
+                  <label>Tanggal Mulai <span style={{fontWeight:400, color:"var(--text-muted)", fontSize:"11px"}}>(opsional)</span></label>
+                  <input name="tanggalMulai" type="date" value={debtForm.tanggalMulai} onChange={handleDebtChange} />
+                </div>
+                <div className="targetpage__field">
+                  <label>Tenor (bulan) <span style={{fontWeight:400, color:"var(--text-muted)", fontSize:"11px"}}>(opsional, khusus yang ada tenornya)</span></label>
+                  <input name="tenor" type="number" min="1" placeholder="Misal: 12"
+                    value={debtForm.tenor} onChange={handleDebtChange} />
+                </div>
+                <div className="targetpage__field">
+                  <label>Cicilan per Bulan (Rp)</label>
+                  <RupiahInput placeholder="Contoh: 500.000" value={debtForm.cicilanPerBulan}
+                    onChange={v => { setDebtForm(p => ({ ...p, cicilanPerBulan: v })); setDebtError(""); }} />
+                </div>
+                <div className="targetpage__field">
+                  <label>Total Utang/Pokok (Rp) <span style={{fontWeight:400, color:"var(--text-muted)", fontSize:"11px"}}>(opsional)</span></label>
+                  <RupiahInput placeholder="Kosongkan kalau nggak tahu totalnya" value={debtForm.totalUtang}
+                    onChange={v => { setDebtForm(p => ({ ...p, totalUtang: v })); setDebtError(""); }} />
+                </div>
+                <div className="targetpage__field">
+                  <label>Tanggal Jatuh Tempo Tiap Bulan <span style={{fontWeight:400, color:"var(--text-muted)", fontSize:"11px"}}>(opsional, 1-28)</span></label>
+                  <input name="tanggalJatuhTempo" type="number" min="1" max="28" placeholder="Misal: 25"
+                    value={debtForm.tanggalJatuhTempo} onChange={handleDebtChange} />
+                </div>
+                <div className="targetpage__field">
+                  <label>Dompet Sumber Bayar <span style={{fontWeight:400, color:"var(--text-muted)", fontSize:"11px"}}>(opsional)</span></label>
+                  <input name="dompet" placeholder="Misal: Kas Tunai, Rekening Bank"
+                    value={debtForm.dompet} onChange={handleDebtChange} />
+                </div>
+                <div className="targetpage__field">
+                  <label>Keterangan <span style={{fontWeight:400, color:"var(--text-muted)", fontSize:"11px"}}>(opsional)</span></label>
+                  <input name="keterangan" placeholder="Catatan tambahan"
+                    value={debtForm.keterangan} onChange={handleDebtChange} />
+                </div>
+
+                {debtError && <p className="targetpage__error">⚠️ {debtError}</p>}
+                <button className="targetpage__submit" onClick={handleAddDebt}>Simpan</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirm: Utang */}
+        {deleteDebtId && (
+          <div className="targetpage__overlay" onClick={() => setDeleteDebtId(null)}>
+            <div className="targetpage__confirm" onClick={(e) => e.stopPropagation()}>
+              <p>Hapus catatan ini?</p>
+              <p>Tindakan ini tidak bisa dibatalkan. Riwayat transaksi cicilan yang udah kebayar TETAP aman.</p>
+              <div className="targetpage__confirm-actions">
+                <button onClick={() => setDeleteDebtId(null)}>Batal</button>
+                <button className="targetpage__confirm-delete" onClick={() => handleDeleteDebt(deleteDebtId)}>Hapus</button>
               </div>
             </div>
           </div>

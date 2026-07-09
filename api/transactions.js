@@ -70,8 +70,8 @@ export default async function handler(req, res) {
           items: items || [],
           jumlah_unit: jumlah_unit || 1,
           produk_id: produk_id || null,
-          kas: mode === "umkm" ? (kas || "Kas Tunai") : null,
-          kas_tujuan: mode === "umkm" && type === "transfer" ? kas_tujuan : null,
+          kas: kas || "Kas Tunai",
+          kas_tujuan: type === "transfer" ? kas_tujuan : null,
         })
         .select()
         .single();
@@ -96,7 +96,7 @@ export default async function handler(req, res) {
 
       const { data, error } = await supabase
         .from("transactions")
-        .update({ type, amount, category, description, date, items, jumlah_unit, produk_id, kas, kas_tujuan: type === "transfer" ? kas_tujuan : null })
+        .update({ type, amount, category, description, date, items, jumlah_unit, produk_id, kas: kas || "Kas Tunai", kas_tujuan: type === "transfer" ? kas_tujuan : null })
         .eq("id", id)
         .eq("user_id", userId) // pastikan hanya bisa edit milik sendiri
         .select()

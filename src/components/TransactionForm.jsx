@@ -57,7 +57,9 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
   const kasTujuanInputRef = useRef(null);
   const kasTujuanDropdownRef = useRef(null);
 
-  const showKas = mode === "umkm";
+  // Kas/dompet sekarang dipakai di kedua mode (UMKM & Personal) — biar saldo per
+  // dompet & halaman Dompet personal bisa ngitung dari histori transaksi juga.
+  const showKas = true;
 
   const [form, setForm] = useState({
     type:        editData?.type        || "pemasukan",
