@@ -76,6 +76,7 @@ export default function TargetPage() {
 
   // State untuk tambah nominal bebas per target
   const [customAmount, setCustomAmount] = useState({});
+  const [confirmTabung, setConfirmTabung] = useState(null); // { id, nama, dompet, amount }
 
   useEffect(() => {
     if (!user) return;
@@ -393,7 +394,7 @@ export default function TargetPage() {
                           <button
                             key={n}
                             className="targetpage__quick-btn"
-                            onClick={() => handleTabung(t.id, n)}
+                            onClick={() => setConfirmTabung({ id: t.id, nama: t.nama, dompet: t.penempatan || "Kas Tunai", amount: n })}
                           >
                             +{n >= 1000000 ? (n/1000000)+"jt" : (n/1000)+"rb"}
                           </button>
@@ -410,7 +411,7 @@ export default function TargetPage() {
                         />
                         <button
                           className="targetpage__custom-btn"
-                          onClick={() => handleTabung(t.id, Number(customAmount[t.id]))}
+                          onClick={() => setConfirmTabung({ id: t.id, nama: t.nama, dompet: t.penempatan || "Kas Tunai", amount: Number(customAmount[t.id]) })}
                           disabled={!customAmount[t.id] || Number(customAmount[t.id]) <= 0}
                         >
                           + Tambah
@@ -492,6 +493,28 @@ export default function TargetPage() {
           </div>
         )}
 
+        {/* Konfirmasi Tambah Tabungan */}
+        {confirmTabung && (
+          <div className="targetpage__overlay" onClick={() => setConfirmTabung(null)}>
+            <div className="targetpage__confirm" onClick={(e) => e.stopPropagation()}>
+              <p>Tambah Tabungan?</p>
+              <p>
+                Kamu akan menambah tabungan <strong>{formatRupiah(confirmTabung.amount)}</strong> ke target
+                "<strong>{confirmTabung.nama}</strong>", yang akan keluar dari dompet <strong>{confirmTabung.dompet}</strong>.
+              </p>
+              <div className="targetpage__confirm-actions">
+                <button onClick={() => setConfirmTabung(null)}>Tidak</button>
+                <button
+                  className="targetpage__confirm-delete targetpage__confirm-delete--positive"
+                  onClick={() => { handleTabung(confirmTabung.id, confirmTabung.amount); setConfirmTabung(null); }}
+                >
+                  Ya, Lanjutkan
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Delete Confirm */}
         {deleteId && (
           <div className="targetpage__overlay" onClick={() => setDeleteId(null)}>
@@ -507,12 +530,74 @@ export default function TargetPage() {
         )}
 
         {/* ══════════════════ TAB: UTANG & CICILAN ══════════════════ */}
-        {activeTab === "utang" && (
+        {activeTab === "utang" && !showDebtForm && (
         <div className="targetpage__toolbar">
           <button className="targetpage__add-btn" onClick={() => setShowDebtForm(true)}>
             + Tambah Utang/Kredit/Paylater
           </button>
         </div>
+        )}
+
+        {/* Form inline (bukan floating) — biar enak diisi, sama kayak form Biaya Operasional di UMKM */}
+        {activeTab === "utang" && showDebtForm && (
+          <div className="targetpage__inline-form">
+            <h3 className="targetpage__inline-form-title">+ Tambah Utang/Kredit/Paylater</h3>
+
+            <div className="targetpage__inline-form-grid">
+              <div className="targetpage__field">
+                <label>Jenis</label>
+                <select name="jenis" value={debtForm.jenis} onChange={handleDebtChange}>
+                  {JENIS_UTANG.map(o => <option key={o.id} value={o.id}>{o.emoji} {o.label}</option>)}
+                </select>
+              </div>
+              <div className="targetpage__field">
+                <label>Nama</label>
+                <input name="nama" placeholder="Misal: KTA Bank Jago, Kredivo, Cicilan HP"
+                  value={debtForm.nama} onChange={handleDebtChange} />
+              </div>
+              <div className="targetpage__field">
+                <label>Tanggal Mulai <span className="targetpage__label-opt">(opsional)</span></label>
+                <input name="tanggalMulai" type="date" value={debtForm.tanggalMulai} onChange={handleDebtChange} />
+              </div>
+              <div className="targetpage__field">
+                <label>Tenor (bulan) <span className="targetpage__label-opt">(opsional)</span></label>
+                <input name="tenor" type="number" min="1" placeholder="Misal: 12"
+                  value={debtForm.tenor} onChange={handleDebtChange} />
+              </div>
+              <div className="targetpage__field">
+                <label>Cicilan per Bulan (Rp)</label>
+                <RupiahInput placeholder="Contoh: 500.000" value={debtForm.cicilanPerBulan}
+                  onChange={v => { setDebtForm(p => ({ ...p, cicilanPerBulan: v })); setDebtError(""); }} />
+              </div>
+              <div className="targetpage__field">
+                <label>Total Utang/Pokok (Rp) <span className="targetpage__label-opt">(opsional)</span></label>
+                <RupiahInput placeholder="Kosongkan kalau nggak tahu totalnya" value={debtForm.totalUtang}
+                  onChange={v => { setDebtForm(p => ({ ...p, totalUtang: v })); setDebtError(""); }} />
+              </div>
+              <div className="targetpage__field">
+                <label>Tanggal Jatuh Tempo Tiap Bulan <span className="targetpage__label-opt">(opsional, 1-28)</span></label>
+                <input name="tanggalJatuhTempo" type="number" min="1" max="28" placeholder="Misal: 25"
+                  value={debtForm.tanggalJatuhTempo} onChange={handleDebtChange} />
+              </div>
+              <div className="targetpage__field">
+                <label>Dompet Sumber Bayar <span className="targetpage__label-opt">(opsional)</span></label>
+                <input name="dompet" placeholder="Misal: Kas Tunai, Rekening Bank"
+                  value={debtForm.dompet} onChange={handleDebtChange} />
+              </div>
+              <div className="targetpage__field targetpage__field--wide">
+                <label>Keterangan <span className="targetpage__label-opt">(opsional)</span></label>
+                <input name="keterangan" placeholder="Catatan tambahan"
+                  value={debtForm.keterangan} onChange={handleDebtChange} />
+              </div>
+            </div>
+
+            {debtError && <p className="targetpage__error">⚠️ {debtError}</p>}
+
+            <div className="targetpage__inline-form-actions">
+              <button className="targetpage__btn-sec" onClick={() => { setShowDebtForm(false); setDebtForm(emptyDebtForm); setDebtError(""); }}>Batal</button>
+              <button className="targetpage__submit" onClick={handleAddDebt}>Simpan</button>
+            </div>
+          </div>
         )}
 
         {activeTab === "utang" && (loading ? (
@@ -597,69 +682,6 @@ export default function TargetPage() {
             })}
           </div>
         ))}
-
-        {/* Form Modal: Tambah Utang/Kredit/Paylater */}
-        {showDebtForm && (
-          <div className="targetpage__overlay" onClick={() => setShowDebtForm(false)}>
-            <div className="targetpage__form animate-fadeUp" onClick={(e) => e.stopPropagation()}>
-              <div className="targetpage__form-header">
-                <h3>Tambah Utang/Kredit/Paylater</h3>
-                <button onClick={() => setShowDebtForm(false)}>✕</button>
-              </div>
-
-              <div className="targetpage__form-fields">
-                <div className="targetpage__field">
-                  <label>Jenis</label>
-                  <select name="jenis" value={debtForm.jenis} onChange={handleDebtChange}>
-                    {JENIS_UTANG.map(o => <option key={o.id} value={o.id}>{o.emoji} {o.label}</option>)}
-                  </select>
-                </div>
-                <div className="targetpage__field">
-                  <label>Nama</label>
-                  <input name="nama" placeholder="Misal: KTA Bank Jago, Kredivo, Cicilan HP"
-                    value={debtForm.nama} onChange={handleDebtChange} />
-                </div>
-                <div className="targetpage__field">
-                  <label>Tanggal Mulai <span style={{fontWeight:400, color:"var(--text-muted)", fontSize:"11px"}}>(opsional)</span></label>
-                  <input name="tanggalMulai" type="date" value={debtForm.tanggalMulai} onChange={handleDebtChange} />
-                </div>
-                <div className="targetpage__field">
-                  <label>Tenor (bulan) <span style={{fontWeight:400, color:"var(--text-muted)", fontSize:"11px"}}>(opsional, khusus yang ada tenornya)</span></label>
-                  <input name="tenor" type="number" min="1" placeholder="Misal: 12"
-                    value={debtForm.tenor} onChange={handleDebtChange} />
-                </div>
-                <div className="targetpage__field">
-                  <label>Cicilan per Bulan (Rp)</label>
-                  <RupiahInput placeholder="Contoh: 500.000" value={debtForm.cicilanPerBulan}
-                    onChange={v => { setDebtForm(p => ({ ...p, cicilanPerBulan: v })); setDebtError(""); }} />
-                </div>
-                <div className="targetpage__field">
-                  <label>Total Utang/Pokok (Rp) <span style={{fontWeight:400, color:"var(--text-muted)", fontSize:"11px"}}>(opsional)</span></label>
-                  <RupiahInput placeholder="Kosongkan kalau nggak tahu totalnya" value={debtForm.totalUtang}
-                    onChange={v => { setDebtForm(p => ({ ...p, totalUtang: v })); setDebtError(""); }} />
-                </div>
-                <div className="targetpage__field">
-                  <label>Tanggal Jatuh Tempo Tiap Bulan <span style={{fontWeight:400, color:"var(--text-muted)", fontSize:"11px"}}>(opsional, 1-28)</span></label>
-                  <input name="tanggalJatuhTempo" type="number" min="1" max="28" placeholder="Misal: 25"
-                    value={debtForm.tanggalJatuhTempo} onChange={handleDebtChange} />
-                </div>
-                <div className="targetpage__field">
-                  <label>Dompet Sumber Bayar <span style={{fontWeight:400, color:"var(--text-muted)", fontSize:"11px"}}>(opsional)</span></label>
-                  <input name="dompet" placeholder="Misal: Kas Tunai, Rekening Bank"
-                    value={debtForm.dompet} onChange={handleDebtChange} />
-                </div>
-                <div className="targetpage__field">
-                  <label>Keterangan <span style={{fontWeight:400, color:"var(--text-muted)", fontSize:"11px"}}>(opsional)</span></label>
-                  <input name="keterangan" placeholder="Catatan tambahan"
-                    value={debtForm.keterangan} onChange={handleDebtChange} />
-                </div>
-
-                {debtError && <p className="targetpage__error">⚠️ {debtError}</p>}
-                <button className="targetpage__submit" onClick={handleAddDebt}>Simpan</button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Delete Confirm: Utang */}
         {deleteDebtId && (

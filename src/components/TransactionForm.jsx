@@ -473,7 +473,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
             </p>
           )}
 
-          {showKas && form.type === "pemasukan" && (
+          {showKas && mode === "umkm" && form.type === "pemasukan" && (
             <div className="txform__field">
               <label className="txform__online-toggle">
                 <input type="checkbox" checked={isOnlineSale} onChange={e => setIsOnlineSale(e.target.checked)} />

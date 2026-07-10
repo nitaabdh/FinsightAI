@@ -230,6 +230,66 @@
   padding: 1rem;
 }
 
+.targetpage__inline-form {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+}
+.targetpage__inline-form-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 1.25rem;
+}
+.targetpage__inline-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+.targetpage__field--wide { grid-column: 1 / -1; }
+.targetpage__label-opt { font-weight: 400; color: var(--text-muted); font-size: 11px; }
+
+.targetpage__inline-form-grid input,
+.targetpage__inline-form-grid select {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.9rem;
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  width: 100%;
+  transition: var(--transition);
+}
+.targetpage__inline-form-grid input:focus,
+.targetpage__inline-form-grid select:focus {
+  border-color: var(--accent-personal);
+  box-shadow: 0 0 0 3px var(--accent-personal-dim);
+}
+.targetpage__inline-form-grid select option { background: var(--bg-card); }
+
+.targetpage__inline-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+.targetpage__inline-form-actions .targetpage__submit { width: auto; padding: 0.65rem 1.5rem; }
+.targetpage__btn-sec {
+  padding: 0.65rem 1.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  transition: var(--transition);
+}
+.targetpage__btn-sec:hover { background: var(--border); }
+
 .targetpage__form {
   background: var(--bg-card);
   border: 1px solid var(--border-light);
@@ -343,6 +403,11 @@
   background: rgba(239,68,68,0.15) !important;
   border-color: rgba(239,68,68,0.3) !important;
   color: #f87171 !important;
+}
+.targetpage__confirm-delete--positive {
+  background: rgba(16,185,129,0.15) !important;
+  border-color: rgba(16,185,129,0.3) !important;
+  color: #10b981 !important;
 }
 
 @media (max-width: 600px) {

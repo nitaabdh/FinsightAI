@@ -5,6 +5,14 @@
   padding: 1.5rem;
   max-width: 900px;
   margin: 0 auto;
+
+  /* Component Dompet.jsx aslinya dipakai di UMKM (aksen oranye). Di sini kita
+     override variabel aksennya jadi hijau (personal) supaya nggak tabrakan
+     warna dengan halaman personal lainnya — tanpa perlu ubah Dompet.jsx/css. */
+  --accent-umkm:      var(--accent-personal);
+  --accent-umkm-dim:  var(--accent-personal-dim);
+  --accent-umkm-glow: var(--accent-personal-glow);
+  --dompet-btn-gradient: linear-gradient(135deg, #059669, #10b981);
 }
 
 @media (max-width: 767px) {

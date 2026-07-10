@@ -1,0 +1,203 @@
+.lapper {
+  padding: 2rem;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.lapper__toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+.lapper__month-select {
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.lapper__summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+.lapper__summary-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.lapper__summary-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+}
+.lapper__summary-value {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+.lapper__summary-card--income .lapper__summary-value  { color: #10b981; }
+.lapper__summary-card--expense .lapper__summary-value { color: #ef4444; }
+.lapper__summary-card--positive .lapper__summary-value { color: #10b981; }
+.lapper__summary-card--negative .lapper__summary-value { color: #ef4444; }
+.lapper__summary-card--wallet .lapper__summary-value { color: #3b82f6; }
+
+.lapper__card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.4rem;
+}
+.lapper__card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.9rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.lapper__card-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.lapper__legend {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.lapper__see-all {
+  font-size: 12px;
+  color: var(--accent-personal);
+  background: none;
+  font-family: var(--font-body);
+}
+.lapper__empty {
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.lapper__row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+@media (max-width: 900px) {
+  .lapper__row2 { grid-template-columns: 1fr; }
+}
+
+.lapper__stat-row {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 0.9rem;
+  flex-wrap: wrap;
+}
+.lapper__stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.lapper__stat-item span {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.lapper__stat-item strong {
+  font-size: 16px;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+}
+
+.lapper__mini-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.lapper__mini-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 0.5rem 0.6rem;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  color: var(--text-primary);
+}
+
+.lapper__cat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.lapper__cat-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-primary);
+  margin-bottom: 0.3rem;
+}
+.lapper__cat-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  overflow: hidden;
+}
+.lapper__cat-bar-fill { height: 100%; border-radius: 999px; }
+.lapper__cat-bar-fill--income  { background: #10b981; }
+.lapper__cat-bar-fill--expense { background: #ef4444; }
+
+.lapper__wallet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+.lapper__wallet-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.85rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+.lapper__wallet-icon { font-size: 20px; }
+.lapper__wallet-nama {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+}
+.lapper__wallet-saldo {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+.lapper__wallet-item--neg .lapper__wallet-saldo { color: #ef4444; }
+
+.lapper__skel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+.lapper__skel-card {
+  height: 90px;
+  border-radius: var(--radius-lg);
+}
+
+@media (max-width: 767px) {
+  .lapper { padding: 1rem; }
+}
