@@ -153,7 +153,7 @@ export default function Dompet({ mode = "umkm" }) {
         </div>
       )}
 
-      <div className="dompet__list">
+      <div className="dompet__grid-cards">
         {loading ? (
           <div className="dompet__empty"><p>⏳</p><p>Memuat data dompet...</p></div>
         ) : semuaDompet.length === 0 ? (
@@ -166,26 +166,23 @@ export default function Dompet({ mode = "umkm" }) {
           semuaDompet.map(it => {
             const saldo = saldoOf(it.nama);
             return (
-              <div key={it.id} className="dompet__item">
-                <div className="dompet__item-info">
-                  <p className="dompet__item-nama">{getKasEmoji(it.nama)} {it.nama}</p>
-                  <p className="dompet__item-meta">
-                    <span className="dompet__item-kategori">{it.jenis}</span>
-                    {it.belumTerdaftar && <span> · belum didaftarin manual (otomatis dari transaksi)</span>}
-                    {it.catatan && <span className="dompet__item-catatan"> · {it.catatan}</span>}
-                  </p>
-                </div>
-                <div className="dompet__item-right">
-                  <span className={"dompet__item-harga" + (saldo < 0 ? " dompet__item-saldo--neg" : "")}>
-                    {formatRupiah(saldo)}
-                  </span>
-                </div>
+              <div key={it.id} className="dompet__card">
                 {!it.belumTerdaftar && (
-                  <div className="dompet__item-actions">
+                  <div className="dompet__card-actions">
                     <button className="dompet__item-edit" onClick={() => openEdit(it)} title="Edit">✏️</button>
                     <button className="dompet__item-del" onClick={() => setDelId(it.id)} title="Hapus">🗑</button>
                   </div>
                 )}
+                <span className="dompet__card-icon">{getKasEmoji(it.nama)}</span>
+                <p className="dompet__card-nama">{it.nama}</p>
+                <p className={"dompet__card-saldo" + (saldo < 0 ? " dompet__item-saldo--neg" : "")}>
+                  {formatRupiah(saldo)}
+                </p>
+                <div className="dompet__card-footer">
+                  <span className="dompet__item-kategori">{it.jenis}</span>
+                  {it.belumTerdaftar && <span className="dompet__card-auto">otomatis dari transaksi</span>}
+                </div>
+                {it.catatan && <p className="dompet__card-catatan">📝 {it.catatan}</p>}
               </div>
             );
           })

@@ -17,12 +17,12 @@ const apiFetch = async (url, options = {}) => {
   return res.json();
 };
 
-const PENEMPATAN_OPTIONS = [
-  "Kantong Bank Krom", "Kantong Bank Jago", "Kantong Bank BCA",
-  "Kantong Bank BRI", "Kantong Bank Mandiri", "Dompet Digital (GoPay)",
-  "Dompet Digital (OVO)", "Dompet Digital (Dana)", "Celengan Rumah",
-];
-
+// Preset dasar — SAMA PERSIS dengan KAS_PRESET di TransactionForm.jsx, supaya nama
+// dompet yang muncul di sini konsisten dengan yang dipakai pas catat transaksi.
+// Daftar ASLI yang ditampilkan ke user nanti digabung lagi sama dompet yang udah
+// terdaftar di halaman Dompet + nama kas yang pernah dipakai di transaksi (live data),
+// jadi user nggak perlu ketik ulang nama yang beda-beda buat wadah yang sama.
+const DEFAULT_WALLET_PRESET = ["Kas Tunai", "Rekening Bank", "E-Wallet"];
 const PENEMPATAN_CUSTOM = "__custom__";
 
 const QUICK_AMOUNTS = [50000, 100000, 200000, 500000, 1000000];
@@ -65,6 +65,12 @@ export default function TargetPage() {
   const [deleteDebtId, setDeleteDebtId] = useState(null);
   const [debtError, setDebtError]       = useState("");
   const [debtForm, setDebtForm]         = useState(emptyDebtForm);
+  const [customDompetDebt, setCustomDompetDebt] = useState(false); // toggle ketik-bebas utk dompet di form utang
+
+  // Daftar nama dompet yang konsisten dipakai di 3 tempat: Transaksi, Penempatan
+  // Target, dan Dompet Sumber Bayar Utang — digabung dari dompet terdaftar +
+  // histori kas transaksi + preset dasar, biar nggak kepecah jadi nama yang beda-beda.
+  const [walletOptions, setWalletOptions] = useState([]);
 
   // Form state dengan field baru
   const [form, setForm] = useState({
@@ -77,6 +83,9 @@ export default function TargetPage() {
   // State untuk tambah nominal bebas per target
   const [customAmount, setCustomAmount] = useState({});
   const [confirmTabung, setConfirmTabung] = useState(null); // { id, nama, dompet, amount }
+  const [tabungBusy, setTabungBusy]   = useState(false); // guard biar tombol "Ya, Lanjutkan" nggak keklik dobel
+  const [payingId, setPayingId]       = useState(null);  // id utang yang lagi diproses "Bayar Cicilan" (cegah klik dobel)
+  const [debtSubmitting, setDebtSubmitting] = useState(false); // guard tombol Simpan form utang
 
   useEffect(() => {
     if (!user) return;
@@ -84,9 +93,17 @@ export default function TargetPage() {
     Promise.all([
       apiFetch("/api/targets"),
       apiFetch("/api/debts"),
-    ]).then(([targetRes, debtRes]) => {
+      apiFetch("/api/transactions?mode=personal"),
+      apiFetch("/api/umkm?table=dompet"),
+    ]).then(([targetRes, debtRes, txRes, dompetRes]) => {
       if (targetRes.success) setTargets(targetRes.data);
       if (debtRes.success)   setDebts(debtRes.data);
+
+      const dompetTerdaftar = dompetRes.success ? dompetRes.data.map(d => d.nama) : [];
+      const kasHist         = txRes.success ? txRes.data.map(tx => tx.kas).filter(Boolean) : [];
+      const penempatanLama  = (targetRes.success ? targetRes.data : []).map(t => t.penempatan).filter(Boolean);
+      const dompetUtangLama = (debtRes.success ? debtRes.data : []).map(d => d.dompet).filter(Boolean);
+      setWalletOptions([...new Set([...DEFAULT_WALLET_PRESET, ...dompetTerdaftar, ...kasHist, ...penempatanLama, ...dompetUtangLama])]);
     }).finally(() => setLoading(false));
   }, [user]);
 
@@ -192,68 +209,87 @@ export default function TargetPage() {
   };
 
   const handleAddDebt = async () => {
+    if (debtSubmitting) return;
     if (!debtForm.nama.trim()) { setDebtError("Nama wajib diisi."); return; }
     if (!debtForm.cicilanPerBulan || Number(debtForm.cicilanPerBulan) <= 0) {
       setDebtError("Cicilan per bulan harus lebih dari 0."); return;
     }
-    const result = await apiFetch("/api/debts", {
-      method: "POST",
-      body: JSON.stringify({
-        jenis:              debtForm.jenis,
-        nama:               debtForm.nama.trim(),
-        tanggalMulai:       debtForm.tanggalMulai || null,
-        tenor:              debtForm.tenor ? Number(debtForm.tenor) : null,
-        cicilanPerBulan:    Number(debtForm.cicilanPerBulan),
-        totalUtang:         debtForm.totalUtang ? Number(debtForm.totalUtang) : null,
-        tanggalJatuhTempo:  debtForm.tanggalJatuhTempo ? Number(debtForm.tanggalJatuhTempo) : null,
-        dompet:             debtForm.dompet || null,
-        keterangan:         debtForm.keterangan.trim(),
-      }),
-    });
-    if (result.success) {
-      setDebts((p) => [...p, result.data]);
-      setDebtForm(emptyDebtForm);
-      setShowDebtForm(false);
-      syncReminder(result.data);
-    } else {
-      setDebtError(result.message || "Gagal menyimpan. Coba lagi.");
+    setDebtSubmitting(true);
+    try {
+      const result = await apiFetch("/api/debts", {
+        method: "POST",
+        body: JSON.stringify({
+          jenis:              debtForm.jenis,
+          nama:               debtForm.nama.trim(),
+          tanggalMulai:       debtForm.tanggalMulai || null,
+          tenor:              debtForm.tenor ? Number(debtForm.tenor) : null,
+          cicilanPerBulan:    Number(debtForm.cicilanPerBulan),
+          totalUtang:         debtForm.totalUtang ? Number(debtForm.totalUtang) : null,
+          tanggalJatuhTempo:  debtForm.tanggalJatuhTempo ? Number(debtForm.tanggalJatuhTempo) : null,
+          dompet:             debtForm.dompet || null,
+          keterangan:         debtForm.keterangan.trim(),
+        }),
+      });
+      if (result.success) {
+        setDebts((p) => [...p, result.data]);
+        setDebtForm(emptyDebtForm);
+        setShowDebtForm(false);
+        setCustomDompetDebt(false);
+        syncReminder(result.data);
+      } else {
+        setDebtError(result.message || "Gagal menyimpan. Coba lagi.");
+      }
+    } finally {
+      setDebtSubmitting(false);
     }
   };
 
   // Bayar cicilan bulan ini — otomatis bikin transaksi pengeluaran +
   // update progress utang + geser reminder kalender ke bulan berikutnya.
   const handleBayarCicilan = async (id) => {
+    if (payingId) return; // udah ada pembayaran lain lagi diproses, cegah klik dobel
     const d = debts.find((x) => x.id === id);
     if (!d) return;
-    const amount = Number(d.cicilanPerBulan);
+    setPayingId(id);
+    try {
+      const amount = Number(d.cicilanPerBulan);
 
-    await apiFetch("/api/transactions", {
-      method: "POST",
-      body: JSON.stringify({
-        mode: "personal",
-        type: "pengeluaran",
-        amount,
-        category: `Cicilan ${jenisLabel(d.jenis)}`,
-        description: `Cicilan ${d.nama}`,
-        date: new Date().toISOString().slice(0, 10),
-        kas: d.dompet || "Kas Tunai",
-      }),
-    });
+      const txResult = await apiFetch("/api/transactions", {
+        method: "POST",
+        body: JSON.stringify({
+          mode: "personal",
+          type: "pengeluaran",
+          amount,
+          category: `Cicilan ${jenisLabel(d.jenis)}`,
+          description: `Cicilan ${d.nama}`,
+          date: new Date().toISOString().slice(0, 10),
+          kas: d.dompet || "Kas Tunai",
+        }),
+      });
+      // Kalau transaksinya gagal kesimpen, jangan lanjut update progress utang —
+      // biar nggak "kecatet lunas" padahal duitnya belum benar-benar tercatat keluar.
+      if (!txResult.success) {
+        setDebtError("Gagal mencatat transaksi pembayaran. Coba lagi.");
+        return;
+      }
 
-    const newTerbayar      = Number(d.terbayar || 0) + amount;
-    const newBulanTerbayar = Number(d.bulanTerbayar || 0) + 1;
-    const newLunas = d.tenor
-      ? newBulanTerbayar >= d.tenor
-      : (d.totalUtang ? newTerbayar >= d.totalUtang : false);
+      const newTerbayar      = Number(d.terbayar || 0) + amount;
+      const newBulanTerbayar = Number(d.bulanTerbayar || 0) + 1;
+      const newLunas = d.tenor
+        ? newBulanTerbayar >= d.tenor
+        : (d.totalUtang ? newTerbayar >= d.totalUtang : false);
 
-    const result = await apiFetch("/api/debts", {
-      method: "PUT",
-      body: JSON.stringify({ id, terbayar: newTerbayar, bulanTerbayar: newBulanTerbayar, lunas: newLunas }),
-    });
-    if (result.success) {
-      setDebts((p) => p.map((x) => (x.id === id ? result.data : x)));
-      if (newLunas) removeReminder(id);
-      else syncReminder(result.data);
+      const result = await apiFetch("/api/debts", {
+        method: "PUT",
+        body: JSON.stringify({ id, terbayar: newTerbayar, bulanTerbayar: newBulanTerbayar, lunas: newLunas }),
+      });
+      if (result.success) {
+        setDebts((p) => p.map((x) => (x.id === id ? result.data : x)));
+        if (newLunas) removeReminder(id);
+        else syncReminder(result.data);
+      }
+    } finally {
+      setPayingId(null);
     }
   };
 
@@ -457,7 +493,7 @@ export default function TargetPage() {
                   {!customPenempatan ? (
                     <select name="penempatan" value={form.penempatan} onChange={handlePenempatanSelect}>
                       <option value="">-- Pilih tempat menabung --</option>
-                      {PENEMPATAN_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+                      {walletOptions.map((o) => <option key={o} value={o}>{o}</option>)}
                       <option value={PENEMPATAN_CUSTOM}>✏️ Lainnya (ketik sendiri)</option>
                     </select>
                   ) : (
@@ -503,12 +539,19 @@ export default function TargetPage() {
                 "<strong>{confirmTabung.nama}</strong>", yang akan keluar dari dompet <strong>{confirmTabung.dompet}</strong>.
               </p>
               <div className="targetpage__confirm-actions">
-                <button onClick={() => setConfirmTabung(null)}>Tidak</button>
+                <button onClick={() => setConfirmTabung(null)} disabled={tabungBusy}>Tidak</button>
                 <button
                   className="targetpage__confirm-delete targetpage__confirm-delete--positive"
-                  onClick={() => { handleTabung(confirmTabung.id, confirmTabung.amount); setConfirmTabung(null); }}
+                  disabled={tabungBusy}
+                  onClick={async () => {
+                    if (tabungBusy) return;
+                    setTabungBusy(true);
+                    await handleTabung(confirmTabung.id, confirmTabung.amount);
+                    setTabungBusy(false);
+                    setConfirmTabung(null);
+                  }}
                 >
-                  Ya, Lanjutkan
+                  {tabungBusy ? "Memproses..." : "Ya, Lanjutkan"}
                 </button>
               </div>
             </div>
@@ -581,8 +624,36 @@ export default function TargetPage() {
               </div>
               <div className="targetpage__field">
                 <label>Dompet Sumber Bayar <span className="targetpage__label-opt">(opsional)</span></label>
-                <input name="dompet" placeholder="Misal: Kas Tunai, Rekening Bank"
-                  value={debtForm.dompet} onChange={handleDebtChange} />
+                {!customDompetDebt ? (
+                  <select
+                    value={walletOptions.includes(debtForm.dompet) ? debtForm.dompet : ""}
+                    onChange={e => {
+                      if (e.target.value === PENEMPATAN_CUSTOM) { setCustomDompetDebt(true); setDebtForm(p => ({ ...p, dompet: "" })); }
+                      else setDebtForm(p => ({ ...p, dompet: e.target.value }));
+                    }}
+                  >
+                    <option value="">-- Pilih dompet --</option>
+                    {walletOptions.map((o) => <option key={o} value={o}>{o}</option>)}
+                    <option value={PENEMPATAN_CUSTOM}>✏️ Lainnya (ketik sendiri)</option>
+                  </select>
+                ) : (
+                  <div className="targetpage__custom-penempatan-wrap">
+                    <input
+                      autoFocus
+                      placeholder="Misal: Bank Syariah Indonesia"
+                      value={debtForm.dompet}
+                      onChange={e => setDebtForm(p => ({ ...p, dompet: e.target.value }))}
+                    />
+                    <button
+                      type="button"
+                      className="targetpage__custom-penempatan-back"
+                      onClick={() => { setCustomDompetDebt(false); setDebtForm(p => ({ ...p, dompet: "" })); }}
+                      title="Kembali ke daftar pilihan"
+                    >
+                      ↺ Pilih dari daftar
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="targetpage__field targetpage__field--wide">
                 <label>Keterangan <span className="targetpage__label-opt">(opsional)</span></label>
@@ -594,8 +665,10 @@ export default function TargetPage() {
             {debtError && <p className="targetpage__error">⚠️ {debtError}</p>}
 
             <div className="targetpage__inline-form-actions">
-              <button className="targetpage__btn-sec" onClick={() => { setShowDebtForm(false); setDebtForm(emptyDebtForm); setDebtError(""); }}>Batal</button>
-              <button className="targetpage__submit" onClick={handleAddDebt}>Simpan</button>
+              <button className="targetpage__btn-sec" onClick={() => { setShowDebtForm(false); setDebtForm(emptyDebtForm); setDebtError(""); setCustomDompetDebt(false); }}>Batal</button>
+              <button className="targetpage__submit" onClick={handleAddDebt} disabled={debtSubmitting}>
+                {debtSubmitting ? "Menyimpan..." : "Simpan"}
+              </button>
             </div>
           </div>
         )}
@@ -673,8 +746,8 @@ export default function TargetPage() {
                   {d.keterangan && <p className="targetpage__debt-keterangan">📝 {d.keterangan}</p>}
 
                   {!d.lunas && (
-                    <button className="targetpage__submit" onClick={() => handleBayarCicilan(d.id)}>
-                      💸 Bayar Cicilan Bulan Ini ({formatRupiah(d.cicilanPerBulan)})
+                    <button className="targetpage__submit" onClick={() => handleBayarCicilan(d.id)} disabled={payingId === d.id}>
+                      {payingId === d.id ? "⏳ Memproses..." : `💸 Bayar Cicilan Bulan Ini (${formatRupiah(d.cicilanPerBulan)})`}
                     </button>
                   )}
                 </div>

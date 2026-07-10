@@ -366,6 +366,13 @@
 }
 
 .targetpage__submit:hover { transform: translateY(-1px); }
+.targetpage__submit:disabled,
+.targetpage__confirm-delete:disabled,
+.targetpage__confirm-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
 
 /* Confirm */
 .targetpage__confirm {

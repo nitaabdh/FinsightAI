@@ -70,4 +70,85 @@
     text-overflow: ellipsis;
     max-width: 100%;
   }
+
+  /* ── Wrapper Personal (nav + popup "menu lainnya") ── */
+  .bottom-nav-wrap {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+  }
+  .bottom-nav-wrap .bottom-nav {
+    position: static; /* posisi fixed dipindah ke wrapper-nya */
+  }
+
+  /* Tombol + di tengah — sedikit lebih besar & "ngambang" biar keliatan beda dari menu lain */
+  .bottom-nav__plus {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 52px;
+    margin: 0 auto;
+  }
+  .bottom-nav__plus-icon {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, #059669, #10b981);
+    box-shadow: 0 4px 14px var(--accent-personal-glow);
+    transform: translateY(-8px);
+    transition: var(--transition);
+  }
+  .bottom-nav__plus--active .bottom-nav__plus-icon {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    transform: translateY(-8px) rotate(90deg);
+  }
+
+  /* Popup menu lainnya — ngambang di atas tombol + */
+  .bottom-nav__more-popup {
+    position: absolute;
+    bottom: calc(100% + 0.5rem);
+    left: 50%;
+    transform: translateX(-50%);
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.4rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 0.6rem;
+    box-shadow: 0 -6px 24px rgba(0,0,0,0.25);
+    min-width: 220px;
+  }
+  .bottom-nav__more-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 0.6rem 0.5rem;
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    font-family: var(--font-body);
+    transition: var(--transition);
+    cursor: pointer;
+  }
+  .bottom-nav__more-item:hover { background: var(--border); color: var(--text-primary); }
+  .bottom-nav__more-item--active {
+    background: var(--accent-personal-dim);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: var(--accent-personal);
+  }
+  .bottom-nav__more-item .bottom-nav__icon { font-size: 1.2rem; }
+  .bottom-nav__more-item .bottom-nav__label { font-size: 10px; }
 }

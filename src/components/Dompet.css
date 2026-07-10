@@ -146,11 +146,66 @@
 .dompet__select:hover { border-color: var(--border-light); color: var(--text-primary); }
 
 /* List */
-.dompet__list {
+.dompet__grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 0.9rem;
+}
+
+.dompet__card {
+  position: relative;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  transition: var(--transition);
+}
+.dompet__card:hover { border-color: var(--accent-umkm); transform: translateY(-2px); }
+
+.dompet__card-icon { font-size: 26px; }
+.dompet__card-nama {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  padding-right: 3.2rem; /* biar nggak ketiban tombol edit/hapus */
+}
+.dompet__card-saldo {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0.1rem 0 0.2rem;
+}
+.dompet__card-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.dompet__card-auto {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+.dompet__card-catatan {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0.3rem 0 0;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dompet__card-actions {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  display: flex;
+  gap: 0.15rem;
 }
 
 .dompet__empty {
@@ -162,21 +217,6 @@
 }
 .dompet__empty p:first-child { font-size: 2.5rem; }
 
-.dompet__item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.85rem 1.25rem;
-  border-bottom: 1px solid var(--border);
-  transition: var(--transition);
-  flex-wrap: wrap;
-}
-.dompet__item:last-child { border-bottom: none; }
-.dompet__item:hover { background: var(--bg-secondary); }
-
-.dompet__item-info { flex: 1; min-width: 180px; }
-.dompet__item-nama { font-size: 14px; color: var(--text-primary); font-weight: 600; }
-.dompet__item-meta { font-size: 12px; color: var(--text-muted); margin-top: 0.2rem; }
 .dompet__item-kategori {
   background: var(--accent-umkm-dim);
   color: var(--accent-umkm);
@@ -184,22 +224,6 @@
   border-radius: 10px;
   font-size: 11px;
   font-weight: 500;
-}
-.dompet__item-catatan { font-style: italic; }
-
-.dompet__item-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.3rem;
-  min-width: 110px;
-}
-
-.dompet__item-harga {
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-primary);
 }
 
 .dompet__badge {
@@ -214,12 +238,6 @@
 .dompet__badge--rusakRingan { background: rgba(245,158,11,0.15); color: var(--accent-umkm); }
 .dompet__badge--rusakBerat  { background: rgba(239,68,68,0.15); color: #f87171; }
 .dompet__item-saldo--neg { color: #f87171 !important; }
-
-.dompet__item-actions {
-  display: flex;
-  gap: 0.3rem;
-  flex-shrink: 0;
-}
 
 .dompet__item-edit, .dompet__item-del {
   background: none;

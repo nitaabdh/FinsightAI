@@ -10,7 +10,7 @@ async function apiFetch(url, options = {}) {
   return res.json();
 }
 
-export function useAIAgent(mode, summary, userId) {
+export function useAIAgent(mode, summary, userId, financeContext = "") {
   const [messages, setMessages]       = useState([]);
   const [apiMessages, setApiMessages] = useState([]);
   const [loading, setLoading]         = useState(false);
@@ -99,7 +99,7 @@ export function useAIAgent(mode, summary, userId) {
       // server-side dari Supabase, nggak pernah lewat browser.
       const r = await apiFetch("/api/ai-chat", {
         method: "POST",
-        body: JSON.stringify({ messages: newApiMsgs, mode, summary, profileContext }),
+        body: JSON.stringify({ messages: newApiMsgs, mode, summary, profileContext, financeContext }),
       });
 
       if (!r.success) {
@@ -121,7 +121,7 @@ export function useAIAgent(mode, summary, userId) {
     } finally {
       setLoading(false);
     }
-  }, [messages, apiMessages, loading, mode, summary, userId, saveHistory]);
+  }, [messages, apiMessages, loading, mode, summary, userId, financeContext, saveHistory]);
 
   const clearChat = useCallback(() => {
     setMessages([]);

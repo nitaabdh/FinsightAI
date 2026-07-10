@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "./BottomNav.css";
@@ -11,39 +12,125 @@ const menuUMKM = [
   { path: "/dashboard/umkm/ai",        icon: "🤖", label: "AI" },
 ];
 
-const menuPersonal = [
+// Personal: cuma 3 menu utama yang tampil langsung + 1 tombol "+" di tengah.
+// Sisanya (Laporan, Catatan, AI, Profil) muncul lewat popup pas tombol "+" dipencet,
+// biar bottom nav-nya nggak penuh sesak kayak sebelumnya (7 item sekaligus).
+const primaryPersonal = [
   { path: "/dashboard/personal",           icon: "📊", label: "Dashboard" },
   { path: "/dashboard/personal/transaksi", icon: "💳", label: "Transaksi" },
   { path: "/dashboard/personal/target",    icon: "🎯", label: "Target" },
-  { path: "/dashboard/personal/catatan",   icon: "📋", label: "Catatan" },
-  { path: "/dashboard/personal/ai",        icon: "🤖", label: "AI" },
-  { path: "/dashboard/personal/profile",   icon: "👤", label: "Profil" },
+];
+const morePersonal = [
+  { path: "/dashboard/personal/laporan", icon: "📈", label: "Laporan" },
+  { path: "/dashboard/personal/catatan", icon: "📋", label: "Catatan" },
+  { path: "/dashboard/personal/ai",      icon: "🤖", label: "AI" },
+  { path: "/dashboard/personal/profile", icon: "👤", label: "Profil" },
 ];
 
 export default function BottomNav() {
   const { user } = useAuth();
   const navigate  = useNavigate();
   const location  = useLocation();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const wrapRef = useRef(null);
 
   const isUMKM = user?.mode === "umkm";
-  const menu   = isUMKM ? menuUMKM : menuPersonal;
   const accent = isUMKM ? "umkm" : "personal";
 
+  // Tutup popup pas ganti halaman atau pas tap di luar popup
+  useEffect(() => { setMoreOpen(false); }, [location.pathname]);
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onOutside = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setMoreOpen(false); };
+    document.addEventListener("mousedown", onOutside);
+    document.addEventListener("touchstart", onOutside);
+    return () => {
+      document.removeEventListener("mousedown", onOutside);
+      document.removeEventListener("touchstart", onOutside);
+    };
+  }, [moreOpen]);
+
+  const isMoreActive = !isUMKM && morePersonal.some(m => m.path === location.pathname);
+
+  if (isUMKM) {
+    return (
+      <nav className={`bottom-nav bottom-nav--${accent}`}>
+        {menuUMKM.map((item) => {
+          const active = location.pathname === item.path;
+          return (
+            <button
+              key={item.path}
+              className={`bottom-nav__item ${active ? `bottom-nav__item--active bottom-nav__item--${accent}` : ""}`}
+              onClick={() => navigate(item.path)}
+            >
+              <span className="bottom-nav__icon">{item.icon}</span>
+              <span className="bottom-nav__label">{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+    );
+  }
+
   return (
-    <nav className={`bottom-nav bottom-nav--${accent}`}>
-      {menu.map((item) => {
-        const active = location.pathname === item.path;
-        return (
-          <button
-            key={item.path}
-            className={`bottom-nav__item ${active ? `bottom-nav__item--active bottom-nav__item--${accent}` : ""}`}
-            onClick={() => navigate(item.path)}
-          >
-            <span className="bottom-nav__icon">{item.icon}</span>
-            <span className="bottom-nav__label">{item.label}</span>
-          </button>
-        );
-      })}
-    </nav>
+    <div className="bottom-nav-wrap" ref={wrapRef}>
+      {/* Popup "Menu Lainnya" — muncul di atas tombol + */}
+      {moreOpen && (
+        <div className="bottom-nav__more-popup animate-fadeUp">
+          {morePersonal.map((item) => {
+            const active = location.pathname === item.path;
+            return (
+              <button
+                key={item.path}
+                className={`bottom-nav__more-item ${active ? "bottom-nav__more-item--active" : ""}`}
+                onClick={() => { navigate(item.path); setMoreOpen(false); }}
+              >
+                <span className="bottom-nav__icon">{item.icon}</span>
+                <span className="bottom-nav__label">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <nav className={`bottom-nav bottom-nav--${accent}`}>
+        {primaryPersonal.slice(0, 2).map((item) => {
+          const active = location.pathname === item.path;
+          return (
+            <button
+              key={item.path}
+              className={`bottom-nav__item ${active ? `bottom-nav__item--active bottom-nav__item--${accent}` : ""}`}
+              onClick={() => navigate(item.path)}
+            >
+              <span className="bottom-nav__icon">{item.icon}</span>
+              <span className="bottom-nav__label">{item.label}</span>
+            </button>
+          );
+        })}
+
+        {/* Tombol + di tengah — buka/tutup popup menu lainnya */}
+        <button
+          className={`bottom-nav__plus ${moreOpen || isMoreActive ? "bottom-nav__plus--active" : ""}`}
+          onClick={() => setMoreOpen((p) => !p)}
+          aria-label="Menu lainnya"
+        >
+          <span className="bottom-nav__plus-icon">{moreOpen ? "✕" : "+"}</span>
+        </button>
+
+        {primaryPersonal.slice(2).map((item) => {
+          const active = location.pathname === item.path;
+          return (
+            <button
+              key={item.path}
+              className={`bottom-nav__item ${active ? `bottom-nav__item--active bottom-nav__item--${accent}` : ""}`}
+              onClick={() => navigate(item.path)}
+            >
+              <span className="bottom-nav__icon">{item.icon}</span>
+              <span className="bottom-nav__label">{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+    </div>
   );
 }

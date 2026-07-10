@@ -6,6 +6,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import jwt from "jsonwebtoken";
+import { encryptSecret } from "./_lib/crypto.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -117,7 +118,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, data });
     }
 
-    // ── POST save-api-key ── (key Groq disimpan di server, nggak pernah dibalikin ke browser lagi)
+    // ── POST save-api-key ── (key Groq dienkripsi (AES-256-GCM) sebelum disimpen, nggak pernah dibalikin ke browser lagi)
     if (req.method === "POST" && action === "save-api-key") {
       const body = await getJsonBody(req);
       const apiKey = (body.apiKey || "").trim();
@@ -128,7 +129,7 @@ export default async function handler(req, res) {
       const { error } = await supabase
         .from("profiles")
         .upsert(
-          { user_id: userId, groq_api_key: apiKey, updated_at: new Date().toISOString() },
+          { user_id: userId, groq_api_key: encryptSecret(apiKey), updated_at: new Date().toISOString() },
           { onConflict: "user_id" }
         );
 

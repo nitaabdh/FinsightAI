@@ -1,12 +1,15 @@
 // /api/ai-chat.js — Vercel Serverless Function
-// POST /api/ai-chat  { messages, mode, summary, profileContext }
+// POST /api/ai-chat  { messages, mode, summary, profileContext, financeContext }
 //
 // Proxy ke Groq API. API key Groq diambil dari Supabase di SERVER
-// (kolom profiles.groq_api_key, cuma bisa dibaca pakai service role key).
-// Browser cuma kirim isi chat — key aslinya nggak pernah lewat client sama sekali.
+// (kolom profiles.groq_api_key, cuma bisa dibaca pakai service role key),
+// disimpan dalam bentuk TERENKRIPSI (AES-256-GCM, lihat api/_lib/crypto.js)
+// dan didekripsi di sini sesaat sebelum dipakai. Browser cuma kirim isi chat —
+// key aslinya nggak pernah lewat client sama sekali.
 
 import { createClient } from "@supabase/supabase-js";
 import jwt from "jsonwebtoken";
+import { decryptSecret } from "./_lib/crypto.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -155,16 +158,19 @@ const executeTool = (name, args) => {
   }
 };
 
-const getSystemPrompt = (mode, summary, profileContext = "") => `Kamu adalah FinSight AI, asisten keuangan yang ramah dan berbicara Bahasa Indonesia.
+const getSystemPrompt = (mode, summary, profileContext = "", financeContext = "") => `Kamu adalah FinSight AI, asisten keuangan yang ramah dan berbicara Bahasa Indonesia.
 Gunakan tools yang tersedia untuk perhitungan. Berikan jawaban praktis dan mudah dipahami.
 Format angka dalam Rupiah (Rp) dengan pemisah ribuan.
 Sesuaikan saranmu dengan profil dan kondisi spesifik pengguna jika tersedia.
+Kalau ada data Utang/Cicilan, Target Tabungan, atau Saldo Dompet di bawah, WAJIB pertimbangkan itu
+saat kasih saran (misal: jangan saranin nabung/investasi kalau cicilan wajib bulanan udah gede
+dibanding pemasukan, atau ingetin jatuh tempo yang deket).
 
 Mode: ${mode === "umkm" ? "UMKM" : "Keuangan Pribadi"}
 Data keuangan saat ini:
 - Pemasukan: Rp ${(summary?.pemasukan || 0).toLocaleString("id-ID")}
 - Pengeluaran: Rp ${(summary?.pengeluaran || 0).toLocaleString("id-ID")}
-- Saldo: Rp ${(summary?.saldo || 0).toLocaleString("id-ID")}${profileContext || ""}`;
+- Saldo: Rp ${(summary?.saldo || 0).toLocaleString("id-ID")}${financeContext || ""}${profileContext || ""}`;
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -180,7 +186,7 @@ export default async function handler(req, res) {
   if (!userId) return res.status(401).json({ success: false, message: "Unauthorized" });
 
   try {
-    const { messages, mode, summary, profileContext } = req.body || {};
+    const { messages, mode, summary, profileContext, financeContext } = req.body || {};
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ success: false, message: "Pesan tidak valid." });
     }
@@ -193,12 +199,22 @@ export default async function handler(req, res) {
       .maybeSingle();
 
     if (profileErr) throw profileErr;
-    const apiKey = profile?.groq_api_key;
+    if (!profile?.groq_api_key) {
+      return res.status(400).json({ success: false, needsApiKey: true, message: "API key belum diatur." });
+    }
+
+    let apiKey;
+    try {
+      apiKey = decryptSecret(profile.groq_api_key);
+    } catch (decryptErr) {
+      console.error("[ai-chat] Gagal dekripsi API key:", decryptErr);
+      return res.status(500).json({ success: false, message: "Gagal membaca API key. Coba atur ulang API key kamu di halaman Profil." });
+    }
     if (!apiKey) {
       return res.status(400).json({ success: false, needsApiKey: true, message: "API key belum diatur." });
     }
 
-    const systemPrompt = getSystemPrompt(mode, summary, profileContext);
+    const systemPrompt = getSystemPrompt(mode, summary, profileContext, financeContext);
     const headers = { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` };
 
     // ── Request 1: biarkan AI putuskan pakai tool atau tidak ──
