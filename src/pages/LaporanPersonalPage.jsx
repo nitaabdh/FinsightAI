@@ -4,6 +4,8 @@ import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import PageHeader from "../components/PageHeader";
 import { BarChart, Bar, ResponsiveContainer, Tooltip, CartesianGrid, XAxis, YAxis } from "recharts";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import {
   calcSummary, formatRupiah, groupByMonth, groupByCategoryType, monthLabel,
   computeKasStats, getKasEmoji,
@@ -80,6 +82,145 @@ export default function LaporanPersonalPage() {
   const kasStats       = computeKasStats(transactions);
   const totalSaldo     = kasStats.reduce((s, k) => s + k.saldo, 0);
 
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    const pageW = doc.internal.pageSize.getWidth();
+    const GREEN = [5, 150, 105];
+    const periodeLabel = filterMonth === "semua" ? "Semua Periode" : monthLabel(filterMonth);
+    const tanggalCetak = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+    let y = 18;
+
+    // ── Header ──
+    doc.setFontSize(16); doc.setFont(undefined, "bold"); doc.setTextColor(...GREEN);
+    doc.text("LAPORAN KEUANGAN PRIBADI", 14, y);
+    doc.setFontSize(9); doc.setFont(undefined, "normal"); doc.setTextColor(90);
+    y += 6;
+    doc.text(`Periode: ${periodeLabel}`, 14, y);
+    doc.text(`Dicetak: ${tanggalCetak}`, pageW - 14, y, { align: "right" });
+    y += 3;
+    doc.setDrawColor(...GREEN); doc.setLineWidth(0.5); doc.line(14, y, pageW - 14, y);
+    y += 8;
+
+    // ── Ringkasan Arus Kas ──
+    autoTable(doc, {
+      startY: y,
+      head: [["Ringkasan Arus Kas", "Nominal"]],
+      body: [
+        ["Total Pemasukan", formatRupiah(summary.pemasukan)],
+        ["Total Pengeluaran", formatRupiah(summary.pengeluaran)],
+        ["Selisih", formatRupiah(summary.saldo)],
+        ["Total Saldo Dompet (saat ini)", formatRupiah(totalSaldo)],
+      ],
+      theme: "grid",
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: GREEN, textColor: 255, fontStyle: "bold" },
+      columnStyles: { 1: { halign: "right" } },
+      margin: { left: 14, right: 14 },
+    });
+    y = doc.lastAutoTable.finalY + 10;
+
+    // ── Saldo per Dompet ──
+    if (kasStats.length > 0) {
+      if (y > 240) { doc.addPage(); y = 18; }
+      autoTable(doc, {
+        startY: y,
+        head: [["Dompet", "Saldo Saat Ini"]],
+        body: kasStats.map(k => [k.nama, formatRupiah(k.saldo)]),
+        theme: "grid",
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: GREEN, textColor: 255, fontStyle: "bold" },
+        columnStyles: { 1: { halign: "right" } },
+        margin: { left: 14, right: 14 },
+      });
+      y = doc.lastAutoTable.finalY + 10;
+    }
+
+    // ── Cicilan Utang & Nabung Target periode ini ──
+    if (y > 240) { doc.addPage(); y = 18; }
+    autoTable(doc, {
+      startY: y,
+      head: [["Utang & Target", "Nominal"]],
+      body: [
+        ["Cicilan Utang Terbayar (periode ini)", formatRupiah(totalCicilan)],
+        ["Wajib Bayar Cicilan/Bulan (utang aktif)", formatRupiah(cicilanAktifPerBulan)],
+        ["Total Nabung ke Target (periode ini)", formatRupiah(totalNabung)],
+        ["Jumlah Target Aktif", String(targets.filter(t => t.terkumpul < t.target).length)],
+      ],
+      theme: "grid",
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: GREEN, textColor: 255, fontStyle: "bold" },
+      columnStyles: { 1: { halign: "right" } },
+      margin: { left: 14, right: 14 },
+    });
+    y = doc.lastAutoTable.finalY + 10;
+
+    // ── Pemasukan per Kategori ──
+    if (incomeByCat.length > 0) {
+      if (y > 230) { doc.addPage(); y = 18; }
+      autoTable(doc, {
+        startY: y,
+        head: [["Kategori Pemasukan", "Nominal", "% dari total"]],
+        body: incomeByCat.map(([cat, amt]) => [
+          cat, formatRupiah(amt),
+          `${summary.pemasukan > 0 ? ((amt / summary.pemasukan) * 100).toFixed(0) : 0}%`,
+        ]),
+        theme: "grid",
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: GREEN, textColor: 255, fontStyle: "bold" },
+        columnStyles: { 1: { halign: "right" }, 2: { halign: "right" } },
+        margin: { left: 14, right: 14 },
+      });
+      y = doc.lastAutoTable.finalY + 10;
+    }
+
+    // ── Pengeluaran per Kategori ──
+    if (expenseByCat.length > 0) {
+      if (y > 230) { doc.addPage(); y = 18; }
+      autoTable(doc, {
+        startY: y,
+        head: [["Kategori Pengeluaran", "Nominal", "% dari total"]],
+        body: expenseByCat.map(([cat, amt]) => [
+          cat, formatRupiah(amt),
+          `${summary.pengeluaran > 0 ? ((amt / summary.pengeluaran) * 100).toFixed(0) : 0}%`,
+        ]),
+        theme: "grid",
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: GREEN, textColor: 255, fontStyle: "bold" },
+        columnStyles: { 1: { halign: "right" }, 2: { halign: "right" } },
+        margin: { left: 14, right: 14 },
+      });
+      y = doc.lastAutoTable.finalY + 10;
+    }
+
+    // ── Tren 6 Bulan ──
+    if (tren6Bulan.length > 0) {
+      if (y > 240) { doc.addPage(); y = 18; }
+      autoTable(doc, {
+        startY: y,
+        head: [["Bulan", "Pemasukan", "Pengeluaran", "Selisih"]],
+        body: tren6Bulan.map(v => [
+          v.label, formatRupiah(v.pemasukan), formatRupiah(v.pengeluaran),
+          formatRupiah(v.pemasukan - v.pengeluaran),
+        ]),
+        theme: "grid",
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: GREEN, textColor: 255, fontStyle: "bold" },
+        columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } },
+        margin: { left: 14, right: 14 },
+      });
+    }
+
+    // ── Footer ──
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8); doc.setTextColor(150);
+      doc.text(`Halaman ${i} dari ${pageCount} · Dibuat otomatis oleh FinSight AI`, pageW / 2, 290, { align: "center" });
+    }
+
+    doc.save(`laporan-personal-${filterMonth === "semua" ? "semua" : filterMonth}.pdf`);
+  };
+
   return (
     <DashboardLayout>
       <div className="lapper">
@@ -91,6 +232,9 @@ export default function LaporanPersonalPage() {
             <option value="semua">Semua Periode</option>
             {months.map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}
           </select>
+          <button className="lapper__export-btn" onClick={handleExportPDF}>
+            📄 Export PDF
+          </button>
         </div>
 
         {loading ? (

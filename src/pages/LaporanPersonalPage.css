@@ -11,6 +11,8 @@
 .lapper__toolbar {
   display: flex;
   justify-content: flex-end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
 }
 .lapper__month-select {
   padding: 0.55rem 1rem;
@@ -22,6 +24,18 @@
   font-size: 13px;
   cursor: pointer;
 }
+.lapper__export-btn {
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #059669, #10b981);
+  box-shadow: 0 4px 16px var(--accent-personal-glow);
+  transition: var(--transition);
+}
+.lapper__export-btn:hover { transform: translateY(-1px); }
 
 .lapper__summary-grid {
   display: grid;
