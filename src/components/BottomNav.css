@@ -83,14 +83,15 @@
     position: static; /* posisi fixed dipindah ke wrapper-nya */
   }
 
-  /* Tombol + di tengah — sedikit lebih besar & "ngambang" biar keliatan beda dari menu lain */
+  /* Tombol + di tengah — flex sama kayak .bottom-nav__item lainnya (kolom sama
+     lebar), cuma isinya lingkaran ngambang biar beda tapi tetep presisi sejajar */
   .bottom-nav__plus {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    max-width: 52px;
-    margin: 0 auto;
+    min-width: 0;
+    padding: 0;
   }
   .bottom-nav__plus-icon {
     width: 44px;

@@ -12,19 +12,18 @@ const menuUMKM = [
   { path: "/dashboard/umkm/ai",        icon: "🤖", label: "AI" },
 ];
 
-// Personal: cuma 3 menu utama yang tampil langsung + 1 tombol "+" di tengah.
-// Sisanya (Laporan, Catatan, AI, Profil) muncul lewat popup pas tombol "+" dipencet,
-// biar bottom nav-nya nggak penuh sesak kayak sebelumnya (7 item sekaligus).
+// Personal: 4 menu utama tampil langsung (2 kiri, 2 kanan), tombol "+" persis
+// di tengah. Sisanya (Laporan, AI) muncul lewat popup pas "+" dipencet. Profil
+// SENGAJA nggak dimasukin ke sini — udah ada di avatar pojok kanan atas (PageHeader).
 const primaryPersonal = [
   { path: "/dashboard/personal",           icon: "📊", label: "Dashboard" },
   { path: "/dashboard/personal/transaksi", icon: "💳", label: "Transaksi" },
   { path: "/dashboard/personal/target",    icon: "🎯", label: "Target" },
+  { path: "/dashboard/personal/catatan",   icon: "📋", label: "Catatan" },
 ];
 const morePersonal = [
   { path: "/dashboard/personal/laporan", icon: "📈", label: "Laporan" },
-  { path: "/dashboard/personal/catatan", icon: "📋", label: "Catatan" },
   { path: "/dashboard/personal/ai",      icon: "🤖", label: "AI" },
-  { path: "/dashboard/personal/profile", icon: "👤", label: "Profil" },
 ];
 
 export default function BottomNav() {
