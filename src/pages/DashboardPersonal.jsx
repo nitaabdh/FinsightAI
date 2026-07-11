@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, Tooltip, CartesianGrid, XAxis, YAxis } from "recharts";
-import { calcSummary, formatRupiah, groupByCategory, computeKasStats, getKasEmoji } from "../utils/storage";
+import { getTransactions, calcSummary, formatRupiah, groupByCategory, computeKasStats, getKasEmoji } from "../utils/storage";
 import "./Dashboard.css";
 import "./DashboardPersonal.css";
 
@@ -79,12 +79,14 @@ export default function DashboardPersonal() {
     const h = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
     setLoading(true);
     Promise.all([
-      fetch(`/api/transactions?mode=personal`, { headers: h }).then(r => r.json()).catch(() => ({ success: false, data: [] })),
+      // Pakai getTransactions (bukan fetch mentah) — biar field kasTujuan ke-normalize
+      // dengan benar buat transaksi Transfer Antar Dompet.
+      getTransactions(user.id, "personal"),
       fetch(`/api/targets`, { headers: h }).then(r => r.json()).catch(() => ({ success: false, data: [] })),
       fetch(`/api/notes?table=cal_notes&mode=personal`, { headers: h }).then(r => r.json()).catch(() => ({ success: false, data: [] })),
       fetch(`/api/profile`, { headers: h }).then(r => r.json()).catch(() => ({ success: false, data: null })),
-    ]).then(([txRes, targetRes, evRes, profRes]) => {
-      if (txRes.success)     setTransactions(txRes.data);
+    ]).then(([txData, targetRes, evRes, profRes]) => {
+      setTransactions(txData);
       if (targetRes.success) setTargets(targetRes.data);
       if (evRes.success)     setEvents(evRes.data.map(ev => ({ id: ev.id, tanggal: ev.date, judul: ev.title || "Acara" })));
       if (profRes.success)   setProfile(profRes.data);

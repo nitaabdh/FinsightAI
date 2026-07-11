@@ -28,12 +28,15 @@ export default function LaporanPage() {
     const h = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
     setLoading(true);
     Promise.all([
-      fetch(`/api/transactions?mode=umkm`, { headers: h }).then(r => r.json()),
+      // Pakai getTransactions (bukan fetch mentah) — biar field kasTujuan ke-normalize
+      // dengan benar. Fetch mentah bikin computeKasStats & transferPeriodeIni salah
+      // hitung buat transaksi Transfer Antar Dompet.
+      getTransactions(user.id, "umkm"),
       fetch(`/api/umkm?table=aset_usaha`, { headers: h }).then(r => r.json()),
       fetch(`/api/umkm?table=bahan_baku`, { headers: h }).then(r => r.json()),
       fetch(`/api/umkm?table=utang_piutang`, { headers: h }).then(r => r.json()),
-    ]).then(([txRes, asetRes, bahanRes, upRes]) => {
-      if (txRes.success)    setTransactions(txRes.data);
+    ]).then(([txData, asetRes, bahanRes, upRes]) => {
+      setTransactions(txData);
       if (asetRes.success)  setAsetUsaha(asetRes.data);
       if (bahanRes.success) setBahanBaku(bahanRes.data);
       if (upRes.success)    setUtangPiutang(upRes.data);

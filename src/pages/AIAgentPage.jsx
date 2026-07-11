@@ -47,12 +47,14 @@ export default function AIAgentPage() {
 
     if (mode === "personal") {
       Promise.all([
-        authFetch(`/api/transactions?mode=personal`),
+        // Pakai getTransactions (bukan authFetch mentah) — biar computeKasStats di bawah
+        // baca kasTujuan dengan benar buat transaksi Transfer Antar Dompet, jadi konteks
+        // yang dikasih ke AI (saldo per dompet) nggak salah.
+        getTransactions(user.id, "personal"),
         authFetch(`/api/debts`),
         authFetch(`/api/targets`),
-      ]).then(([txRes, debtRes, targetRes]) => {
-        const tx = txRes.success ? txRes.data : [];
-        if (txRes.success) setSummary(calcSummary(tx));
+      ]).then(([tx, debtRes, targetRes]) => {
+        setSummary(calcSummary(tx));
 
         const debts   = debtRes.success ? debtRes.data : [];
         const targets = targetRes.success ? targetRes.data : [];

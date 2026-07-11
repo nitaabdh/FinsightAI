@@ -86,7 +86,7 @@ export default function TargetPage() {
 
   // State untuk tambah nominal bebas per target
   const [customAmount, setCustomAmount] = useState({});
-  const [confirmTabung, setConfirmTabung] = useState(null); // { id, nama, dompet, amount }
+  const [confirmTabung, setConfirmTabung] = useState(null); // { id, nama, penempatan, amount, sumber }
   const [tabungBusy, setTabungBusy]   = useState(false); // guard biar tombol "Ya, Lanjutkan" nggak keklik dobel
   const [payingId, setPayingId]       = useState(null);  // id utang yang lagi diproses "Bayar Cicilan" (cegah klik dobel)
   const [debtSubmitting, setDebtSubmitting] = useState(false); // guard tombol Simpan form utang
@@ -193,9 +193,11 @@ export default function TargetPage() {
   };
 
   // Tambah nominal — bisa dari tombol cepat atau input bebas.
-  // Setiap nambah tabungan otomatis dicatat sebagai transaksi PENGELUARAN juga —
-  // soalnya uang itu "pindah" dari saldo/dompet ke pos tabungan target.
-  const handleTabung = async (id, tambah) => {
+  // Kalau target punya "Penempatan Tabungan" (dompet tujuan), dicatat sebagai TRANSFER
+  // dari dompet sumber ke dompet penempatan — biar saldo dompet penempatan itu beneran
+  // NAMBAH (bukan malah kepotong kayak sebelumnya). Kalau nggak ada penempatan, dicatat
+  // sebagai pengeluaran biasa dari dompet sumber (uangnya "disisihkan", tanpa tujuan spesifik).
+  const handleTabung = async (id, tambah, sumberDompet) => {
   if (!tambah || tambah <= 0) return;
   const t = targets.find((t) => t.id === id);
   const newTerkumpul = Math.min(t.terkumpul + tambah, t.target);
@@ -206,19 +208,37 @@ export default function TargetPage() {
   if (result.success) {
     setTargets((p) => p.map((t) => t.id === id ? result.data : t));
     setCustomAmount((p) => ({ ...p, [id]: "" }));
-    // Catat otomatis sebagai pengeluaran "Tabungan" biar saldo/dompet ikut kepotong
-    await apiFetch("/api/transactions", {
-      method: "POST",
-      body: JSON.stringify({
-        mode: "personal",
-        type: "pengeluaran",
-        amount: tambah,
-        category: "Tabungan",
-        description: `Nabung ke target: ${t.nama}`,
-        date: new Date().toISOString().slice(0, 10),
-        kas: t.penempatan || "Kas Tunai",
-      }),
-    });
+    const sumber = sumberDompet || "Kas Tunai";
+    if (t.penempatan && t.penempatan.trim().toLowerCase() !== sumber.trim().toLowerCase()) {
+      await apiFetch("/api/transactions", {
+        method: "POST",
+        body: JSON.stringify({
+          mode: "personal",
+          type: "transfer",
+          amount: tambah,
+          category: "Transfer Antar Dompet",
+          description: `Nabung ke target: ${t.nama}`,
+          date: new Date().toISOString().slice(0, 10),
+          kas: sumber,
+          kas_tujuan: t.penempatan,
+        }),
+      });
+    } else {
+      // Nggak ada penempatan spesifik (atau sumbernya sama dengan penempatan) —
+      // dicatat pengeluaran biasa, konsisten kayak sebelumnya.
+      await apiFetch("/api/transactions", {
+        method: "POST",
+        body: JSON.stringify({
+          mode: "personal",
+          type: "pengeluaran",
+          amount: tambah,
+          category: "Tabungan",
+          description: `Nabung ke target: ${t.nama}`,
+          date: new Date().toISOString().slice(0, 10),
+          kas: sumber,
+        }),
+      });
+    }
   }
 };
 
@@ -539,7 +559,7 @@ export default function TargetPage() {
                           <button
                             key={n}
                             className="targetpage__quick-btn"
-                            onClick={() => setConfirmTabung({ id: t.id, nama: t.nama, dompet: t.penempatan || "Kas Tunai", amount: n })}
+                            onClick={() => setConfirmTabung({ id: t.id, nama: t.nama, penempatan: t.penempatan || "", amount: n, sumber: "Kas Tunai" })}
                           >
                             +{n >= 1000000 ? (n/1000000)+"jt" : (n/1000)+"rb"}
                           </button>
@@ -556,7 +576,7 @@ export default function TargetPage() {
                         />
                         <button
                           className="targetpage__custom-btn"
-                          onClick={() => setConfirmTabung({ id: t.id, nama: t.nama, dompet: t.penempatan || "Kas Tunai", amount: Number(customAmount[t.id]) })}
+                          onClick={() => setConfirmTabung({ id: t.id, nama: t.nama, penempatan: t.penempatan || "", amount: Number(customAmount[t.id]), sumber: "Kas Tunai" })}
                           disabled={!customAmount[t.id] || Number(customAmount[t.id]) <= 0}
                         >
                           + Tambah
@@ -647,8 +667,22 @@ export default function TargetPage() {
               <p>Tambah Tabungan?</p>
               <p>
                 Kamu akan menambah tabungan <strong>{formatRupiah(confirmTabung.amount)}</strong> ke target
-                "<strong>{confirmTabung.nama}</strong>", yang akan keluar dari dompet <strong>{confirmTabung.dompet}</strong>.
+                "<strong>{confirmTabung.nama}</strong>"
+                {confirmTabung.penempatan
+                  ? <> — dipindah dari dompet di bawah ini ke <strong>{confirmTabung.penempatan}</strong>.</>
+                  : <> — diambil dari dompet di bawah ini.</>}
               </p>
+              <div className="targetpage__field">
+                <label>Ambil dari dompet mana?</label>
+                <select
+                  value={confirmTabung.sumber}
+                  onChange={e => setConfirmTabung(p => ({ ...p, sumber: e.target.value }))}
+                >
+                  {[...new Set([confirmTabung.sumber, ...walletOptions])].map(o => (
+                    <option key={o} value={o}>{o}</option>
+                  ))}
+                </select>
+              </div>
               <div className="targetpage__confirm-actions">
                 <button onClick={() => setConfirmTabung(null)} disabled={tabungBusy}>Tidak</button>
                 <button
@@ -657,7 +691,7 @@ export default function TargetPage() {
                   onClick={async () => {
                     if (tabungBusy) return;
                     setTabungBusy(true);
-                    await handleTabung(confirmTabung.id, confirmTabung.amount);
+                    await handleTabung(confirmTabung.id, confirmTabung.amount, confirmTabung.sumber);
                     setTabungBusy(false);
                     setConfirmTabung(null);
                   }}

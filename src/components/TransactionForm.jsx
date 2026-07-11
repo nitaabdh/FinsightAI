@@ -457,7 +457,12 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
               ) : (
                 <select className={"txform__input txform__input--" + accent} value={selProdukId} onChange={e => handleSelectProduk(e.target.value)}>
                   <option value="">-- Pilih produk --</option>
-                  {produkList.map(p => <option key={p.id} value={p.id}>{p.nama} ({formatRupiah(isSampleFlow ? (p.totalBiaya || 0) : p.hargaJual)})</option>)}
+                  {produkList.map(p => {
+                    const hargaTampil = isSampleFlow
+                      ? (p.totalBiaya || 0)
+                      : (isOnlineSale && p.hargaOnline ? p.hargaOnline : p.hargaJual);
+                    return <option key={p.id} value={p.id}>{p.nama} ({formatRupiah(hargaTampil)}{isOnlineSale && p.hargaOnline ? " · online" : ""})</option>;
+                  })}
                 </select>
               )}
             </div>

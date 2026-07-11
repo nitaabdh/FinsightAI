@@ -84,7 +84,15 @@ export default function BahanBaku() {
     });
   }, [user]);
 
-  // Gabungan preset + dompet custom yang udah didaftarin, dedup case-insensitive
+  // Supplier bisa ditambah dari tab "Supplier" di sebelah (tab lain nggak remount),
+  // jadi daftarnya perlu ikut refresh di sini juga — sama kayak pola produkUpdated.
+  useEffect(() => {
+    const refresh = () => {
+      if (user) apiFetch(`/api/umkm?table=supplier`).then(r => { if (r.success) setSupplierList(r.data); });
+    };
+    window.addEventListener("supplierUpdated", refresh);
+    return () => window.removeEventListener("supplierUpdated", refresh);
+  }, [user]);
   const kasOptionsAll = (() => {
     const map = {};
     [...KAS_PRESET, ...dompetList.map(d => d.nama)].forEach(k => {

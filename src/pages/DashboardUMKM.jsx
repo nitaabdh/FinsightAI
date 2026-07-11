@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import { BarChart, Bar, ResponsiveContainer, Tooltip, CartesianGrid, XAxis, YAxis } from "recharts";
-import { calcSummary, formatRupiah, groupByCategory, isModalUsaha, computeKasStats, getKasEmoji } from "../utils/storage";
+import { getTransactions, calcSummary, formatRupiah, groupByCategory, isModalUsaha, computeKasStats, getKasEmoji } from "../utils/storage";
 import { labelJatuhTempo, selisihHari } from "../utils/umkmCalc";
 import "./Dashboard.css";
 import "./DashboardUMKM.css";
@@ -54,12 +54,16 @@ export default function DashboardUMKM() {
     const h = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
     setLoading(true);
     Promise.all([
-      fetch(`/api/transactions?mode=umkm`, { headers: h }).then(r => r.json()),
+      // Pakai getTransactions (bukan fetch mentah) — supaya field kayak kasTujuan,
+      // refId, dll ke-normalize dari snake_case ke camelCase. Kalau fetch mentah,
+      // computeKasStats jadi salah hitung buat transaksi Transfer Antar Dompet
+      // (kas_tujuan nggak kebaca sebagai kasTujuan, saldo tujuan transfer jadi nyasar).
+      getTransactions(user.id, "umkm"),
       apiFetch(`/api/umkm?table=utang_piutang`),
       apiFetch(`/api/umkm?table=aset_usaha`),
       fetch(`/api/profile`, { headers: h }).then(r => r.json()).catch(() => ({ success: false })),
-    ]).then(([txRes, upRes, asetRes, profRes]) => {
-      if (txRes.success)  setTransactions(txRes.data);
+    ]).then(([txData, upRes, asetRes, profRes]) => {
+      setTransactions(txData);
       if (upRes.success)  setUtangPiutang(upRes.data);
       if (asetRes.success) setAsetUsaha(asetRes.data);
       if (profRes.success) setProfile(profRes.data);

@@ -230,9 +230,10 @@ export default function ProfilePage() {
                 />
                 <button
                   className={"profilepage__name-save profilepage__name-save--" + accent}
-                  onClick={() => setEditingName(false)}
+                  onClick={handleSave}
+                  disabled={saving}
                 >
-                  ✓
+                  {saving ? "⏳" : "✓"}
                 </button>
               </div>
             ) : (

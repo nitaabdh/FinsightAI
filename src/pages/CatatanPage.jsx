@@ -304,9 +304,12 @@ export default function CatatanPage() {
 
   const closeNotePopup = async () => {
   if (openNote) {
+    // Kalau judulnya dikosongin pas edit, jangan simpen kosong — balik ke judul lama
+    // (konsisten sama alur bikin-catatan-baru yang udah ada fallback "Draft tanpa judul").
+    const titleToSave = openNoteTitle.trim() || openNote.title || "Tanpa judul";
     const r = await apiFetch(`/api/notes?table=notes`, {
       method: "PUT",
-      body: JSON.stringify({ id: openNote.id, mode, title: openNoteTitle, body: openNoteBody, color: openNote.color, category: openNote.category }),
+      body: JSON.stringify({ id: openNote.id, mode, title: titleToSave, body: openNoteBody, color: openNote.color, category: openNote.category }),
     });
     if (r.success) setNotes(p => p.map(n => n.id === openNote.id ? r.data : n));
   }

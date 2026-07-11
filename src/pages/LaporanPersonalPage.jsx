@@ -7,7 +7,7 @@ import { BarChart, Bar, ResponsiveContainer, Tooltip, CartesianGrid, XAxis, YAxi
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
-  calcSummary, formatRupiah, groupByMonth, groupByCategoryType, monthLabel,
+  getTransactions, calcSummary, formatRupiah, groupByMonth, groupByCategoryType, monthLabel,
   computeKasStats, getKasEmoji,
 } from "../utils/storage";
 import "./LaporanPersonalPage.css";
@@ -45,11 +45,13 @@ export default function LaporanPersonalPage() {
     if (!user) return;
     setLoading(true);
     Promise.all([
-      apiFetch("/api/transactions?mode=personal"),
+      // Pakai getTransactions (bukan fetch mentah) — biar field kasTujuan ke-normalize
+      // dengan benar buat transaksi Transfer Antar Dompet.
+      getTransactions(user.id, "personal"),
       apiFetch("/api/debts"),
       apiFetch("/api/targets"),
-    ]).then(([txRes, debtRes, targetRes]) => {
-      if (txRes.success)     setTransactions(txRes.data);
+    ]).then(([txData, debtRes, targetRes]) => {
+      setTransactions(txData);
       if (debtRes.success)   setDebts(debtRes.data);
       if (targetRes.success) setTargets(targetRes.data);
     }).finally(() => setLoading(false));

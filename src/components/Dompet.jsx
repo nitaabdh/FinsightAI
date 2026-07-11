@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { genId, formatRupiah } from "../utils/umkmCalc";
-import { computeKasStats, getKasEmoji } from "../utils/storage";
+import { getTransactions, computeKasStats, getKasEmoji } from "../utils/storage";
 import "./Dompet.css";
 
 const JENIS_OPTIONS = ["Tunai", "Bank", "E-Wallet", "QRIS", "Lainnya"];
@@ -44,10 +44,12 @@ export default function Dompet({ mode = "umkm" }) {
       // Daftar dompet TIDAK dipisah per mode dengan sengaja — dompet fisik (misal
       // rekening BCA) bisa aja dipakai buat nyatet transaksi usaha & pribadi sekaligus.
       apiFetch(`/api/umkm?table=dompet`),
-      apiFetch(`/api/transactions?mode=${mode}`),
-    ]).then(([dompetRes, txRes]) => {
+      // Pakai getTransactions (bukan fetch mentah) — biar field kasTujuan ke-normalize
+      // dengan benar, kalau nggak, saldo transfer ke dompet lain bisa nyasar ke "Kas Tunai".
+      getTransactions(user.id, mode),
+    ]).then(([dompetRes, txData]) => {
       if (dompetRes.success) setList(dompetRes.data);
-      if (txRes.success)     setTransactions(txRes.data);
+      setTransactions(txData);
     }).finally(() => setLoading(false));
   }, [user, mode]);
 

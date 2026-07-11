@@ -132,7 +132,7 @@ function buildPayload(body, table, userId, isUpdate = false) {
   }
 
   if (table === "produk") {
-    return {
+    const payload = {
       ...base,
       nama:              body.nama,
       items:             body.items || [],
@@ -142,8 +142,16 @@ function buildPayload(body, table, userId, isUpdate = false) {
       biaya_bahan:       body.biayaBahan || 0,
       total_biaya:       body.totalBiaya || 0,
       harga_jual:        body.hargaJual || 0,
-      harga_online:      body.hargaOnline ?? 0,
     };
+    // harga_online cuma ditulis kalau memang dikirim eksplisit (dari tab Kalkulator Online).
+    // Edit resep/harga dari Kalkulator Harga TIDAK ngirim field ini — kalau selalu ditulis
+    // dengan fallback 0, harga online yang udah kesimpen bakal ke-reset tiap kali resep diedit.
+    if (!isUpdate) {
+      payload.harga_online = body.hargaOnline ?? 0;
+    } else if (body.hargaOnline !== undefined) {
+      payload.harga_online = body.hargaOnline;
+    }
+    return payload;
   }
 
   if (table === "biaya_operasional") {
