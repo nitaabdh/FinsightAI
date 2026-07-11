@@ -93,21 +93,24 @@ export default function BottomNav() {
       )}
 
       <nav className={`bottom-nav bottom-nav--${accent}`}>
-        {primaryPersonal.slice(0, 2).map((item) => {
-          const active = location.pathname === item.path;
-          return (
-            <button
-              key={item.path}
-              className={`bottom-nav__item ${active ? `bottom-nav__item--active bottom-nav__item--${accent}` : ""}`}
-              onClick={() => navigate(item.path)}
-            >
-              <span className="bottom-nav__icon">{item.icon}</span>
-              <span className="bottom-nav__label">{item.label}</span>
-            </button>
-          );
-        })}
+        <div className="bottom-nav__side">
+          {primaryPersonal.slice(0, 2).map((item) => {
+            const active = location.pathname === item.path;
+            return (
+              <button
+                key={item.path}
+                className={`bottom-nav__item ${active ? `bottom-nav__item--active bottom-nav__item--${accent}` : ""}`}
+                onClick={() => navigate(item.path)}
+              >
+                <span className="bottom-nav__icon">{item.icon}</span>
+                <span className="bottom-nav__label">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
 
-        {/* Tombol + di tengah — buka/tutup popup menu lainnya */}
+        {/* Tombol + di tengah — slot lebar tetap, diapit 2 grup sisi kiri/kanan yang
+            sama-sama flex:1, jadi posisinya presisi di tengah nggak peduli isi tiap sisi */}
         <button
           className={`bottom-nav__plus ${moreOpen || isMoreActive ? "bottom-nav__plus--active" : ""}`}
           onClick={() => setMoreOpen((p) => !p)}
@@ -116,19 +119,21 @@ export default function BottomNav() {
           <span className="bottom-nav__plus-icon">{moreOpen ? "✕" : "+"}</span>
         </button>
 
-        {primaryPersonal.slice(2).map((item) => {
-          const active = location.pathname === item.path;
-          return (
-            <button
-              key={item.path}
-              className={`bottom-nav__item ${active ? `bottom-nav__item--active bottom-nav__item--${accent}` : ""}`}
-              onClick={() => navigate(item.path)}
-            >
-              <span className="bottom-nav__icon">{item.icon}</span>
-              <span className="bottom-nav__label">{item.label}</span>
-            </button>
-          );
-        })}
+        <div className="bottom-nav__side">
+          {primaryPersonal.slice(2).map((item) => {
+            const active = location.pathname === item.path;
+            return (
+              <button
+                key={item.path}
+                className={`bottom-nav__item ${active ? `bottom-nav__item--active bottom-nav__item--${accent}` : ""}`}
+                onClick={() => navigate(item.path)}
+              >
+                <span className="bottom-nav__icon">{item.icon}</span>
+                <span className="bottom-nav__label">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </nav>
     </div>
   );

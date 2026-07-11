@@ -83,15 +83,23 @@
     position: static; /* posisi fixed dipindah ke wrapper-nya */
   }
 
-  /* Tombol + di tengah — flex sama kayak .bottom-nav__item lainnya (kolom sama
-     lebar), cuma isinya lingkaran ngambang biar beda tapi tetep presisi sejajar */
-  .bottom-nav__plus {
+  /* 2 grup sisi (kiri/kanan), masing-masing flex:1 sama besar — ini yang
+     bikin slot tombol + di tengah PASTI presisi center, apapun isi tiap sisi */
+  .bottom-nav__side {
+    display: flex;
     flex: 1;
+    min-width: 0;
+  }
+
+  /* Tombol + — slot lebar TETAP (bukan flex:1), diapit 2 sisi yang sama besar */
+  .bottom-nav__plus {
+    flex: 0 0 60px;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 0;
     padding: 0;
+    background: none;
+    border: none;
   }
   .bottom-nav__plus-icon {
     width: 44px;
@@ -108,12 +116,14 @@
     transform: translateY(-8px);
     transition: var(--transition);
   }
+  /* Tetap hijau pas aktif/kebuka — cuma ikonnya yang ganti jadi ✕, biar nggak
+     "tabrakan" warna merah-hijau di tengah nav yang isinya ijo semua */
   .bottom-nav__plus--active .bottom-nav__plus-icon {
-    background: linear-gradient(135deg, #dc2626, #ef4444);
     transform: translateY(-8px) rotate(90deg);
   }
 
-  /* Popup menu lainnya — ngambang di atas tombol + */
+  /* Popup menu lainnya — ngambang di atas tombol +, center-nya ngikutin
+     wrapper yang sama lebarnya kayak nav, jadi otomatis pas sama tombol + */
   .bottom-nav__more-popup {
     position: absolute;
     bottom: calc(100% + 0.5rem);
@@ -127,7 +137,7 @@
     border-radius: var(--radius-lg);
     padding: 0.6rem;
     box-shadow: 0 -6px 24px rgba(0,0,0,0.25);
-    min-width: 220px;
+    min-width: 180px;
   }
   .bottom-nav__more-item {
     display: flex;
