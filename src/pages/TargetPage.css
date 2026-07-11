@@ -6,6 +6,10 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  box-sizing: border-box;
+}
+@media (max-width: 767px) {
+  .targetpage { padding: 1rem; gap: 1.1rem; }
 }
 
 .targetpage__toolbar {
