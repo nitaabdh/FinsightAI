@@ -128,7 +128,6 @@
     position: absolute;
     bottom: calc(100% + 0.5rem);
     left: 50%;
-    transform: translateX(-50%);
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 0.4rem;
@@ -138,6 +137,13 @@
     padding: 0.6rem;
     box-shadow: 0 -6px 24px rgba(0,0,0,0.25);
     min-width: 180px;
+    animation: bottomNavPopupIn 0.2s ease forwards;
+  }
+  /* Animasi custom (BUKAN animate-fadeUp) — supaya translateX(-50%) buat
+     nge-center popup nggak ketiban/ketimpa sama transform animasinya sendiri */
+  @keyframes bottomNavPopupIn {
+    from { opacity: 0; transform: translate(-50%, 10px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
   }
   .bottom-nav__more-item {
     display: flex;

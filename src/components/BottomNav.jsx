@@ -75,7 +75,7 @@ export default function BottomNav() {
     <div className="bottom-nav-wrap" ref={wrapRef}>
       {/* Popup "Menu Lainnya" — muncul di atas tombol + */}
       {moreOpen && (
-        <div className="bottom-nav__more-popup animate-fadeUp">
+        <div className="bottom-nav__more-popup">
           {morePersonal.map((item) => {
             const active = location.pathname === item.path;
             return (
