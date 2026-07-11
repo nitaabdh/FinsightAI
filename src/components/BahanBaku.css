@@ -233,6 +233,8 @@
 }
 
 .bahanbaku__modal-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.6; }
+.bahanbaku__checkbox-row { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.5; cursor: pointer; }
+.bahanbaku__checkbox-row input { margin-top: 2px; flex-shrink: 0; }
 
 .bahanbaku__restok-row { display: flex; gap: 0.6rem; margin-bottom: 1rem; }
 .bahanbaku__input--sat { max-width: 110px; flex-shrink: 0; }

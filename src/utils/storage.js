@@ -5,7 +5,7 @@
 
 export const CATEGORIES = {
   umkm: {
-    pemasukan: ["Modal Usaha", "Penjualan Produk", "Jasa", "Komisi", "Investasi", "Lainnya"],
+    pemasukan: ["Modal Usaha", "Penjualan Produk", "Penjualan Aset Usaha", "Jasa", "Komisi", "Investasi", "Lainnya"],
     pengeluaran: ["Bahan Baku / HPP", "Operasional", "Gaji Karyawan", "Marketing", "Pembelian Aset Usaha", "Kerugian Stok (Rusak/Gagal)", "Sample & Marketing", "Utilitas", "Lainnya"],
   },
   personal: {
@@ -55,10 +55,20 @@ export const addTransaction = async (userId, mode, data) => {
       produk_id: data.produkId || null,
       kas: data.kas || null,
       kas_tujuan: data.kasTujuan || null,
+      ref_id: data.refId || null,
+      ref_type: data.refType || null,
     }),
   });
   if (!result.success) throw new Error(result.message);
   return normalizeTransaction(result.data);
+};
+
+// Ambil transaksi yang nempel ke satu record tertentu (bahan baku/aset usaha) —
+// dipakai buat cek/hapus transaksi terkait pas record itu dihapus.
+export const getTransactionsByRef = async (mode, refType, refId) => {
+  const result = await apiFetch(`/api/transactions?mode=${mode}&refType=${refType}&refId=${refId}`);
+  if (!result.success) return [];
+  return result.data.map(normalizeTransaction);
 };
 
 // Edit transaksi
@@ -108,6 +118,8 @@ function normalizeTransaction(tx) {
     produkId:    tx.produk_id || null,
     kas:         tx.kas || null,
     kasTujuan:   tx.kas_tujuan || null,
+    refId:       tx.ref_id || null,
+    refType:     tx.ref_type || null,
     createdAt:   tx.created_at,
   };
 }

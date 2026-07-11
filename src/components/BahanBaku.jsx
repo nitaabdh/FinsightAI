@@ -6,7 +6,7 @@ import {
   hargaPerBase, nilaiStok, stokDisplay, hargaUnitLabel,
   toBaseWithHasil, unitGroupOf, restokUnitOptions,
 } from "../utils/umkmCalc";
-import { addTransaction } from "../utils/storage";
+import { addTransaction, getTransactionsByRef, deleteTransaction } from "../utils/storage";
 import RupiahInput from "./RupiahInput";
 import "./BahanBaku.css";
 
@@ -41,6 +41,10 @@ export default function BahanBaku() {
   const [error,     setError]     = useState("");
   const [delId,     setDelId]     = useState(null);
   const [showYield, setShowYield] = useState(false);
+  const [dompetList, setDompetList] = useState([]); // dompet custom yg didaftarin di Laporan > Dompet
+  const [delTxList,  setDelTxList]  = useState([]); // transaksi yang nempel ke bahan yg mau dihapus
+  const [delTxLoading, setDelTxLoading] = useState(false);
+  const [hapusTxJuga, setHapusTxJuga] = useState(false);
 
   // Halaman detail
   const [detailId,      setDetailId]      = useState(null);
@@ -73,7 +77,22 @@ export default function BahanBaku() {
     apiFetch(`/api/umkm?table=supplier`).then(r => {
       if (r.success) setSupplierList(r.data);
     });
+    // Dompet custom yang didaftarin manual (misal "QRIS") — biar dropdown kas di sini
+    // konsisten sama form Transaksi, nggak cuma 3 preset bawaan doang.
+    apiFetch(`/api/umkm?table=dompet`).then(r => {
+      if (r.success) setDompetList(r.data);
+    });
   }, [user]);
+
+  // Gabungan preset + dompet custom yang udah didaftarin, dedup case-insensitive
+  const kasOptionsAll = (() => {
+    const map = {};
+    [...KAS_PRESET, ...dompetList.map(d => d.nama)].forEach(k => {
+      const key = (k || "").toLowerCase().trim();
+      if (key && !(key in map)) map[key] = k;
+    });
+    return Object.values(map);
+  })();
 
   const fetchHistory = async (bahanId) => {
     setHistoryLoading(true);
@@ -197,6 +216,8 @@ export default function BahanBaku() {
             description: `Pembelian awal ${nama.trim()}`,
             date: new Date().toISOString().slice(0, 10),
             kas: form.kas.trim(),
+            refId: r.data.id,
+            refType: "bahan_baku",
           });
           window.dispatchEvent(new CustomEvent("transactionsUpdated"));
         }
@@ -229,10 +250,26 @@ export default function BahanBaku() {
     setError("");
   };
 
+  const openDel = async (id) => {
+    setDelId(id);
+    setHapusTxJuga(false);
+    setDelTxList([]);
+    setDelTxLoading(true);
+    const tx = await getTransactionsByRef("umkm", "bahan_baku", id);
+    setDelTxList(tx);
+    setDelTxLoading(false);
+  };
+
   const handleDel = async (id) => {
+    if (hapusTxJuga && delTxList.length > 0) {
+      await Promise.all(delTxList.map(tx => deleteTransaction(user.id, "umkm", tx.id)));
+      window.dispatchEvent(new CustomEvent("transactionsUpdated"));
+    }
     await apiFetch(`/api/umkm?table=bahan_baku&id=${id}`, { method: "DELETE" });
     setList(p => p.filter(b => b.id !== id));
     setDelId(null);
+    setDelTxList([]);
+    setHapusTxJuga(false);
     if (editId === id) resetForm();
     if (detailId === id) setDetailId(null);
     window.dispatchEvent(new CustomEvent("bahanBakuUpdated"));
@@ -307,6 +344,8 @@ export default function BahanBaku() {
         description: `Restock ${bahan.nama}${supplierNama ? ` — dari ${supplierNama}` : ""}`,
         date: new Date().toISOString().slice(0, 10),
         kas: restokKas.trim(),
+        refId: restokId,
+        refType: "bahan_baku",
       });
       window.dispatchEvent(new CustomEvent("bahanBakuUpdated"));
       window.dispatchEvent(new CustomEvent("transactionsUpdated"));
@@ -419,7 +458,7 @@ export default function BahanBaku() {
                 <button className="bahanbaku__item-restok" onClick={() => openRestok(detailBahan)}>+ Tambah Stok</button>
                 <button className="bahanbaku__item-kurangi" onClick={() => openKurangi(detailBahan)}>− Kurangi Stok</button>
                 <button className="bahanbaku__btn-sec" onClick={() => { openEdit(detailBahan); setDetailId(null); }}>✏️ Edit Data</button>
-                <button className="bahanbaku__btn-danger" onClick={() => setDelId(detailBahan.id)}>🗑 Hapus Bahan</button>
+                <button className="bahanbaku__btn-danger" onClick={() => openDel(detailBahan.id)}>🗑 Hapus Bahan</button>
               </div>
             </div>
 
@@ -519,7 +558,7 @@ export default function BahanBaku() {
             <div className="bahanbaku__field">
               <label className="bahanbaku__label">Bayar Pakai Kas</label>
               <select className="bahanbaku__input" name="kas" value={form.kas} onChange={handleChange}>
-                {KAS_PRESET.map(k => <option key={k} value={k}>{k}</option>)}
+                {kasOptionsAll.map(k => <option key={k} value={k}>{k}</option>)}
               </select>
             </div>
           )}
@@ -665,7 +704,7 @@ export default function BahanBaku() {
                   value={restokKas}
                   onChange={e => setRestokKas(e.target.value)}
                 >
-                  {KAS_PRESET.map(k => <option key={k} value={k}>{k}</option>)}
+                  {kasOptionsAll.map(k => <option key={k} value={k}>{k}</option>)}
                 </select>
               </div>
               {supplierList.length > 0 && (
@@ -766,6 +805,19 @@ export default function BahanBaku() {
             <p className="bahanbaku__modal-sub">
               Produk yang sudah memakai bahan ini tidak terhapus, tapi perhitungan biayanya tidak akan ter-update.
             </p>
+            {delTxLoading ? (
+              <p className="bahanbaku__modal-sub">Mengecek transaksi terkait...</p>
+            ) : delTxList.length > 0 ? (
+              <label className="bahanbaku__checkbox-row">
+                <input type="checkbox" checked={hapusTxJuga} onChange={e => setHapusTxJuga(e.target.checked)} />
+                <span>
+                  Hapus juga {delTxList.length} transaksi terkait di Keuangan
+                  (total {formatRupiah(delTxList.reduce((s, t) => s + (t.amount || 0), 0))})
+                </span>
+              </label>
+            ) : (
+              <p className="bahanbaku__modal-sub">Nggak ada transaksi Keuangan yang nempel ke bahan ini.</p>
+            )}
             <div className="bahanbaku__modal-actions">
               <button className="bahanbaku__btn-sec" onClick={() => setDelId(null)}>Batal</button>
               <button className="bahanbaku__btn-danger" onClick={() => handleDel(delId)}>Hapus</button>

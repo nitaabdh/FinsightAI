@@ -35,6 +35,10 @@ export default async function handler(req, res) {
         .order("date", { ascending: false });
 
       if (mode) query = query.eq("mode", mode);
+      // Filter transaksi yang nempel ke satu record tertentu (bahan baku/aset usaha) —
+      // dipakai pas mau hapus bahan/aset & mau tau/hapus transaksi terkaitnya juga.
+      if (req.query.refType) query = query.eq("ref_type", req.query.refType);
+      if (req.query.refId)   query = query.eq("ref_id", req.query.refId);
 
       const { data, error } = await query;
       if (error) throw error;
@@ -43,7 +47,7 @@ export default async function handler(req, res) {
 
     // ── POST: tambah transaksi baru ──────────────────────────────────────────
     if (req.method === "POST") {
-      const { mode, type, amount, category, description, date, items, jumlah_unit, produk_id, kas, kas_tujuan } = req.body;
+      const { mode, type, amount, category, description, date, items, jumlah_unit, produk_id, kas, kas_tujuan, ref_id, ref_type } = req.body;
 
       if (!mode || !type || !amount) {
         return res.status(400).json({ success: false, message: "Field mode, type, amount wajib diisi." });
@@ -72,6 +76,8 @@ export default async function handler(req, res) {
           produk_id: produk_id || null,
           kas: kas || "Kas Tunai",
           kas_tujuan: type === "transfer" ? kas_tujuan : null,
+          ref_id: ref_id || null,
+          ref_type: ref_type || null,
         })
         .select()
         .single();

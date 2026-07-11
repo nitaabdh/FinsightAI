@@ -96,6 +96,7 @@
   transition: var(--transition);
 }
 .dompet__btn-primary:hover { transform: translateY(-1px); }
+.dompet__btn-primary:disabled, .dompet__btn-sec:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
 
 .dompet__btn-sec {
   padding: 0.6rem 1.25rem;

@@ -58,13 +58,17 @@ export default function TargetPage() {
   const [showForm, setShowForm] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [error, setError]       = useState("");
+  const [editingId, setEditingId] = useState(null); // null = tambah baru, isi id = lagi edit target itu
+  const [targetSubmitting, setTargetSubmitting] = useState(false); // guard tombol Simpan Target
 
   // ── State khusus Utang & Cicilan ─────────────────────────────────────────
   const [debts, setDebts]             = useState([]);
   const [showDebtForm, setShowDebtForm] = useState(false);
   const [deleteDebtId, setDeleteDebtId] = useState(null);
   const [debtError, setDebtError]       = useState("");
+  const [reminderWarning, setReminderWarning] = useState(""); // notice non-blocking kalau sync reminder gagal
   const [debtForm, setDebtForm]         = useState(emptyDebtForm);
+  const [editingDebtId, setEditingDebtId] = useState(null); // null = tambah baru, isi id = lagi edit utang itu
   const [customDompetDebt, setCustomDompetDebt] = useState(false); // toggle ketik-bebas utk dompet di form utang
 
   // Daftar nama dompet yang konsisten dipakai di 3 tempat: Transaksi, Penempatan
@@ -127,20 +131,66 @@ export default function TargetPage() {
     setError("");
   };
 
-  const handleAdd = async () => {
+  const handleSaveTarget = async () => {
+  if (targetSubmitting) return;
   if (!form.nama) { setError("Nama target wajib diisi."); return; }
   if (!form.target || Number(form.target) <= 0) { setError("Nominal target harus lebih dari 0."); return; }
-  const result = await apiFetch("/api/targets", {
-    method: "POST",
-    body: JSON.stringify({ nama: form.nama, target: Number(form.target), terkumpul: Number(form.terkumpul) || 0, deadline: form.deadline || null, penempatan: form.penempatan || null }),
-  });
-  if (result.success) {
-    setTargets((p) => [...p, result.data]);
-    setForm({ nama: "", target: "", terkumpul: "", deadline: "", penempatan: "" });
-    setCustomPenempatan(false);
-    setShowForm(false);
+  setTargetSubmitting(true);
+  try {
+    if (editingId) {
+      const result = await apiFetch("/api/targets", {
+        method: "PUT",
+        body: JSON.stringify({
+          id: editingId, nama: form.nama, target: Number(form.target),
+          terkumpul: Number(form.terkumpul) || 0, deadline: form.deadline || null, penempatan: form.penempatan || null,
+        }),
+      });
+      if (result.success) {
+        setTargets((p) => p.map((t) => t.id === editingId ? result.data : t));
+        setForm({ nama: "", target: "", terkumpul: "", deadline: "", penempatan: "" });
+        setCustomPenempatan(false);
+        setEditingId(null);
+        setShowForm(false);
+      } else {
+        setError(result.message || "Gagal menyimpan perubahan.");
+      }
+    } else {
+      const result = await apiFetch("/api/targets", {
+        method: "POST",
+        body: JSON.stringify({ nama: form.nama, target: Number(form.target), terkumpul: Number(form.terkumpul) || 0, deadline: form.deadline || null, penempatan: form.penempatan || null }),
+      });
+      if (result.success) {
+        setTargets((p) => [...p, result.data]);
+        setForm({ nama: "", target: "", terkumpul: "", deadline: "", penempatan: "" });
+        setCustomPenempatan(false);
+        setShowForm(false);
+      } else {
+        setError(result.message || "Gagal menyimpan target.");
+      }
+    }
+  } finally {
+    setTargetSubmitting(false);
   }
 };
+
+  const openEditTarget = (t) => {
+    setForm({
+      nama: t.nama, target: String(t.target), terkumpul: String(t.terkumpul),
+      deadline: t.deadline || "", penempatan: t.penempatan || "",
+    });
+    setCustomPenempatan(!!(t.penempatan && !walletOptions.includes(t.penempatan)));
+    setEditingId(t.id);
+    setError("");
+    setShowForm(true);
+  };
+
+  const closeTargetForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setForm({ nama: "", target: "", terkumpul: "", deadline: "", penempatan: "" });
+    setCustomPenempatan(false);
+    setError("");
+  };
 
   // Tambah nominal — bisa dari tombol cepat atau input bebas.
   // Setiap nambah tabungan otomatis dicatat sebagai transaksi PENGELUARAN juga —
@@ -187,28 +237,43 @@ export default function TargetPage() {
   // Upsert reminder kalender H-jatuh-tempo — coba PUT dulu (kalau reminder-nya
   // udah ada dari sebelumnya), kalau belum ada (gagal) baru POST baru. Dengan
   // id tetap `debt-{id}` biar nggak numpuk-numpuk tiap bulan, cuma geser tanggalnya.
+  // Dibungkus try/catch + kasih notice non-blocking kalau gagal, jangan gagal diam-diam
+  // (utang/pembayarannya TETAP kesimpen biarpun reminder-nya gagal disinkronkan).
   const syncReminder = async (debt) => {
     if (!debt.tanggalJatuhTempo) return;
-    const due = nextDueDate(debt.tanggalJatuhTempo);
-    const payload = {
-      id: `debt-${debt.id}`,
-      mode: "personal",
-      title: `${jenisEmoji(debt.jenis)} Bayar ${jenisLabel(debt.jenis)}: ${debt.nama}`,
-      body: `Cicilan ${formatRupiah(debt.cicilanPerBulan)}${debt.dompet ? " · " + debt.dompet : ""}`,
-      category: "tagihan",
-      date: due.toISOString().slice(0, 10),
-    };
-    const putRes = await apiFetch(`/api/notes?table=cal_notes`, { method: "PUT", body: JSON.stringify(payload) });
-    if (!putRes.success) {
-      await apiFetch(`/api/notes?table=cal_notes`, { method: "POST", body: JSON.stringify(payload) });
+    try {
+      const due = nextDueDate(debt.tanggalJatuhTempo);
+      const payload = {
+        id: `debt-${debt.id}`,
+        mode: "personal",
+        title: `${jenisEmoji(debt.jenis)} Bayar ${jenisLabel(debt.jenis)}: ${debt.nama}`,
+        body: `Cicilan ${formatRupiah(debt.cicilanPerBulan)}${debt.dompet ? " · " + debt.dompet : ""}`,
+        category: "tagihan",
+        date: due.toISOString().slice(0, 10),
+      };
+      const putRes = await apiFetch(`/api/notes?table=cal_notes`, { method: "PUT", body: JSON.stringify(payload) });
+      if (!putRes.success) {
+        const postRes = await apiFetch(`/api/notes?table=cal_notes`, { method: "POST", body: JSON.stringify(payload) });
+        if (!postRes.success) throw new Error(postRes.message || "gagal sync reminder");
+      }
+      setReminderWarning("");
+    } catch (err) {
+      console.error("[syncReminder] gagal:", err);
+      setReminderWarning(`⚠️ Data utang "${debt.nama}" tersimpan, tapi reminder di Catatan gagal disinkronkan (cek koneksi lalu buka lagi halaman ini).`);
     }
   };
 
   const removeReminder = async (debtId) => {
-    await apiFetch(`/api/notes?table=cal_notes&id=debt-${debtId}`, { method: "DELETE" });
+    try {
+      const res = await apiFetch(`/api/notes?table=cal_notes&id=debt-${debtId}`, { method: "DELETE" });
+      if (!res.success) throw new Error(res.message || "gagal hapus reminder");
+    } catch (err) {
+      console.error("[removeReminder] gagal:", err);
+      setReminderWarning(`⚠️ Reminder lama masih ketinggalan di Catatan — boleh dihapus manual kalau ganggu.`);
+    }
   };
 
-  const handleAddDebt = async () => {
+  const handleSaveDebt = async () => {
     if (debtSubmitting) return;
     if (!debtForm.nama.trim()) { setDebtError("Nama wajib diisi."); return; }
     if (!debtForm.cicilanPerBulan || Number(debtForm.cicilanPerBulan) <= 0) {
@@ -216,32 +281,73 @@ export default function TargetPage() {
     }
     setDebtSubmitting(true);
     try {
-      const result = await apiFetch("/api/debts", {
-        method: "POST",
-        body: JSON.stringify({
-          jenis:              debtForm.jenis,
-          nama:               debtForm.nama.trim(),
-          tanggalMulai:       debtForm.tanggalMulai || null,
-          tenor:              debtForm.tenor ? Number(debtForm.tenor) : null,
-          cicilanPerBulan:    Number(debtForm.cicilanPerBulan),
-          totalUtang:         debtForm.totalUtang ? Number(debtForm.totalUtang) : null,
-          tanggalJatuhTempo:  debtForm.tanggalJatuhTempo ? Number(debtForm.tanggalJatuhTempo) : null,
-          dompet:             debtForm.dompet || null,
-          keterangan:         debtForm.keterangan.trim(),
-        }),
-      });
-      if (result.success) {
-        setDebts((p) => [...p, result.data]);
-        setDebtForm(emptyDebtForm);
-        setShowDebtForm(false);
-        setCustomDompetDebt(false);
-        syncReminder(result.data);
+      const payload = {
+        jenis:              debtForm.jenis,
+        nama:               debtForm.nama.trim(),
+        tanggalMulai:       debtForm.tanggalMulai || null,
+        tenor:              debtForm.tenor ? Number(debtForm.tenor) : null,
+        cicilanPerBulan:    Number(debtForm.cicilanPerBulan),
+        totalUtang:         debtForm.totalUtang ? Number(debtForm.totalUtang) : null,
+        tanggalJatuhTempo:  debtForm.tanggalJatuhTempo ? Number(debtForm.tanggalJatuhTempo) : null,
+        dompet:             debtForm.dompet || null,
+        keterangan:         debtForm.keterangan.trim(),
+      };
+
+      if (editingDebtId) {
+        // Edit TIDAK menyentuh terbayar/bulanTerbayar/lunas — progress cicilan yang
+        // udah jalan harus tetap aman, cuma detail info-nya aja yang berubah.
+        const result = await apiFetch("/api/debts", {
+          method: "PUT",
+          body: JSON.stringify({ id: editingDebtId, ...payload }),
+        });
+        if (result.success) {
+          setDebts((p) => p.map((x) => (x.id === editingDebtId ? result.data : x)));
+          setDebtForm(emptyDebtForm);
+          setShowDebtForm(false);
+          setEditingDebtId(null);
+          setCustomDompetDebt(false);
+          // Tanggal jatuh tempo bisa aja berubah pas edit — geser ulang reminder-nya
+          if (!result.data.lunas) syncReminder(result.data); else removeReminder(editingDebtId);
+        } else {
+          setDebtError(result.message || "Gagal menyimpan perubahan.");
+        }
       } else {
-        setDebtError(result.message || "Gagal menyimpan. Coba lagi.");
+        const result = await apiFetch("/api/debts", { method: "POST", body: JSON.stringify(payload) });
+        if (result.success) {
+          setDebts((p) => [...p, result.data]);
+          setDebtForm(emptyDebtForm);
+          setShowDebtForm(false);
+          setCustomDompetDebt(false);
+          syncReminder(result.data);
+        } else {
+          setDebtError(result.message || "Gagal menyimpan. Coba lagi.");
+        }
       }
     } finally {
       setDebtSubmitting(false);
     }
+  };
+
+  const openEditDebt = (d) => {
+    setDebtForm({
+      jenis: d.jenis, nama: d.nama, tanggalMulai: d.tanggalMulai || "",
+      tenor: d.tenor ? String(d.tenor) : "", cicilanPerBulan: String(d.cicilanPerBulan),
+      totalUtang: d.totalUtang ? String(d.totalUtang) : "",
+      tanggalJatuhTempo: d.tanggalJatuhTempo ? String(d.tanggalJatuhTempo) : "",
+      dompet: d.dompet || "", keterangan: d.keterangan || "",
+    });
+    setCustomDompetDebt(!!(d.dompet && !walletOptions.includes(d.dompet)));
+    setEditingDebtId(d.id);
+    setDebtError("");
+    setShowDebtForm(true);
+  };
+
+  const closeDebtForm = () => {
+    setShowDebtForm(false);
+    setEditingDebtId(null);
+    setDebtForm(emptyDebtForm);
+    setCustomDompetDebt(false);
+    setDebtError("");
   };
 
   // Bayar cicilan bulan ini — otomatis bikin transaksi pengeluaran +
@@ -340,7 +446,7 @@ export default function TargetPage() {
 
         {activeTab === "tabungan" && (
         <div className="targetpage__toolbar">
-          <button className="targetpage__add-btn" onClick={() => setShowForm(true)}>
+          <button className="targetpage__add-btn" onClick={() => { setEditingId(null); setShowForm(true); }}>
             + Tambah Target
           </button>
         </div>
@@ -356,7 +462,7 @@ export default function TargetPage() {
           <div className="targetpage__empty">
             <p>🎯</p>
             <p>Belum ada target tabungan.</p>
-            <button className="targetpage__add-btn" onClick={() => setShowForm(true)}>
+            <button className="targetpage__add-btn" onClick={() => { setEditingId(null); setShowForm(true); }}>
               + Buat Target Pertama
             </button>
           </div>
@@ -380,7 +486,10 @@ export default function TargetPage() {
                         <span className="targetpage__card-penempatan">🏦 {t.penempatan}</span>
                       )}
                     </div>
-                    <button className="targetpage__card-delete" onClick={() => setDeleteId(t.id)}>🗑</button>
+                    <div className="targetpage__card-actions-group">
+                      <button className="targetpage__card-edit" onClick={() => openEditTarget(t)} title="Edit">✏️</button>
+                      <button className="targetpage__card-delete" onClick={() => setDeleteId(t.id)} title="Hapus">🗑</button>
+                    </div>
                   </div>
 
                   {/* Progress bar + persen */}
@@ -463,11 +572,11 @@ export default function TargetPage() {
 
         {/* Form Modal */}
         {showForm && (
-          <div className="targetpage__overlay" onClick={() => setShowForm(false)}>
+          <div className="targetpage__overlay" onClick={closeTargetForm}>
             <div className="targetpage__form animate-fadeUp" onClick={(e) => e.stopPropagation()}>
               <div className="targetpage__form-header">
-                <h3>Tambah Target Baru</h3>
-                <button onClick={() => setShowForm(false)}>✕</button>
+                <h3>{editingId ? "✏️ Edit Target" : "Tambah Target Baru"}</h3>
+                <button onClick={closeTargetForm}>✕</button>
               </div>
 
               <div className="targetpage__form-fields">
@@ -523,7 +632,9 @@ export default function TargetPage() {
                 </div>
 
                 {error && <p className="targetpage__error">⚠️ {error}</p>}
-                <button className="targetpage__submit" onClick={handleAdd}>Simpan Target</button>
+                <button className="targetpage__submit" onClick={handleSaveTarget} disabled={targetSubmitting}>
+                  {targetSubmitting ? "Menyimpan..." : (editingId ? "Simpan Perubahan" : "Simpan Target")}
+                </button>
               </div>
             </div>
           </div>
@@ -573,9 +684,16 @@ export default function TargetPage() {
         )}
 
         {/* ══════════════════ TAB: UTANG & CICILAN ══════════════════ */}
+        {activeTab === "utang" && reminderWarning && (
+          <div className="targetpage__reminder-warning">
+            <span>{reminderWarning}</span>
+            <button onClick={() => setReminderWarning("")}>✕</button>
+          </div>
+        )}
+
         {activeTab === "utang" && !showDebtForm && (
         <div className="targetpage__toolbar">
-          <button className="targetpage__add-btn" onClick={() => setShowDebtForm(true)}>
+          <button className="targetpage__add-btn" onClick={() => { setEditingDebtId(null); setShowDebtForm(true); }}>
             + Tambah Utang/Kredit/Paylater
           </button>
         </div>
@@ -584,7 +702,7 @@ export default function TargetPage() {
         {/* Form inline (bukan floating) — biar enak diisi, sama kayak form Biaya Operasional di UMKM */}
         {activeTab === "utang" && showDebtForm && (
           <div className="targetpage__inline-form">
-            <h3 className="targetpage__inline-form-title">+ Tambah Utang/Kredit/Paylater</h3>
+            <h3 className="targetpage__inline-form-title">{editingDebtId ? "✏️ Edit Utang/Kredit/Paylater" : "+ Tambah Utang/Kredit/Paylater"}</h3>
 
             <div className="targetpage__inline-form-grid">
               <div className="targetpage__field">
@@ -665,9 +783,9 @@ export default function TargetPage() {
             {debtError && <p className="targetpage__error">⚠️ {debtError}</p>}
 
             <div className="targetpage__inline-form-actions">
-              <button className="targetpage__btn-sec" onClick={() => { setShowDebtForm(false); setDebtForm(emptyDebtForm); setDebtError(""); setCustomDompetDebt(false); }}>Batal</button>
-              <button className="targetpage__submit" onClick={handleAddDebt} disabled={debtSubmitting}>
-                {debtSubmitting ? "Menyimpan..." : "Simpan"}
+              <button className="targetpage__btn-sec" onClick={closeDebtForm}>Batal</button>
+              <button className="targetpage__submit" onClick={handleSaveDebt} disabled={debtSubmitting}>
+                {debtSubmitting ? "Menyimpan..." : (editingDebtId ? "Simpan Perubahan" : "Simpan")}
               </button>
             </div>
           </div>
@@ -683,7 +801,7 @@ export default function TargetPage() {
           <div className="targetpage__empty">
             <p>💳</p>
             <p>Belum ada utang, kredit, atau paylater tercatat.</p>
-            <button className="targetpage__add-btn" onClick={() => setShowDebtForm(true)}>
+            <button className="targetpage__add-btn" onClick={() => { setEditingDebtId(null); setShowDebtForm(true); }}>
               + Catat yang Pertama
             </button>
           </div>
@@ -706,7 +824,10 @@ export default function TargetPage() {
                       <h3 className="targetpage__card-nama">{jenisEmoji(d.jenis)} {d.nama}</h3>
                       <span className="targetpage__card-penempatan">{jenisLabel(d.jenis)}{d.dompet ? " · dari " + d.dompet : ""}</span>
                     </div>
-                    <button className="targetpage__card-delete" onClick={() => setDeleteDebtId(d.id)}>🗑</button>
+                    <div className="targetpage__card-actions-group">
+                      <button className="targetpage__card-edit" onClick={() => openEditDebt(d)} title="Edit">✏️</button>
+                      <button className="targetpage__card-delete" onClick={() => setDeleteDebtId(d.id)} title="Hapus">🗑</button>
+                    </div>
                   </div>
 
                   {(d.totalUtang || d.tenor) && (

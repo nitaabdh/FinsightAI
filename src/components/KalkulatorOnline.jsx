@@ -25,9 +25,14 @@ export default function KalkulatorOnline() {
 
   useEffect(() => {
     if (!user) return;
-    const token = localStorage.getItem("finsight_token");
-    fetch(`/api/umkm?table=produk`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json()).then(r => { if (r.success) setProdukList(r.data); });
+    const fetchProduk = () => {
+      const token = localStorage.getItem("finsight_token");
+      fetch(`/api/umkm?table=produk`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.json()).then(r => { if (r.success) setProdukList(r.data); });
+    };
+    fetchProduk();
+    window.addEventListener("produkUpdated", fetchProduk);
+    return () => window.removeEventListener("produkUpdated", fetchProduk);
   }, [user]);
 
   const produk = produkList.find(p => p.id === selProdukId);
@@ -36,6 +41,22 @@ export default function KalkulatorOnline() {
   const handlePilihPlatform = (key) => {
     setPlatformKey(key);
     setFeeRows(buatFeeRowsDariPreset(key));
+  };
+
+  // Simpen harga jual online per produk — kirim SEMUA field produk yang udah ada
+  // (bukan cuma hargaOnline), soalnya backend nulis ulang seluruh row pas PUT.
+  const saveHargaOnline = async (produk, hargaBaru) => {
+    const token = localStorage.getItem("finsight_token");
+    const r = await fetch(`/api/umkm?table=produk`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id: produk.id, ...produk, hargaOnline: hargaBaru }),
+    }).then(res => res.json());
+    if (r.success) {
+      setProdukList(list => list.map(p => p.id === produk.id ? r.data : p));
+      window.dispatchEvent(new CustomEvent("produkUpdated"));
+    }
+    return r.success;
   };
 
   const updateFeeRow = (id, field, value) =>
@@ -194,6 +215,57 @@ export default function KalkulatorOnline() {
           </>
         )}
       </div>
+
+      {produkList.length > 0 && (
+        <div className="komarket__form komarket__list-card">
+          <h3 className="komarket__form-title">💾 Daftar Harga Jual Online</h3>
+          <p className="komarket__hint">
+            Simpen harga jual listing per produk di sini sekali aja. Nanti pas centang "Ini penjualan online?"
+            di form Transaksi dan pilih produknya, harga ini otomatis keisi sendiri — nggak perlu ngetik ulang tiap kali.
+          </p>
+          <div className="komarket__online-list">
+            {produkList.map(p => (
+              <HargaOnlineRow key={p.id} produk={p} onSave={saveHargaOnline} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Baris kecil per produk di "Daftar Harga Jual Online" ─────────────────────
+// Dipisah jadi komponen sendiri biar state edit tiap baris nggak numpuk di parent
+// (tiap baris punya input & status simpannya sendiri-sendiri).
+function HargaOnlineRow({ produk, onSave }) {
+  const [val, setVal]         = useState(produk.hargaOnline ? String(produk.hargaOnline) : "");
+  const [saving, setSaving]   = useState(false);
+  const [saved, setSaved]     = useState(false);
+
+  const dirty = val !== (produk.hargaOnline ? String(produk.hargaOnline) : "");
+
+  const handleSave = async () => {
+    setSaving(true);
+    const ok = await onSave(produk, +val || 0);
+    setSaving(false);
+    if (ok) { setSaved(true); setTimeout(() => setSaved(false), 1500); }
+  };
+
+  return (
+    <div className="komarket__online-row">
+      <div className="komarket__online-row-info">
+        <span className="komarket__online-row-nama">{produk.nama}</span>
+        <span className="komarket__online-row-hpp">HPP {formatRupiah(produk.totalBiaya)} · Harga Normal {formatRupiah(produk.hargaJual)}</span>
+      </div>
+      <RupiahInput className="komarket__input komarket__online-row-input" placeholder="Harga listing online"
+        value={val} onChange={setVal} />
+      <button
+        className="komarket__online-row-save"
+        disabled={!dirty || saving}
+        onClick={handleSave}
+      >
+        {saving ? "..." : saved ? "✓ Kesimpen" : "Simpan"}
+      </button>
     </div>
   );
 }

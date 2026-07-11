@@ -287,7 +287,12 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
     // Sample/marketing: nominal yang kecatat = biaya produksi (HPP), bukan harga jual —
     // karena ini pengeluaran/biaya, bukan pemasukan penjualan. Kategori juga TIDAK ditimpa
     // (biar tetap "Sample & Marketing", bukan berubah jadi "Penjualan Produk").
-    const nilai = isSampleFlow ? (produk.totalBiaya || 0) : produk.hargaJual;
+    // Penjualan online: kalau produk ini udah punya harga jual online yang kesimpen
+    // (di tab Kalkulator Online), pakai itu — bukan harga jual normal — karena harga
+    // listing di marketplace biasanya beda (udah dimarkup buat nutup potongan admin).
+    const nilai = isSampleFlow
+      ? (produk.totalBiaya || 0)
+      : (isOnlineSale && produk.hargaOnline ? produk.hargaOnline : produk.hargaJual);
     // Math.round jaga-jaga kalau hargaJual/totalBiaya tersimpan desimal (dari hasil bagi/kali
     // di Kalkulator Harga) — desimal bikin titik ribuan salah kalkulasi kalau lolos mentah.
     setForm(prev => ({
@@ -306,11 +311,16 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
     const produk = produkList.find(p => p.id === selProdukId);
     if (!produk) return;
     const qty = parseInt(val, 10) || 0;
-    const nilai = isSampleFlow ? (produk.totalBiaya || 0) : produk.hargaJual;
+    const nilai = isSampleFlow
+      ? (produk.totalBiaya || 0)
+      : (isOnlineSale && produk.hargaOnline ? produk.hargaOnline : produk.hargaJual);
     setForm(prev => ({ ...prev, amount: String(Math.round(nilai * qty)) }));
   };
 
+  const [submitted, setSubmitted] = useState(false); // guard biar onAdd/onEdit nggak ke-fire dobel pas diklik cepat
+
   const handleSubmit = () => {
+    if (submitted) return;
     if (!form.amount || isNaN(form.amount) || Number(form.amount) <= 0) { setError("Masukkan nominal yang valid."); return; }
 
     if (isTransferFlow) {
@@ -354,6 +364,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
         : {}),
     };
 
+    setSubmitted(true);
     if (isEdit) { onEdit({ ...editData, ...data }); } else { onAdd(data); }
     onClose();
   };
@@ -476,7 +487,23 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
           {showKas && mode === "umkm" && form.type === "pemasukan" && (
             <div className="txform__field">
               <label className="txform__online-toggle">
-                <input type="checkbox" checked={isOnlineSale} onChange={e => setIsOnlineSale(e.target.checked)} />
+                <input type="checkbox" checked={isOnlineSale} onChange={e => {
+                  const checked = e.target.checked;
+                  setIsOnlineSale(checked);
+                  // Kalau produk udah kepilih duluan, harga jualnya perlu di-refresh:
+                  // ganti ke harga listing online yang tersimpan (atau balik ke harga normal
+                  // kalau toggle dimatikan lagi).
+                  if (selProdukId) {
+                    const produk = produkList.find(p => p.id === selProdukId);
+                    if (produk) {
+                      const qty = parseInt(jumlahUnit, 10) || 1;
+                      const nilai = isSampleFlow
+                        ? (produk.totalBiaya || 0)
+                        : (checked && produk.hargaOnline ? produk.hargaOnline : produk.hargaJual);
+                      setForm(prev => ({ ...prev, amount: String(Math.round(nilai * qty)) }));
+                    }
+                  }
+                }} />
                 🛒 Ini penjualan online/marketplace (ada potongan admin)?
               </label>
             </div>
@@ -489,6 +516,12 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
                 Potongan di bawah ini otomatis kecatat sebagai pengeluaran terpisah kategori "Biaya Admin Marketplace",
                 pakai dompet yang sama kayak yang kamu pilih di bawah.
               </p>
+              {showProdukPicker && selProdukId && produkList.find(p => p.id === selProdukId)?.hargaOnline > 0 && (
+                <p className="txform__hint txform__hint--tight">
+                  💾 Nominal otomatis dipakein harga jual online yang udah kesimpen buat produk ini
+                  (dari tab Kalkulator Online). Boleh diedit lagi kalau beda.
+                </p>
+              )}
               <div className="txform__online-platform">
                 {Object.entries(PLATFORM_PRESETS).map(([key, p]) => (
                   <button key={key} type="button"
@@ -633,8 +666,8 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
 
           {error && <div className="txform__error">⚠️ {error}</div>}
 
-          <button className={"txform__submit txform__submit--" + accent} onClick={handleSubmit}>
-            {isEdit ? "Simpan Perubahan" : "Simpan Transaksi"}
+          <button className={"txform__submit txform__submit--" + accent} onClick={handleSubmit} disabled={submitted}>
+            {submitted ? "Menyimpan..." : (isEdit ? "Simpan Perubahan" : "Simpan Transaksi")}
           </button>
         </div>
       </div>

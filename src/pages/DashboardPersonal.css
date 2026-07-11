@@ -18,7 +18,19 @@
 }
 
 /* ── Skeleton ── */
-.dp2__skeleton { display: flex; flex-direction: column; gap: 1rem; }
+.dp2__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 2rem;
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+@media (max-width: 767px) {
+  .dp2__skeleton { padding: 1rem; }
+}
 .dp2__skel-block { border-radius: var(--radius-lg); }
 .dp2__skel-block:nth-child(1) { height: 60px; }
 .dp2__skel-block:nth-child(2) { height: 160px; }

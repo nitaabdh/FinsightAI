@@ -35,6 +35,7 @@ export default function Dompet({ mode = "umkm" }) {
   const [delId, setDelId]       = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading]   = useState(true);
+  const [submitting, setSubmitting] = useState(false); // guard tombol Simpan/Tambah biar nggak keklik dobel
 
   useEffect(() => {
     if (!user) return;
@@ -67,6 +68,7 @@ export default function Dompet({ mode = "umkm" }) {
   };
 
   const handleSubmit = async () => {
+    if (submitting) return;
     const { nama, jenis, catatan } = form;
     if (!nama.trim()) return setError("Nama dompet tidak boleh kosong.");
     const dup = list.find(d => d.id !== editId && d.nama.toLowerCase().trim() === nama.toLowerCase().trim());
@@ -74,14 +76,21 @@ export default function Dompet({ mode = "umkm" }) {
 
     const payloadData = { nama: nama.trim(), jenis, catatan: catatan.trim() };
 
-    if (editId) {
-      const r = await apiFetch(`/api/umkm?table=dompet`, { method: "PUT", body: JSON.stringify({ id: editId, ...payloadData }) });
-      if (r.success) setList(p => p.map(it => it.id === editId ? r.data : it));
-    } else {
-      const r = await apiFetch(`/api/umkm?table=dompet`, { method: "POST", body: JSON.stringify({ id: genId(), ...payloadData, createdAt: Date.now() }) });
-      if (r.success) setList(p => [r.data, ...p]);
+    setSubmitting(true);
+    try {
+      if (editId) {
+        const r = await apiFetch(`/api/umkm?table=dompet`, { method: "PUT", body: JSON.stringify({ id: editId, ...payloadData }) });
+        if (r.success) setList(p => p.map(it => it.id === editId ? r.data : it));
+        else { setError(r.message || "Gagal menyimpan perubahan."); return; }
+      } else {
+        const r = await apiFetch(`/api/umkm?table=dompet`, { method: "POST", body: JSON.stringify({ id: genId(), ...payloadData, createdAt: Date.now() }) });
+        if (r.success) setList(p => [r.data, ...p]);
+        else { setError(r.message || "Gagal menyimpan dompet."); return; }
+      }
+      resetForm();
+    } finally {
+      setSubmitting(false);
     }
-    resetForm();
   };
 
   const openEdit = (it) => {
@@ -145,9 +154,9 @@ export default function Dompet({ mode = "umkm" }) {
           </div>
           {error && <p className="dompet__error">⚠️ {error}</p>}
           <div className="dompet__form-actions">
-            <button className="dompet__btn-sec" onClick={resetForm}>Batal</button>
-            <button className="dompet__btn-primary" onClick={handleSubmit}>
-              {editId ? "Simpan Perubahan" : "+ Tambah Dompet"}
+            <button className="dompet__btn-sec" onClick={resetForm} disabled={submitting}>Batal</button>
+            <button className="dompet__btn-primary" onClick={handleSubmit} disabled={submitting}>
+              {submitting ? "Menyimpan..." : (editId ? "Simpan Perubahan" : "+ Tambah Dompet")}
             </button>
           </div>
         </div>
@@ -195,6 +204,13 @@ export default function Dompet({ mode = "umkm" }) {
             <h4 className="dompet__modal-title">Hapus dompet ini?</h4>
             <p className="dompet__modal-sub">
               Ini cuma ngehapus dari daftar dompet — riwayat transaksi yang udah kepakai nama dompet ini TETAP aman, nggak ikut kehapus.
+              {(() => {
+                const target = semuaDompet.find(d => d.id === delId);
+                const hasHistory = target && kasStats.some(k => k.nama.toLowerCase().trim() === target.nama.toLowerCase().trim());
+                return hasHistory
+                  ? " Karena dompet ini masih punya riwayat transaksi, dia bakal MUNCUL LAGI di daftar sebagai \"otomatis dari transaksi\" (cuma nggak bisa diedit/dikasih catatan lagi)."
+                  : "";
+              })()}
             </p>
             <div className="dompet__modal-actions">
               <button className="dompet__btn-sec" onClick={() => setDelId(null)}>Batal</button>

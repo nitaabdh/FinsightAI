@@ -142,6 +142,7 @@ function buildPayload(body, table, userId, isUpdate = false) {
       biaya_bahan:       body.biayaBahan || 0,
       total_biaya:       body.totalBiaya || 0,
       harga_jual:        body.hargaJual || 0,
+      harga_online:      body.hargaOnline ?? 0,
     };
   }
 
@@ -223,7 +224,7 @@ function normalize(row, table) {
   }
 
   if (table === "produk") {
-    return { ...base, nama: row.nama, items: row.items || [], biayaOperasionalItems: row.ops_items || [], biayaOperasional: row.biaya_operasional, targetUntung: row.target_untung, biayaBahan: row.biaya_bahan, totalBiaya: row.total_biaya, hargaJual: row.harga_jual };
+    return { ...base, nama: row.nama, items: row.items || [], biayaOperasionalItems: row.ops_items || [], biayaOperasional: row.biaya_operasional, targetUntung: row.target_untung, biayaBahan: row.biaya_bahan, totalBiaya: row.total_biaya, hargaJual: row.harga_jual, hargaOnline: row.harga_online || 0 };
   }
 
   if (table === "biaya_operasional") {

@@ -263,6 +263,15 @@
 }
 
 .asetusaha__modal-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 1.25rem; }
+.asetusaha__del-reason { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1rem; }
+.asetusaha__del-reason-btn {
+  padding: 10px; border-radius: 10px; border: 1px solid var(--border-color, #e5e7eb);
+  background: var(--bg-secondary, #f8f9fa); color: var(--text-primary); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .15s;
+}
+.asetusaha__del-reason-btn--active { border-color: var(--umkm-accent, #6366f1); background: var(--umkm-accent, #6366f1); color: #fff; }
+.asetusaha__checkbox-row { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.5; cursor: pointer; }
+.asetusaha__checkbox-row input { margin-top: 2px; flex-shrink: 0; }
 
 .asetusaha__modal-actions { display: flex; gap: 0.75rem; }
 .asetusaha__modal-actions .asetusaha__btn-sec,

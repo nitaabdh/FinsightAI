@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { genId, formatRupiah } from "../utils/umkmCalc";
-import { addTransaction } from "../utils/storage";
+import { addTransaction, getTransactionsByRef, deleteTransaction } from "../utils/storage";
 import RupiahInput from "./RupiahInput";
 import "./AsetUsaha.css";
 
@@ -41,11 +41,32 @@ export default function AsetUsaha() {
   const [filterKondisi,  setFilterKondisi]  = useState("semua");
   const [showForm, setShowForm] = useState(false);
   const [search,   setSearch]   = useState("");
+  const [dompetList, setDompetList] = useState([]);
+
+  // ── Modal hapus ──────────────────────────────────────────────────────────
+  const [delAlasanJenis, setDelAlasanJenis] = useState("salahInput"); // "terjual" | "salahInput"
+  const [delHargaJual,   setDelHargaJual]   = useState("");
+  const [delKasJual,     setDelKasJual]     = useState("Kas Tunai");
+  const [delCatatan,     setDelCatatan]     = useState("");
+  const [delErr,         setDelErr]         = useState("");
+  const [delTxList,      setDelTxList]      = useState([]);
+  const [delTxLoading,   setDelTxLoading]   = useState(false);
+  const [hapusTxJuga,    setHapusTxJuga]    = useState(false);
 
   useEffect(() => {
     if (!user) return;
     apiFetch(`/api/umkm?table=aset_usaha`).then(r => { if (r.success) setList(r.data); });
+    apiFetch(`/api/umkm?table=dompet`).then(r => { if (r.success) setDompetList(r.data); });
   }, [user]);
+
+  const kasOptionsAll = (() => {
+    const map = {};
+    [...KAS_PRESET, ...dompetList.map(d => d.nama)].forEach(k => {
+      const key = (k || "").toLowerCase().trim();
+      if (key && !(key in map)) map[key] = k;
+    });
+    return Object.values(map);
+  })();
 
   const resetForm = () => { setForm(emptyForm); setEditId(null); setEditHargaLocked(false); setError(""); setShowForm(false); };
 
@@ -97,6 +118,8 @@ export default function AsetUsaha() {
             description: `Beli aset: ${nama.trim()}`,
             date: tanggalBeli,
             kas: kas?.trim() || "Kas Tunai",
+            refId: r.data.id,
+            refType: "aset_usaha",
           });
           window.dispatchEvent(new CustomEvent("transactionsUpdated"));
         }
@@ -127,11 +150,55 @@ export default function AsetUsaha() {
     setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   };
 
-  const handleDel = async (id) => {
-    await apiFetch(`/api/umkm?table=aset_usaha&id=${id}`, { method: "DELETE" });
-    setList(p => p.filter(it => it.id !== id));
+  const openDel = async (id) => {
+    setDelId(id);
+    setDelAlasanJenis("salahInput");
+    setDelHargaJual("");
+    setDelKasJual("Kas Tunai");
+    setDelCatatan("");
+    setDelErr("");
+    setHapusTxJuga(false);
+    setDelTxList([]);
+    setDelTxLoading(true);
+    const tx = await getTransactionsByRef("umkm", "aset_usaha", id);
+    setDelTxList(tx);
+    setDelTxLoading(false);
+  };
+
+  const confirmDel = async () => {
+    const aset = list.find(it => it.id === delId);
+    if (!aset) return;
+
+    if (delAlasanJenis === "terjual") {
+      if (!delHargaJual || +delHargaJual <= 0) return setDelErr("Isi harga jual aset ini.");
+      if (!delCatatan.trim())                 return setDelErr("Isi alasan/catatan penjualannya.");
+      if (!delKasJual?.trim())                return setDelErr("Pilih dompet tempat uang penjualan masuk.");
+      // Dicatat sebagai kategori terpisah "Penjualan Aset Usaha" — tetap kehitung sebagai
+      // pemasukan/mempengaruhi laba, tapi TIDAK masuk "Modal Usaha" (itu khusus setoran
+      // modal pemilik) dan TIDAK dicampur sama "Penjualan Produk" asli di laporan.
+      await addTransaction(user.id, "umkm", {
+        type: "pemasukan",
+        amount: +delHargaJual,
+        category: "Penjualan Aset Usaha",
+        description: `Jual aset: ${aset.nama} — ${delCatatan.trim()}`,
+        date: new Date().toISOString().slice(0, 10),
+        kas: delKasJual.trim(),
+        refId: aset.id,
+        refType: "aset_usaha",
+      });
+      window.dispatchEvent(new CustomEvent("transactionsUpdated"));
+    } else {
+      if (hapusTxJuga && delTxList.length > 0) {
+        await Promise.all(delTxList.map(tx => deleteTransaction(user.id, "umkm", tx.id)));
+        window.dispatchEvent(new CustomEvent("transactionsUpdated"));
+      }
+    }
+
+    await apiFetch(`/api/umkm?table=aset_usaha&id=${delId}`, { method: "DELETE" });
+    setList(p => p.filter(it => it.id !== delId));
+    if (editId === delId) resetForm();
     setDelId(null);
-    if (editId === id) resetForm();
+    setDelTxList([]);
   };
 
   const semuaKategori = [...new Set([...KATEGORI_PRESET, ...list.map(it => it.kategori)])].sort();
@@ -207,7 +274,7 @@ export default function AsetUsaha() {
             <div className="asetusaha__field">
               <label className="asetusaha__label">Bayar Pakai Kas</label>
               <select className="asetusaha__input" name="kas" value={form.kas} onChange={handleChange}>
-                {KAS_PRESET.map(k => <option key={k} value={k}>{k}</option>)}
+                {kasOptionsAll.map(k => <option key={k} value={k}>{k}</option>)}
               </select>
             </div>
           )}
@@ -269,25 +336,89 @@ export default function AsetUsaha() {
               </div>
               <div className="asetusaha__item-actions">
                 <button className="asetusaha__item-edit" onClick={() => openEdit(it)} title="Edit">✏️</button>
-                <button className="asetusaha__item-del" onClick={() => setDelId(it.id)} title="Hapus">🗑</button>
+                <button className="asetusaha__item-del" onClick={() => openDel(it.id)} title="Hapus">🗑</button>
               </div>
             </div>
           ))
         )}
       </div>
 
-      {delId && (
-        <div className="asetusaha__modal-overlay" onClick={() => setDelId(null)}>
-          <div className="asetusaha__modal" onClick={e => e.stopPropagation()}>
-            <h4 className="asetusaha__modal-title">Hapus aset ini?</h4>
-            <p className="asetusaha__modal-sub">Tindakan ini tidak bisa dibatalkan.</p>
-            <div className="asetusaha__modal-actions">
-              <button className="asetusaha__btn-sec" onClick={() => setDelId(null)}>Batal</button>
-              <button className="asetusaha__btn-danger" onClick={() => handleDel(delId)}>Hapus</button>
+      {delId && (() => {
+        const aset = list.find(it => it.id === delId);
+        if (!aset) return null;
+        return (
+          <div className="asetusaha__modal-overlay" onClick={() => setDelId(null)}>
+            <div className="asetusaha__modal" onClick={e => e.stopPropagation()}>
+              <h4 className="asetusaha__modal-title">Hapus "{aset.nama}"?</h4>
+              <p className="asetusaha__modal-sub">Kenapa aset ini dihapus?</p>
+
+              <div className="asetusaha__del-reason">
+                <button
+                  className={"asetusaha__del-reason-btn" + (delAlasanJenis === "salahInput" ? " asetusaha__del-reason-btn--active" : "")}
+                  onClick={() => { setDelAlasanJenis("salahInput"); setDelErr(""); }}
+                >
+                  ❌ Salah Input
+                </button>
+                <button
+                  className={"asetusaha__del-reason-btn" + (delAlasanJenis === "terjual" ? " asetusaha__del-reason-btn--active" : "")}
+                  onClick={() => { setDelAlasanJenis("terjual"); setDelErr(""); }}
+                >
+                  💰 Terjual
+                </button>
+              </div>
+
+              {delAlasanJenis === "terjual" ? (
+                <>
+                  <p className="asetusaha__modal-sub">
+                    Otomatis kecatat sebagai pemasukan kategori "Penjualan Aset Usaha" (terpisah dari Modal & Penjualan Produk).
+                  </p>
+                  <div className="asetusaha__field" style={{ marginBottom: "0.85rem" }}>
+                    <label className="asetusaha__label">Harga Jual (Rp)</label>
+                    <RupiahInput className="asetusaha__input" placeholder="Contoh: 800.000"
+                      value={delHargaJual} onChange={v => { setDelHargaJual(v); setDelErr(""); }} />
+                  </div>
+                  <div className="asetusaha__field" style={{ marginBottom: "0.85rem" }}>
+                    <label className="asetusaha__label">Uang Masuk ke Dompet</label>
+                    <select className="asetusaha__input" value={delKasJual} onChange={e => setDelKasJual(e.target.value)}>
+                      {kasOptionsAll.map(k => <option key={k} value={k}>{k}</option>)}
+                    </select>
+                  </div>
+                  <div className="asetusaha__field" style={{ marginBottom: "0.85rem" }}>
+                    <label className="asetusaha__label">Alasan / Catatan</label>
+                    <input className="asetusaha__input" type="text" placeholder="Misal: dijual karena mau ganti yang baru"
+                      value={delCatatan} onChange={e => { setDelCatatan(e.target.value); setDelErr(""); }} />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="asetusaha__modal-sub">
+                    Aset dihapus dari daftar tanpa nambah transaksi apa pun.
+                  </p>
+                  {delTxLoading ? (
+                    <p className="asetusaha__modal-sub">Mengecek transaksi terkait...</p>
+                  ) : delTxList.length > 0 ? (
+                    <label className="asetusaha__checkbox-row">
+                      <input type="checkbox" checked={hapusTxJuga} onChange={e => setHapusTxJuga(e.target.checked)} />
+                      <span>
+                        Hapus juga {delTxList.length} transaksi pembelian terkait di Keuangan
+                        (total {formatRupiah(delTxList.reduce((s, t) => s + (t.amount || 0), 0))})
+                      </span>
+                    </label>
+                  ) : (
+                    <p className="asetusaha__modal-sub">Nggak ada transaksi Keuangan yang nempel ke aset ini.</p>
+                  )}
+                </>
+              )}
+
+              {delErr && <p className="asetusaha__error">⚠️ {delErr}</p>}
+              <div className="asetusaha__modal-actions">
+                <button className="asetusaha__btn-sec" onClick={() => setDelId(null)}>Batal</button>
+                <button className="asetusaha__btn-danger" onClick={confirmDel}>Hapus</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

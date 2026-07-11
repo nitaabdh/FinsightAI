@@ -136,6 +136,7 @@
 .txform__submit--umkm     { background: linear-gradient(135deg, #d97706, #f59e0b); box-shadow: 0 4px 20px var(--accent-umkm-glow); }
 .txform__submit--personal { background: linear-gradient(135deg, #059669, #10b981); box-shadow: 0 4px 20px var(--accent-personal-glow); }
 .txform__submit:hover { transform: translateY(-1px); }
+.txform__submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
 
 /* ── Fix: modal TransactionForm kepotong/nggak bisa scroll pas konten panjang ── */
 
