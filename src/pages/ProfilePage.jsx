@@ -52,6 +52,60 @@ export default function ProfilePage() {
   const [deleteError, setDeleteError]             = useState("");
   const [deleting, setDeleting]                   = useState(false);
 
+  // ── Hubungkan Telegram ────────────────────────────
+  const [tgLinked, setTgLinked]     = useState(null); // null = belum dicek, {} object kalau linked, false kalau belum
+  const [tgLoading, setTgLoading]   = useState(true);
+  const [tgCode, setTgCode]         = useState(null);
+  const [tgExpiresAt, setTgExpiresAt] = useState(null);
+  const [tgCountdown, setTgCountdown] = useState(0);
+  const [tgGenerating, setTgGenerating] = useState(false);
+  const [tgError, setTgError]       = useState("");
+  const [showUnlinkModal, setShowUnlinkModal] = useState(false);
+  const [unlinking, setUnlinking]   = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    apiFetch("/api/telegram").then(r => {
+      if (r.success) setTgLinked(r.linked ? r.data : false);
+    }).finally(() => setTgLoading(false));
+  }, [user]);
+
+  useEffect(() => {
+    if (!tgExpiresAt) return;
+    const tick = () => {
+      const diff = Math.max(0, Math.floor((new Date(tgExpiresAt) - new Date()) / 1000));
+      setTgCountdown(diff);
+      if (diff === 0) setTgCode(null);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [tgExpiresAt]);
+
+  const handleGenerateTgCode = async () => {
+    if (tgGenerating) return;
+    setTgGenerating(true);
+    setTgError("");
+    try {
+      const r = await apiFetch("/api/telegram?action=generate-code", { method: "POST" });
+      if (r.success) { setTgCode(r.code); setTgExpiresAt(r.expiresAt); }
+      else setTgError(r.message || "Gagal membuat kode.");
+    } finally {
+      setTgGenerating(false);
+    }
+  };
+
+  const handleUnlinkTelegram = async () => {
+    if (unlinking) return;
+    setUnlinking(true);
+    try {
+      const r = await apiFetch("/api/telegram?action=unlink", { method: "POST" });
+      if (r.success) { setTgLinked(false); setShowUnlinkModal(false); }
+    } finally {
+      setUnlinking(false);
+    }
+  };
+
   useEffect(() => {
     if (!user) return;
     setLoading(true);
@@ -287,6 +341,66 @@ export default function ProfilePage() {
             Foto & nama akan muncul di chat AI Agent.
           </p>
         </div>
+
+        {/* Hubungkan Telegram */}
+        <div className="profilepage__telegram">
+          <div className="profilepage__telegram-header">
+            <span className="profilepage__telegram-icon">📲</span>
+            <div>
+              <h3>Bot Telegram</h3>
+              <p>Cek saldo, laporan, dan dapet reminder cicilan langsung dari Telegram.</p>
+            </div>
+          </div>
+
+          {tgLoading ? (
+            <p className="profilepage__telegram-loading">Memuat status koneksi...</p>
+          ) : tgLinked ? (
+            <div className="profilepage__telegram-status profilepage__telegram-status--linked">
+              <div>
+                <p className="profilepage__telegram-connected">✅ Terhubung ke @{tgLinked.telegram_username || tgLinked.telegram_first_name || "Telegram"}</p>
+                <p className="profilepage__telegram-since">Sejak {new Date(tgLinked.linked_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</p>
+              </div>
+              <button className="profilepage__telegram-unlink-btn" onClick={() => setShowUnlinkModal(true)}>Putuskan</button>
+            </div>
+          ) : (
+            <div className="profilepage__telegram-status">
+              {tgCode ? (
+                <div className="profilepage__telegram-code-box">
+                  <p className="profilepage__telegram-code">{tgCode}</p>
+                  <p className="profilepage__telegram-code-hint">
+                    Buka bot Telegram, kirim: <code>/link {tgCode}</code><br />
+                    Berlaku {Math.floor(tgCountdown / 60)}:{String(tgCountdown % 60).padStart(2, "0")} lagi
+                  </p>
+                </div>
+              ) : (
+                <button
+                  className={"profilepage__telegram-connect-btn profilepage__telegram-connect-btn--" + accent}
+                  onClick={handleGenerateTgCode}
+                  disabled={tgGenerating}
+                >
+                  {tgGenerating ? "Membuat kode..." : "Hubungkan Telegram"}
+                </button>
+              )}
+              {tgError && <p className="profilepage__telegram-error">⚠️ {tgError}</p>}
+            </div>
+          )}
+        </div>
+
+        {/* Modal konfirmasi putus Telegram */}
+        {showUnlinkModal && (
+          <div className="profilepage__modal-overlay" onClick={() => !unlinking && setShowUnlinkModal(false)}>
+            <div className="profilepage__modal" onClick={(e) => e.stopPropagation()}>
+              <h3 className="profilepage__modal-title">Putuskan koneksi Telegram?</h3>
+              <p className="profilepage__modal-desc">Bot nggak akan bisa akses data akun kamu lagi sampai dihubungkan ulang.</p>
+              <div className="profilepage__modal-actions">
+                <button className="profilepage__modal-cancel" onClick={() => setShowUnlinkModal(false)} disabled={unlinking}>Batal</button>
+                <button className="profilepage__modal-confirm" onClick={handleUnlinkTelegram} disabled={unlinking}>
+                  {unlinking ? "Memutuskan..." : "Ya, Putuskan"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Form */}
         <div className="profilepage__form">
