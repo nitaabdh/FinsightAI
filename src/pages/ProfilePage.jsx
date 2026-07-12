@@ -30,7 +30,7 @@ async function apiFetch(url, options = {}) {
 }
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, deleteAccount } = useAuth();
   const navigate = useNavigate();
   const mode   = user?.mode;
   const accent = mode === "umkm" ? "umkm" : "personal";
@@ -44,6 +44,13 @@ export default function ProfilePage() {
   const [photoError, setPhotoError]   = useState("");
   const [editingName, setEditingName] = useState(false);
   const fileRef = useRef(null);
+
+  // ── Hapus Akun ────────────────────────────────────
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deletePassword, setDeletePassword]       = useState("");
+  const [deleteError, setDeleteError]             = useState("");
+  const [deleting, setDeleting]                   = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -159,6 +166,27 @@ export default function ProfilePage() {
 
   const displayName = form.displayName || user?.name || "User";
   const initial      = displayName.charAt(0).toUpperCase();
+
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+    setDeleteConfirmText("");
+    setDeletePassword("");
+    setDeleteError("");
+  };
+
+  const canDelete = deleteConfirmText.trim().toLowerCase() === (user?.email || "").trim().toLowerCase()
+    && deletePassword.length > 0 && !deleting;
+
+  const handleDeleteAccount = async () => {
+    if (!canDelete) return;
+    setDeleting(true);
+    setDeleteError("");
+    const r = await deleteAccount(deletePassword);
+    setDeleting(false);
+    if (!r.success) { setDeleteError(r.message || "Gagal menghapus akun."); return; }
+    // deleteAccount() di context udah nge-clear token & user; tinggal balik ke landing.
+    navigate("/", { replace: true });
+  };
 
   return (
     <DashboardLayout>
@@ -348,8 +376,73 @@ export default function ProfilePage() {
               </p>
             )}
           </div>
+
+          {/* ── Danger Zone ── */}
+          <div className="profilepage__danger">
+            <h3 className="profilepage__danger-title">⚠️ Zona Berbahaya</h3>
+            <p className="profilepage__danger-desc">
+              Menghapus akun akan menghilangkan SEMUA data kamu secara permanen — transaksi, produk, bahan baku,
+              laporan, target, catatan, semuanya. Tindakan ini tidak bisa dibatalkan.
+            </p>
+            <button className="profilepage__danger-btn" onClick={() => setShowDeleteModal(true)}>
+              🗑 Hapus Akun Saya
+            </button>
+          </div>
         </div>
         </>)}
+
+        {/* ── Modal Konfirmasi Hapus Akun ── */}
+        {showDeleteModal && (
+          <div className="profilepage__modal-overlay" onClick={closeDeleteModal}>
+            <div className="profilepage__modal" onClick={e => e.stopPropagation()}>
+              <h3 className="profilepage__modal-title">Hapus akun secara permanen?</h3>
+              <p className="profilepage__modal-desc">
+                Ini akan menghapus akun <strong>{user?.email}</strong> beserta SEMUA data yang nempel di dalamnya
+                (transaksi, produk, bahan baku, aset, laporan, target, catatan, riwayat chat AI) — nggak bisa
+                dikembalikan lagi setelah ini.
+              </p>
+
+              <div className="profilepage__modal-field">
+                <label>Ketik <strong>{user?.email}</strong> untuk konfirmasi:</label>
+                <input
+                  type="text"
+                  className="profilepage__modal-input"
+                  value={deleteConfirmText}
+                  onChange={e => { setDeleteConfirmText(e.target.value); setDeleteError(""); }}
+                  placeholder={user?.email}
+                  autoComplete="off"
+                />
+              </div>
+
+              <div className="profilepage__modal-field">
+                <label>Masukkan password kamu:</label>
+                <input
+                  type="password"
+                  className="profilepage__modal-input"
+                  value={deletePassword}
+                  onChange={e => { setDeletePassword(e.target.value); setDeleteError(""); }}
+                  placeholder="Password"
+                  autoComplete="off"
+                />
+              </div>
+
+              {deleteError && <p className="profilepage__modal-error">⚠️ {deleteError}</p>}
+
+              <div className="profilepage__modal-actions">
+                <button className="profilepage__modal-cancel" onClick={closeDeleteModal} disabled={deleting}>
+                  Batal
+                </button>
+                <button
+                  className="profilepage__modal-confirm"
+                  onClick={handleDeleteAccount}
+                  disabled={!canDelete}
+                >
+                  {deleting ? "Menghapus..." : "Hapus Akun Permanen"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

@@ -321,6 +321,119 @@
   margin: 0;
 }
 
+/* ── Danger Zone ── */
+.profilepage__danger {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed rgba(239, 68, 68, 0.35);
+}
+.profilepage__danger-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ef4444;
+  margin: 0 0 0.4rem 0;
+}
+.profilepage__danger-desc {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0 0 0.9rem 0;
+}
+.profilepage__danger-btn {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+}
+.profilepage__danger-btn:hover { background: rgba(239, 68, 68, 0.16); }
+
+/* ── Modal Konfirmasi Hapus Akun ── */
+.profilepage__modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+.profilepage__modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+.profilepage__modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ef4444;
+  margin: 0 0 0.6rem 0;
+}
+.profilepage__modal-desc {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0 0 1.1rem 0;
+}
+.profilepage__modal-field {
+  margin-bottom: 0.9rem;
+}
+.profilepage__modal-field label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 0.4rem;
+}
+.profilepage__modal-input {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.profilepage__modal-input:focus { outline: none; border-color: #ef4444; }
+.profilepage__modal-error {
+  font-size: 12px;
+  color: #ef4444;
+  margin: 0 0 0.9rem 0;
+}
+.profilepage__modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+.profilepage__modal-cancel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+}
+.profilepage__modal-cancel:hover { color: var(--text-primary); }
+.profilepage__modal-confirm {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: #ef4444;
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+}
+.profilepage__modal-confirm:hover { opacity: 0.9; }
+.profilepage__modal-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+
 /* ── Responsive ── */
 @media (max-width: 640px) {
   .profilepage__header { flex-direction: column; align-items: center; text-align: center; }

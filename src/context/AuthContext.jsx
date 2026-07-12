@@ -119,10 +119,32 @@ export function AuthProvider({ children }) {
   };
 
   // -------------------------------------------------------
+  // checkEmailExists — dipakai di step 1 "Lupa Password", biar ketauan dari awal
+  // kalau emailnya salah, sebelum user keburu ngetik password baru di step 2.
+  // -------------------------------------------------------
+  const checkEmailExists = async (email, mode) => {
+    return callAPI("/api/auth/update", { action: "checkEmail", email, mode }); // { success, message? }
+  };
+
+  // -------------------------------------------------------
   // resetPassword
   // -------------------------------------------------------
   const resetPassword = async (email, mode, newPassword) => {
     const result = await callAPI("/api/auth/update", { action: "resetPassword", email, mode, newPassword });
+    return result; // { success, message? }
+  };
+
+  // -------------------------------------------------------
+  // deleteAccount — hapus akun & SEMUA datanya secara permanen. Nggak bisa dibatalin.
+  // Butuh password buat konfirmasi (dicek ulang di server, bukan cuma di sisi frontend).
+  // -------------------------------------------------------
+  const deleteAccount = async (password) => {
+    const token  = getToken();
+    const result = await callAPI("/api/auth/update", { action: "deleteAccount", password }, token);
+    if (result.success) {
+      removeToken();
+      setUser(null);
+    }
     return result; // { success, message? }
   };
 
@@ -135,7 +157,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, register, login, logout, updateName, resetPassword, getToken }}>
+    <AuthContext.Provider value={{ user, loading, register, login, logout, updateName, checkEmailExists, resetPassword, deleteAccount, getToken }}>
       {children}
     </AuthContext.Provider>
   );

@@ -95,3 +95,10 @@
   border-radius: 999px;
   border: 1px solid var(--border);
 }
+
+.txform__cat-empty {
+  padding: 0.7rem 0.85rem;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}

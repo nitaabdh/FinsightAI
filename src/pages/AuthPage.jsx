@@ -5,7 +5,7 @@ import "./AuthPage.css";
 
 export default function AuthPage() {
   const { mode } = useParams();
-  const { register, login, resetPassword } = useAuth();
+  const { register, login, checkEmailExists, resetPassword } = useAuth();
   const navigate = useNavigate();
 
   const [tab, setTab]         = useState("login");
@@ -66,10 +66,13 @@ export default function AuthPage() {
 
   // ── Lupa Password Logic ───────────────────
   const handleForgotStep1 = async () => {
-  if (!forgotEmail) { setError("Masukkan email kamu."); return; }
-  // langsung lanjut ke step 2, validasi email ada/tidak saat reset
-  setError("");
-  setForgotStep(2);
+    if (!forgotEmail) { setError("Masukkan email kamu."); return; }
+    setError("");
+    setLoading(true);
+    const result = await checkEmailExists(forgotEmail.trim(), mode);
+    setLoading(false);
+    if (!result.success) { setError(result.message); return; }
+    setForgotStep(2);
   };
 
  const handleForgotStep2 = async () => {
@@ -127,13 +130,13 @@ export default function AuthPage() {
                   />
                 </div>
                 {error && <div className="auth__error animate-fadeIn">⚠️ {error}</div>}
-                <button className={"auth__submit auth__submit--" + accent} onClick={handleForgotStep1}>
-                  Cek Email →
+                <button className={"auth__submit auth__submit--" + accent} onClick={handleForgotStep1} disabled={loading}>
+                  {loading ? "Mengecek..." : "Cek Email →"}
                 </button>
               </>
             ) : (
               <>
-                <p className="auth__forgot-hint">Buat password baru untuk <strong>{forgotEmail}</strong>. Kalau email ini nggak terdaftar, kamu akan diberi tahu setelah submit.</p>
+                <p className="auth__forgot-hint">Buat password baru untuk <strong>{forgotEmail}</strong>.</p>
                 <div className="auth__field">
                   <label className="auth__label">Password Baru</label>
                   <div className="auth__input-wrap">
