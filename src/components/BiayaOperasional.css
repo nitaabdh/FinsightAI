@@ -84,9 +84,9 @@
 }
 
 .biayaops__error {
-  background: rgba(239,68,68,0.1);
-  border: 1px solid rgba(239,68,68,0.25);
-  color: #f87171;
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-dim);
+  color: var(--danger);
   font-size: 13px;
   padding: 0.6rem 0.9rem;
   border-radius: var(--radius-sm);
@@ -101,7 +101,7 @@
   font-size: 13px;
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(135deg, #d97706, #f59e0b);
+  background: linear-gradient(135deg, var(--accent-umkm), var(--accent-umkm));
   box-shadow: 0 4px 16px var(--accent-umkm-glow);
   transition: var(--transition);
 }
@@ -126,12 +126,12 @@
   font-family: var(--font-display);
   font-size: 13px;
   font-weight: 600;
-  color: #f87171;
-  background: rgba(239,68,68,0.15);
-  border: 1px solid rgba(239,68,68,0.3);
+  color: var(--danger);
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-dim);
   transition: var(--transition);
 }
-.biayaops__btn-danger:hover { background: rgba(239,68,68,0.25); }
+.biayaops__btn-danger:hover { background: var(--danger-dim); }
 
 /* List */
 .biayaops__list {
@@ -196,7 +196,7 @@
   color: var(--text-muted);
 }
 .biayaops__edit:hover { background: rgba(129,140,248,0.1); color: var(--accent-ai); }
-.biayaops__del:hover  { background: rgba(239,68,68,0.1); color: #f87171; }
+.biayaops__del:hover  { background: var(--danger-dim); color: var(--danger); }
 
 /* Modal */
 .biayaops__modal-overlay {

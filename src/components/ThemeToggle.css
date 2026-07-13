@@ -17,8 +17,8 @@
   position: relative;
   width: 52px;
   height: 28px;
-  background: #1e293b;
-  border-radius: 14px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
   flex-shrink: 0;
   transition: background var(--transition-slow);
   border: 1px solid rgba(255,255,255,0.1);
@@ -50,14 +50,14 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #818cf8;
+  background: var(--accent-ai);
   transition: transform var(--transition-slow), background var(--transition-slow);
   box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 
 .theme-toggle__thumb--light {
   transform: translateX(24px);
-  background: #f59e0b;
+  background: var(--accent-umkm);
 }
 
 /* Label */

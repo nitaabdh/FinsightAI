@@ -31,7 +31,7 @@
   font-size: 13px;
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(135deg, #059669, #10b981);
+  background: linear-gradient(135deg, var(--success), var(--success));
   box-shadow: 0 4px 16px var(--accent-personal-glow);
   transition: var(--transition);
 }
@@ -62,11 +62,11 @@
   font-weight: 800;
   color: var(--text-primary);
 }
-.lapper__summary-card--income .lapper__summary-value  { color: #10b981; }
-.lapper__summary-card--expense .lapper__summary-value { color: #ef4444; }
-.lapper__summary-card--positive .lapper__summary-value { color: #10b981; }
-.lapper__summary-card--negative .lapper__summary-value { color: #ef4444; }
-.lapper__summary-card--wallet .lapper__summary-value { color: #3b82f6; }
+.lapper__summary-card--income .lapper__summary-value  { color: var(--success); }
+.lapper__summary-card--expense .lapper__summary-value { color: var(--danger); }
+.lapper__summary-card--positive .lapper__summary-value { color: var(--success); }
+.lapper__summary-card--negative .lapper__summary-value { color: var(--danger); }
+.lapper__summary-card--wallet .lapper__summary-value { color: var(--info); }
 
 .lapper__card {
   background: var(--bg-card);
@@ -148,7 +148,7 @@
   font-size: 12px;
   padding: 0.5rem 0.6rem;
   background: var(--bg-secondary);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   color: var(--text-primary);
 }
 
@@ -166,13 +166,13 @@
 }
 .lapper__cat-bar {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--bg-secondary);
   overflow: hidden;
 }
-.lapper__cat-bar-fill { height: 100%; border-radius: 999px; }
-.lapper__cat-bar-fill--income  { background: #10b981; }
-.lapper__cat-bar-fill--expense { background: #ef4444; }
+.lapper__cat-bar-fill { height: 100%; border-radius: var(--radius-full); }
+.lapper__cat-bar-fill--income  { background: var(--success); }
+.lapper__cat-bar-fill--expense { background: var(--danger); }
 
 .lapper__wallet-grid {
   display: grid;
@@ -200,7 +200,7 @@
   color: var(--text-primary);
   margin: 0;
 }
-.lapper__wallet-item--neg .lapper__wallet-saldo { color: #ef4444; }
+.lapper__wallet-item--neg .lapper__wallet-saldo { color: var(--danger); }
 
 .lapper__skel-grid {
   display: grid;

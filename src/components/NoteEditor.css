@@ -38,7 +38,7 @@
 .ne-tool-btn {
   width: 30px;
   height: 30px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: none;
   background: transparent;
   color: var(--text-secondary);
@@ -51,7 +51,7 @@
 }
 
 .ne-tool-btn:hover { background: var(--bg-hover, #e5e7eb); color: var(--text-primary); }
-.ne-tool-btn.active { background: var(--accent-personal, #059669); color: #fff; }
+.ne-tool-btn.active { background: var(--accent-personal, var(--success)); color: #fff; }
 
 .ne-icon { font-size: 13px; font-weight: 700; line-height: 1; font-family: var(--font-display); }
 .ne-icon--bold          { font-weight: 900; }

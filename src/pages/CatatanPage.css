@@ -67,9 +67,9 @@
 .tab-btn:hover { color: var(--text-primary); }
 
 .tab-btn.active {
-  background: var(--accent-personal, #059669);
+  background: var(--accent-personal, var(--success));
   color: #fff;
-  box-shadow: 0 2px 8px rgba(5,150,105,0.35);
+  box-shadow: 0 2px 8px var(--success-dim);
 }
 
 .tab-badge {
@@ -77,11 +77,11 @@
   font-size: 11px;
   font-weight: 700;
   padding: 1px 6px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 
 .tab-btn:not(.active) .tab-badge {
-  background: var(--accent-personal, #059669);
+  background: var(--accent-personal, var(--success));
   color: #fff;
 }
 
@@ -128,9 +128,9 @@
 }
 
 .cal-nav-btn:hover {
-  background: var(--accent-personal, #059669);
+  background: var(--accent-personal, var(--success));
   color: #fff;
-  border-color: var(--accent-personal, #059669);
+  border-color: var(--accent-personal, var(--success));
 }
 
 .cal-title {
@@ -141,7 +141,7 @@
   margin: 0;
 }
 
-.cal-year { color: var(--accent-personal, #059669); font-weight: 500; }
+.cal-year { color: var(--accent-personal, var(--success)); font-weight: 500; }
 
 .cal-grid {
   display: grid;
@@ -175,12 +175,12 @@
 
 .cal-cell.empty { background: var(--bg-secondary); cursor: default; }
 
-.cal-cell:not(.empty):hover { background: var(--bg-hover, rgba(5,150,105,0.05)); }
+.cal-cell:not(.empty):hover { background: var(--bg-hover, var(--success-dim)); }
 
-.cal-cell.today { background: rgba(5,150,105,0.07); }
+.cal-cell.today { background: var(--success-dim); }
 
 .cal-cell.has-notes {
-  box-shadow: inset 0 -3px 0 0 var(--accent-personal, #059669);
+  box-shadow: inset 0 -3px 0 0 var(--accent-personal, var(--success));
 }
 
 .cal-day-num {
@@ -191,7 +191,7 @@
 }
 
 .cal-cell.today .cal-day-num {
-  background: var(--accent-personal, #059669);
+  background: var(--accent-personal, var(--success));
   color: #fff;
   border-radius: 50%;
   width: 24px;
@@ -265,8 +265,8 @@
 }
 
 .notes-search:focus {
-  border-color: var(--accent-personal, #059669);
-  box-shadow: 0 0 0 3px rgba(5,150,105,0.1);
+  border-color: var(--accent-personal, var(--success));
+  box-shadow: 0 0 0 3px var(--success-dim);
 }
 
 .search-clear {
@@ -314,7 +314,7 @@
 }
 
 .view-btn.active {
-  background: var(--accent-personal, #059669);
+  background: var(--accent-personal, var(--success));
   color: #fff;
 }
 
@@ -328,13 +328,13 @@
   font-size: 13px;
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(135deg, #059669, #10b981);
-  box-shadow: 0 4px 16px rgba(5,150,105,0.3);
+  background: linear-gradient(135deg, var(--success), var(--success));
+  box-shadow: 0 4px 16px var(--success-dim);
   cursor: pointer;
   transition: var(--transition);
 }
 
-.add-note-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(5,150,105,0.4); }
+.add-note-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px var(--success-dim); }
 
 /* Empty */
 .notes-empty {
@@ -392,7 +392,7 @@
   color: rgba(0,0,0,0.5);
   background: rgba(0,0,0,0.08);
   padding: 2px 8px;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
 }
 
 .sticky-actions {
@@ -565,7 +565,7 @@
   transition: var(--transition);
 }
 
-.cn-close:hover { background: #fee2e2; color: #dc2626; }
+.cn-close:hover { background: #fee2e2; color: var(--danger); }
 
 /* Existing notes list */
 .cn-existing { padding: 13px 18px 0; }
@@ -605,7 +605,7 @@
   cursor: pointer;
   font-size: 13px;
   padding: 2px 4px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   transition: background 0.12s;
 }
 
@@ -619,7 +619,7 @@
 .cn-form-title {
   font-size: 11px;
   font-weight: 700;
-  color: var(--accent-personal, #059669);
+  color: var(--accent-personal, var(--success));
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -649,8 +649,8 @@
 
 .cn-input:focus,
 .cn-textarea:focus {
-  border-color: var(--accent-personal, #059669);
-  box-shadow: 0 0 0 3px rgba(5,150,105,0.1);
+  border-color: var(--accent-personal, var(--success));
+  box-shadow: 0 0 0 3px var(--success-dim);
   background: var(--bg-card);
 }
 
@@ -659,7 +659,7 @@
 
 .cat-chip {
   padding: 4px 11px;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   border: 1.5px solid var(--border);
   background: var(--bg-secondary);
   color: var(--text-secondary);
@@ -669,11 +669,11 @@
   transition: var(--transition);
 }
 
-.cat-chip:hover { border-color: var(--accent-personal, #059669); color: var(--accent-personal, #059669); }
+.cat-chip:hover { border-color: var(--accent-personal, var(--success)); color: var(--accent-personal, var(--success)); }
 
 .cat-chip.active {
-  background: var(--accent-personal, #059669);
-  border-color: var(--accent-personal, #059669);
+  background: var(--accent-personal, var(--success));
+  border-color: var(--accent-personal, var(--success));
   color: #fff;
   font-weight: 700;
 }
@@ -708,7 +708,7 @@
 
 .cn-btn-primary {
   padding: 8px 18px;
-  background: linear-gradient(135deg, #059669, #10b981);
+  background: linear-gradient(135deg, var(--success), var(--success));
   color: #fff;
   border: none;
   border-radius: var(--radius-sm, 8px);
@@ -719,7 +719,7 @@
   transition: var(--transition);
 }
 
-.cn-btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(5,150,105,0.4); }
+.cn-btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 14px var(--success-dim); }
 .cn-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .cn-btn-sec {
@@ -738,7 +738,7 @@
 
 .cn-btn-danger {
   padding: 8px 18px;
-  background: #dc2626;
+  background: var(--danger);
   color: #fff;
   border: none;
   border-radius: var(--radius-sm, 8px);
@@ -802,8 +802,8 @@
 .cal-cell.past .cal-day-num { color: var(--text-muted); }
 .cal-cell.past { opacity: 0.55; }
 .cal-cell.selected {
-  background: rgba(5,150,105,0.1);
-  outline: 2px solid var(--accent-personal, #059669);
+  background: var(--success-dim);
+  outline: 2px solid var(--accent-personal, var(--success));
   outline-offset: -2px;
 }
 
@@ -828,7 +828,7 @@
 
 .cal-filter-clear {
   padding: 4px 12px;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   border: 1.5px solid var(--border);
   background: var(--bg-secondary);
   color: var(--text-secondary);
@@ -838,8 +838,8 @@
 }
 
 .cal-filter-clear:hover {
-  border-color: var(--accent-personal, #059669);
-  color: var(--accent-personal, #059669);
+  border-color: var(--accent-personal, var(--success));
+  color: var(--accent-personal, var(--success));
 }
 
 .cal-cards-empty {
@@ -866,7 +866,7 @@
   padding: 14px 16px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-left: 4px solid var(--accent-personal, #059669);
+  border-left: 4px solid var(--accent-personal, var(--success));
   border-radius: var(--radius-md);
   transition: box-shadow 0.15s, opacity 0.15s;
 }
@@ -885,7 +885,7 @@
 }
 
 /* Hari ini */
-.cal-card--today { border-left-color: #f59e0b; background: rgba(245,158,11,0.04); }
+.cal-card--today { border-left-color: var(--accent-umkm); background: var(--accent-umkm-dim); }
 
 .cal-card__left { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
 
@@ -927,15 +927,15 @@
   font-family: var(--font-display);
   font-size: 12px;
   font-weight: 700;
-  color: var(--accent-personal, #059669);
-  background: rgba(5,150,105,0.1);
+  color: var(--accent-personal, var(--success));
+  background: var(--success-dim);
   padding: 3px 10px;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   white-space: nowrap;
 }
 
 .cal-card__countdown.past  { color: var(--text-muted);  background: var(--bg-secondary); }
-.cal-card__countdown.today { color: #f59e0b; background: rgba(245,158,11,0.12); }
+.cal-card__countdown.today { color: var(--accent-umkm); background: var(--accent-umkm-dim); }
 
 .cal-card__actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; }
 .cal-card:hover .cal-card__actions { opacity: 1; }
@@ -943,7 +943,7 @@
 .cal-card__btn {
   background: var(--bg-secondary);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 4px 7px;
   cursor: pointer;
   font-size: 12px;
@@ -958,7 +958,7 @@
   color: var(--text-muted);
   background: var(--bg-secondary);
   padding: 2px 8px;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   display: inline-block;
   margin-top: 3px;
 }
@@ -998,13 +998,13 @@
 .cn-existing-cd {
   font-size: 11px;
   font-weight: 700;
-  color: var(--accent-personal, #059669);
+  color: var(--accent-personal, var(--success));
   margin-left: auto;
   white-space: nowrap;
 }
 
 .cn-existing-cd.past  { color: var(--text-muted); }
-.cn-existing-cd.today { color: #f59e0b; }
+.cn-existing-cd.today { color: var(--accent-umkm); }
 
 /* ═══════════════════════════════════════════════
    TAB KALKULATOR
@@ -1023,8 +1023,8 @@
   justify-content: space-between;
   gap: 16px;
   padding: 18px 20px;
-  background: linear-gradient(135deg, rgba(5,150,105,0.08), rgba(16,185,129,0.04));
-  border: 1.5px solid rgba(5,150,105,0.2);
+  background: linear-gradient(135deg, var(--success-dim), var(--success-dim));
+  border: 1.5px solid var(--success-dim);
   border-radius: var(--radius-lg, 16px);
   flex-wrap: wrap;
 }
@@ -1045,7 +1045,7 @@
 
 .calc-tab-cta__btn {
   padding: 9px 20px;
-  background: linear-gradient(135deg, #059669, #10b981);
+  background: linear-gradient(135deg, var(--success), var(--success));
   color: #fff;
   border: none;
   border-radius: var(--radius-md);
@@ -1055,12 +1055,12 @@
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
-  box-shadow: 0 4px 14px rgba(5,150,105,0.3);
+  box-shadow: 0 4px 14px var(--success-dim);
 }
 
 .calc-tab-cta__btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(5,150,105,0.4);
+  box-shadow: 0 6px 20px var(--success-dim);
 }
 
 /* Catatan Perhitungan */
@@ -1136,13 +1136,13 @@
   font-size: 13px;
   cursor: pointer;
   padding: 2px 4px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   opacity: 0;
   transition: all 0.12s;
 }
 
 .calc-saved-card:hover .calc-saved-card__del { opacity: 1; }
-.calc-saved-card__del:hover { background: rgba(220,38,38,0.1); }
+.calc-saved-card__del:hover { background: var(--danger-dim); }
 
 .calc-saved-card__entries {
   padding: 10px 14px 8px;
@@ -1162,7 +1162,7 @@
   width: 16px;
   text-align: center;
   font-weight: 700;
-  color: var(--accent-personal, #059669);
+  color: var(--accent-personal, var(--success));
   font-size: 14px;
 }
 
@@ -1178,7 +1178,7 @@
   color: var(--text-muted);
   background: var(--bg-secondary);
   padding: 1px 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 
 .calc-saved-card__result {
@@ -1187,7 +1187,7 @@
   justify-content: space-between;
   padding: 8px 14px 10px;
   border-top: 1px solid var(--border);
-  background: rgba(5,150,105,0.04);
+  background: var(--success-dim);
 }
 
 .calc-saved-card__result span {
@@ -1202,7 +1202,7 @@
   font-family: var(--font-display);
   font-size: 16px;
   font-weight: 800;
-  color: var(--accent-personal, #059669);
+  color: var(--accent-personal, var(--success));
 }
 
 /* ── Riwayat Kalkulasi ───────────────────────────────────────────────────── */
@@ -1224,7 +1224,7 @@
   padding: 2px 4px;
 }
 
-.calc-history-clear:hover { color: #dc2626; }
+.calc-history-clear:hover { color: var(--danger); }
 
 .calc-history-list {
   display: flex;
@@ -1281,7 +1281,7 @@
 
 .note-popup {
   background: var(--bg-card);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   width: 100%;
   max-width: 580px;
   max-height: 85vh;
@@ -1330,7 +1330,7 @@
 .note-popup__del-btn,
 .note-popup__close {
   width: 30px; height: 30px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: none;
   background: rgba(0,0,0,0.08);
   cursor: pointer;
@@ -1341,7 +1341,7 @@
 }
 
 .note-popup__meta-btn:hover { background: rgba(0,0,0,0.15); }
-.note-popup__del-btn:hover  { background: rgba(220,38,38,0.2); }
+.note-popup__del-btn:hover  { background: var(--danger-dim); }
 .note-popup__close:hover    { background: rgba(0,0,0,0.15); }
 
 /* Meta panel — sudah di luar header berwarna, jadi ikut tema umum */
@@ -1400,9 +1400,9 @@
 .notes-add-icon-btn {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: none;
-  background: var(--accent-personal, #059669);
+  background: var(--accent-personal, var(--success));
   color: #fff;
   font-size: 18px;
   font-weight: 400;
@@ -1412,12 +1412,12 @@
   justify-content: center;
   transition: all 0.15s;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(5,150,105,0.3);
+  box-shadow: 0 2px 8px var(--success-dim);
 }
 
 .notes-add-icon-btn:hover {
   transform: scale(1.08);
-  box-shadow: 0 4px 14px rgba(5,150,105,0.4);
+  box-shadow: 0 4px 14px var(--success-dim);
 }
 
 /* Sticky card — klik seluruh card */

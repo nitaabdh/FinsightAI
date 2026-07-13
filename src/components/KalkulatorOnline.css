@@ -61,7 +61,7 @@
 .komarket__platform-btn--active {
   background: var(--accent-umkm-dim);
   color: var(--accent-umkm);
-  border-color: rgba(245,158,11,0.35);
+  border-color: var(--accent-umkm-dim);
 }
 
 /* Fee rows */
@@ -82,8 +82,8 @@
 }
 
 .komarket__fee-remove {
-  background: rgba(239,68,68,0.1);
-  color: #f87171;
+  background: var(--danger-dim);
+  color: var(--danger);
   border-radius: var(--radius-sm);
   width: 34px;
   height: 34px;
@@ -91,7 +91,7 @@
   display: flex; align-items: center; justify-content: center;
   transition: var(--transition);
 }
-.komarket__fee-remove:hover { background: rgba(239,68,68,0.2); }
+.komarket__fee-remove:hover { background: var(--danger-dim); }
 
 .komarket__empty-fee { font-size: 13px; color: var(--text-muted); font-style: italic; padding: 0.5rem 0; }
 
@@ -103,10 +103,10 @@
   font-weight: 700;
   color: var(--accent-umkm);
   background: var(--accent-umkm-dim);
-  border: 1px solid rgba(245,158,11,0.3);
+  border: 1px solid var(--accent-umkm-dim);
   transition: var(--transition);
 }
-.komarket__addfee:hover { background: rgba(245,158,11,0.18); }
+.komarket__addfee:hover { background: var(--accent-umkm-dim); }
 
 /* Mode toggle (dipakai 2x: mode utama & target mundur) */
 .komarket__mode-toggle {
@@ -164,12 +164,12 @@
   font-weight: 800;
   color: var(--accent-umkm);
 }
-.komarket__sum-row--final.komarket__sum-row--neg { color: #f87171; border-top-color: #f87171; }
+.komarket__sum-row--final.komarket__sum-row--neg { color: var(--danger); border-top-color: var(--danger); }
 
 .komarket__error {
-  background: rgba(239,68,68,0.1);
-  border: 1px solid rgba(239,68,68,0.25);
-  color: #f87171;
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-dim);
+  color: var(--danger);
   font-size: 13px;
   padding: 0.6rem 0.9rem;
   border-radius: var(--radius-sm);

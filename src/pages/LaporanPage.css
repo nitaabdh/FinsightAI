@@ -53,7 +53,7 @@
   font-size: 13px;
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(135deg, #d97706, #f59e0b);
+  background: linear-gradient(135deg, var(--accent-umkm), var(--accent-umkm));
   box-shadow: 0 4px 16px var(--accent-umkm-glow);
   transition: var(--transition);
 }
@@ -93,13 +93,13 @@
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
-.laporanpage__sum-card--income::before  { background: #10b981; }
-.laporanpage__sum-card--expense::before { background: #ef4444; }
+.laporanpage__sum-card--income::before  { background: var(--success); }
+.laporanpage__sum-card--expense::before { background: var(--danger); }
 .laporanpage__sum-card--profit::before  { background: var(--accent-umkm); }
-.laporanpage__sum-card--loss::before    { background: #ef4444; }
+.laporanpage__sum-card--loss::before    { background: var(--danger); }
 .laporanpage__sum-card--neutral::before { background: var(--accent-ai); }
-.laporanpage__sum-card--modal::before   { background: #3b82f6; }
-.laporanpage__sum-card--aset::before    { background: #8b5cf6; }
+.laporanpage__sum-card--modal::before   { background: var(--info); }
+.laporanpage__sum-card--aset::before    { background: var(--accent-ai); }
 
 .laporanpage__sum-label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
 
@@ -193,7 +193,7 @@
 }
 
 .laporanpage__chart-bar--income  { background: var(--accent-umkm); opacity: 0.85; }
-.laporanpage__chart-bar--expense { background: #ef4444; opacity: 0.6; }
+.laporanpage__chart-bar--expense { background: var(--danger); opacity: 0.6; }
 .laporanpage__chart-label { font-size: 10px; color: var(--text-muted); white-space: nowrap; }
 
 .laporanpage__chart-legend {
@@ -211,7 +211,7 @@
 }
 
 .laporanpage__legend-dot--income  { background: var(--accent-umkm); }
-.laporanpage__legend-dot--expense { background: #ef4444; opacity: 0.7; }
+.laporanpage__legend-dot--expense { background: var(--danger); opacity: 0.7; }
 
 /* Categories */
 .laporanpage__categories { display: flex; flex-direction: column; gap: 0.75rem; }
@@ -236,7 +236,7 @@
 
 .laporanpage__cat-fill {
   height: 100%;
-  background: linear-gradient(90deg, #d97706, #f59e0b);
+  background: linear-gradient(90deg, var(--accent-umkm), var(--accent-umkm));
   border-radius: 3px;
   transition: width 0.5s ease;
 }
@@ -311,8 +311,8 @@
   justify-self: start;
 }
 
-.laporanpage__pl-delta--naik  { color: #10b981; }
-.laporanpage__pl-delta--turun { color: #ef4444; }
+.laporanpage__pl-delta--naik  { color: var(--success); }
+.laporanpage__pl-delta--turun { color: var(--danger); }
 .laporanpage__pl-delta--tetap { color: var(--text-muted); }
 
 .laporanpage__pl-subgroup {
@@ -365,8 +365,8 @@
 
 .laporanpage__pl-table tbody tr:last-child td { border-bottom: none; }
 
-.laporanpage__pl-table-pos { color: #10b981 !important; font-weight: 600; }
-.laporanpage__pl-table-neg { color: #ef4444 !important; font-weight: 600; }
+.laporanpage__pl-table-pos { color: var(--success) !important; font-weight: 600; }
+.laporanpage__pl-table-neg { color: var(--danger) !important; font-weight: 600; }
 
 @media (max-width: 600px) {
   .laporanpage__pl-row { grid-template-columns: 1.2fr 1fr 1fr; font-size: 12px; }
@@ -511,7 +511,7 @@
   letter-spacing: 0.06em;
   color: var(--accent-umkm);
   background: var(--accent-umkm-dim);
-  border-bottom: 1px solid rgba(245,158,11,0.25);
+  border-bottom: 1px solid var(--accent-umkm-dim);
   padding-top: 0.7rem;
   padding-bottom: 0.35rem;
 }
@@ -524,7 +524,7 @@
 }
 
 .laporanpage__formal-grand {
-  background: rgba(245,158,11,0.08);
+  background: var(--accent-umkm-dim);
 }
 .laporanpage__formal-grand td {
   font-weight: 800;
@@ -535,7 +535,7 @@
   padding-top: 0.75rem;
   padding-bottom: 0.75rem;
 }
-.laporanpage__formal-grand--neg td { color: #f87171; border-top-color: #f87171; }
+.laporanpage__formal-grand--neg td { color: var(--danger); border-top-color: var(--danger); }
 
 .laporanpage__formal-empty {
   color: var(--text-muted);

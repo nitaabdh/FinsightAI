@@ -68,9 +68,9 @@
 }
 
 .txform__type-btn--active { background: var(--bg-card); color: var(--text-primary); }
-.txform__type-btn--pemasukan.txform__type-btn--active { color: #10b981; box-shadow: 0 0 0 1px #10b981; }
-.txform__type-btn--pengeluaran.txform__type-btn--active { color: #f87171; box-shadow: 0 0 0 1px #ef4444; }
-.txform__type-btn--transfer.txform__type-btn--active { color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6; }
+.txform__type-btn--pemasukan.txform__type-btn--active { color: var(--success); box-shadow: 0 0 0 1px var(--success); }
+.txform__type-btn--pengeluaran.txform__type-btn--active { color: var(--danger); box-shadow: 0 0 0 1px var(--danger); }
+.txform__type-btn--transfer.txform__type-btn--active { color: var(--info); box-shadow: 0 0 0 1px var(--info); }
 
 .txform__fields { display: flex; flex-direction: column; gap: 1rem; }
 
@@ -101,9 +101,9 @@
 .txform__input--personal:focus { border-color: var(--accent-personal); box-shadow: 0 0 0 3px var(--accent-personal-dim); }
 
 .txform__error {
-  background: rgba(239,68,68,0.1);
-  border: 1px solid rgba(239,68,68,0.25);
-  color: #f87171;
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-dim);
+  color: var(--danger);
   font-size: 13px;
   padding: 0.6rem 0.9rem;
   border-radius: var(--radius-sm);
@@ -133,8 +133,8 @@
   margin-top: 0.25rem;
 }
 
-.txform__submit--umkm     { background: linear-gradient(135deg, #d97706, #f59e0b); box-shadow: 0 4px 20px var(--accent-umkm-glow); }
-.txform__submit--personal { background: linear-gradient(135deg, #059669, #10b981); box-shadow: 0 4px 20px var(--accent-personal-glow); }
+.txform__submit--umkm     { background: linear-gradient(135deg, var(--accent-umkm), var(--accent-umkm)); box-shadow: 0 4px 20px var(--accent-umkm-glow); }
+.txform__submit--personal { background: linear-gradient(135deg, var(--success), var(--success)); box-shadow: 0 4px 20px var(--accent-personal-glow); }
 .txform__submit:hover { transform: translateY(-1px); }
 .txform__submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
 
@@ -179,8 +179,8 @@
 .txform__online-toggle input { width: 16px; height: 16px; accent-color: var(--accent-umkm); cursor: pointer; }
 
 .txform__online-box {
-  background: rgba(59,130,246,0.06);
-  border: 1px solid rgba(59,130,246,0.25);
+  background: var(--info-dim);
+  border: 1px solid var(--info-dim);
   border-radius: var(--radius-md);
   padding: 0.85rem 1rem;
   display: flex;
@@ -201,9 +201,9 @@
   white-space: nowrap;
 }
 .txform__online-platform-btn--active {
-  background: rgba(59,130,246,0.15);
-  color: #3b82f6;
-  border-color: rgba(59,130,246,0.4);
+  background: var(--info-dim);
+  color: var(--info);
+  border-color: var(--info-dim);
 }
 
 .txform__online-fee-row {
@@ -214,14 +214,14 @@
 }
 
 .txform__online-fee-remove {
-  background: rgba(239,68,68,0.1);
-  color: #f87171;
+  background: var(--danger-dim);
+  color: var(--danger);
   border-radius: var(--radius-sm);
   width: 30px; height: 30px;
   flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
 }
-.txform__online-fee-remove:hover { background: rgba(239,68,68,0.2); }
+.txform__online-fee-remove:hover { background: var(--danger-dim); }
 
 .txform__online-addfee {
   align-self: flex-start;
@@ -229,21 +229,21 @@
   border-radius: var(--radius-sm);
   font-size: 12px;
   font-weight: 700;
-  color: #3b82f6;
-  background: rgba(59,130,246,0.1);
-  border: 1px solid rgba(59,130,246,0.3);
+  color: var(--info);
+  background: var(--info-dim);
+  border: 1px solid var(--info-dim);
 }
-.txform__online-addfee:hover { background: rgba(59,130,246,0.18); }
+.txform__online-addfee:hover { background: var(--info-dim); }
 
 .txform__online-summary {
-  border-top: 1px dashed rgba(59,130,246,0.3);
+  border-top: 1px dashed var(--info-dim);
   padding-top: 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
 }
 .txform__online-sum-row { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--text-secondary); }
-.txform__online-sum-row--final { font-weight: 800; color: #3b82f6; font-size: 13.5px; }
+.txform__online-sum-row--final { font-weight: 800; color: var(--info); font-size: 13.5px; }
 
 @media (max-width: 420px) {
   .txform__online-fee-row { grid-template-columns: 1fr 50px 75px auto; gap: 0.3rem; }

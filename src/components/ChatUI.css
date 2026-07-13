@@ -43,7 +43,7 @@
 .chat__suggestion {
   font-size: 12px;
   padding: 0.4rem 0.9rem;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   color: var(--text-secondary);
@@ -103,13 +103,13 @@
 }
 
 .chat__bubble--assistant.chat__bubble--umkm {
-  background: rgba(245,158,11,0.06);
-  border-color: rgba(245,158,11,0.2);
+  background: var(--accent-umkm-dim);
+  border-color: var(--accent-umkm-dim);
 }
 
 .chat__bubble--assistant.chat__bubble--personal {
-  background: rgba(16,185,129,0.06);
-  border-color: rgba(16,185,129,0.2);
+  background: var(--success-dim);
+  border-color: var(--success-dim);
 }
 
 /* Tool chips */
@@ -123,7 +123,7 @@
 .chat__tool-chip {
   font-size: 11px;
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--accent-ai-dim);
   color: var(--accent-ai);
   border: 1px solid rgba(129,140,248,0.3);
@@ -222,8 +222,8 @@
 .chat__mic--listening { animation: mic-pulse 1.2s ease-in-out infinite; }
 
 @keyframes mic-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.35); }
-  50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+  0%, 100% { box-shadow: 0 0 0 0 var(--danger-dim); }
+  50% { box-shadow: 0 0 0 6px var(--danger-dim); }
 }
 
 .chat__send {
@@ -238,8 +238,8 @@
   justify-content: center;
 }
 
-.chat__send--umkm     { background: linear-gradient(135deg, #d97706, #f59e0b); }
-.chat__send--personal { background: linear-gradient(135deg, #059669, #10b981); }
+.chat__send--umkm     { background: linear-gradient(135deg, var(--accent-umkm), var(--accent-umkm)); }
+.chat__send--personal { background: linear-gradient(135deg, var(--success), var(--success)); }
 .chat__send:hover:not(:disabled) { transform: scale(1.05); }
 .chat__send:disabled { opacity: 0.4; cursor: not-allowed; }
 

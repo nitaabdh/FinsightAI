@@ -53,9 +53,9 @@
 .supplier__input:focus { border-color: var(--accent-umkm); box-shadow: 0 0 0 3px var(--accent-umkm-dim); }
 
 .supplier__error {
-  background: rgba(239,68,68,0.1);
-  border: 1px solid rgba(239,68,68,0.25);
-  color: #f87171;
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-dim);
+  color: var(--danger);
   font-size: 13px;
   padding: 0.6rem 0.9rem;
   border-radius: var(--radius-sm);
@@ -70,7 +70,7 @@
   font-size: 13px;
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(135deg, #d97706, #f59e0b);
+  background: linear-gradient(135deg, var(--accent-umkm), var(--accent-umkm));
   box-shadow: 0 4px 16px var(--accent-umkm-glow);
   transition: var(--transition);
 }
@@ -95,12 +95,12 @@
   font-family: var(--font-display);
   font-size: 13px;
   font-weight: 600;
-  color: #f87171;
-  background: rgba(239,68,68,0.15);
-  border: 1px solid rgba(239,68,68,0.3);
+  color: var(--danger);
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-dim);
   transition: var(--transition);
 }
-.supplier__btn-danger:hover { background: rgba(239,68,68,0.25); }
+.supplier__btn-danger:hover { background: var(--danger-dim); }
 
 /* Filters */
 .supplier__filters { display: flex; flex-wrap: wrap; gap: 0.65rem; }
@@ -165,14 +165,14 @@
   color: var(--text-muted);
 }
 .supplier__edit:hover { background: rgba(129,140,248,0.1); color: var(--accent-ai); }
-.supplier__del:hover  { background: rgba(239,68,68,0.1); color: #f87171; }
+.supplier__del:hover  { background: var(--danger-dim); color: var(--danger); }
 
 .supplier__badge {
   align-self: flex-start;
   font-size: 11px;
   font-weight: 500;
   padding: 2px 10px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--accent-umkm-dim);
   color: var(--accent-umkm);
 }
@@ -190,11 +190,11 @@
 }
 
 .supplier__link--wa {
-  background: rgba(16,185,129,0.12);
-  color: #10b981;
-  border: 1px solid rgba(16,185,129,0.25);
+  background: var(--success-dim);
+  color: var(--success);
+  border: 1px solid var(--success-dim);
 }
-.supplier__link--wa:hover { background: rgba(16,185,129,0.2); }
+.supplier__link--wa:hover { background: var(--success-dim); }
 
 .supplier__link--market {
   background: rgba(129,140,248,0.12);

@@ -65,7 +65,7 @@
 
 .apikey__error {
   font-size: 12px;
-  color: #f87171;
+  color: var(--danger);
   align-self: flex-start;
 }
 
@@ -81,6 +81,6 @@
   margin-top: 0.25rem;
 }
 
-.apikey__btn--umkm     { background: linear-gradient(135deg, #d97706, #f59e0b); box-shadow: 0 4px 16px var(--accent-umkm-glow); }
-.apikey__btn--personal { background: linear-gradient(135deg, #059669, #10b981); box-shadow: 0 4px 16px var(--accent-personal-glow); }
+.apikey__btn--umkm     { background: linear-gradient(135deg, var(--accent-umkm), var(--accent-umkm)); box-shadow: 0 4px 16px var(--accent-umkm-glow); }
+.apikey__btn--personal { background: linear-gradient(135deg, var(--success), var(--success)); box-shadow: 0 4px 16px var(--accent-personal-glow); }
 .apikey__btn:hover { transform: translateY(-1px); }

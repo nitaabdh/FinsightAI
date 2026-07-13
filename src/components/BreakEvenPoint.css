@@ -125,9 +125,9 @@
 
 /* Warning (margin negatif) */
 .bep__warning {
-  background: rgba(239,68,68,0.1);
-  border: 1px solid rgba(239,68,68,0.25);
-  color: #f87171;
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-dim);
+  color: var(--danger);
   font-size: 13px;
   line-height: 1.6;
   padding: 0.85rem 1rem;

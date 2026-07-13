@@ -58,7 +58,7 @@
 .float-calc__label-btn {
   background: var(--bg-hover, #e5e7eb);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   width: 26px; height: 26px;
   cursor: pointer;
   font-size: 12px;
@@ -70,12 +70,12 @@
 }
 
 .float-calc__label-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-@media (hover: hover) { .float-calc__label-btn:not(:disabled):hover { background: rgba(99,102,241,0.15); color: #6366f1; } }
+@media (hover: hover) { .float-calc__label-btn:not(:disabled):hover { background: rgba(99,102,241,0.15); color: var(--accent-ai); } }
 
 .float-calc__close {
   background: var(--bg-hover, #e5e7eb);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   width: 24px; height: 24px;
   cursor: pointer;
   font-size: 11px;
@@ -84,7 +84,7 @@
   transition: all 0.12s;
 }
 
-@media (hover: hover) { .float-calc__close:hover { background: #fee2e2; color: #dc2626; } }
+@media (hover: hover) { .float-calc__close:hover { background: #fee2e2; color: var(--danger); } }
 .float-calc__close { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 
 /* ── Entries ─────────────────────────────────────────────────────────────── */
@@ -109,7 +109,7 @@
   width: 14px;
   text-align: center;
   font-weight: 700;
-  color: var(--accent-personal, #059669);
+  color: var(--accent-personal, var(--success));
 }
 
 .float-calc__entry-val { font-weight: 600; color: var(--text-primary); }
@@ -119,7 +119,7 @@
   color: var(--text-muted);
   background: var(--bg-secondary);
   padding: 1px 6px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -137,7 +137,7 @@
 .float-calc__op-indicator {
   font-size: 13px;
   font-weight: 700;
-  color: var(--accent-personal, #059669);
+  color: var(--accent-personal, var(--success));
   min-height: 16px;
 }
 
@@ -154,7 +154,7 @@
   transition: color 0.15s;
 }
 
-.float-calc__value.result { color: var(--accent-personal, #059669); }
+.float-calc__value.result { color: var(--accent-personal, var(--success)); }
 
 /* ── Label input ─────────────────────────────────────────────────────────── */
 .float-calc__label-input {
@@ -162,14 +162,14 @@
   align-items: center;
   gap: 4px;
   padding: 6px 10px;
-  background: rgba(5,150,105,0.06);
+  background: var(--success-dim);
   border-bottom: 1px solid var(--border);
 }
 
 .float-calc__label-input input {
   flex: 1;
   padding: 5px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--bg-card);
   color: var(--text-primary);
@@ -179,12 +179,12 @@
 }
 
 .float-calc__label-input input:focus {
-  border-color: var(--accent-personal, #059669);
+  border-color: var(--accent-personal, var(--success));
 }
 
 .float-calc__label-input button {
   width: 26px; height: 26px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: none;
   font-size: 13px;
   cursor: pointer;
@@ -193,7 +193,7 @@
 }
 
 .float-calc__label-input button:first-of-type {
-  background: var(--accent-personal, #059669);
+  background: var(--accent-personal, var(--success));
   color: #fff;
 }
 
@@ -218,7 +218,7 @@
 
 .calc-btn {
   height: 52px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--bg-secondary);
   color: var(--text-primary);
@@ -242,34 +242,34 @@
 .calc-btn:active { transform: scale(0.94); transition: transform 0.08s; }
 
 /* Focus hanya untuk keyboard (bukan touch) */
-.calc-btn:focus-visible { outline: 2px solid var(--accent-personal, #059669); outline-offset: 2px; }
+.calc-btn:focus-visible { outline: 2px solid var(--accent-personal, var(--success)); outline-offset: 2px; }
 
 .calc-btn--op {
-  background: rgba(5,150,105,0.1);
-  color: var(--accent-personal, #059669);
-  border-color: rgba(5,150,105,0.2);
+  background: var(--success-dim);
+  color: var(--accent-personal, var(--success));
+  border-color: var(--success-dim);
   font-size: 17px;
 }
 
-@media (hover: hover) { .calc-btn--op:hover { background: rgba(5,150,105,0.18); } }
+@media (hover: hover) { .calc-btn--op:hover { background: var(--success-dim); } }
 
 .calc-btn--eq {
-  background: linear-gradient(135deg, #059669, #10b981);
+  background: linear-gradient(135deg, var(--success), var(--success));
   color: #fff;
   border-color: transparent;
   font-size: 17px;
-  box-shadow: 0 2px 8px rgba(5,150,105,0.3);
+  box-shadow: 0 2px 8px var(--success-dim);
 }
 
-@media (hover: hover) { .calc-btn--eq:hover { box-shadow: 0 4px 14px rgba(5,150,105,0.4); } }
+@media (hover: hover) { .calc-btn--eq:hover { box-shadow: 0 4px 14px var(--success-dim); } }
 
 .calc-btn--clear {
-  background: rgba(220,38,38,0.1);
-  color: #dc2626;
-  border-color: rgba(220,38,38,0.2);
+  background: var(--danger-dim);
+  color: var(--danger);
+  border-color: var(--danger-dim);
 }
 
-@media (hover: hover) { .calc-btn--clear:hover { background: rgba(220,38,38,0.18); } }
+@media (hover: hover) { .calc-btn--clear:hover { background: var(--danger-dim); } }
 
 .calc-btn--back {
   background: var(--bg-secondary);
@@ -286,7 +286,7 @@
   font-size: 11px;
   font-weight: 700;
   background: rgba(99,102,241,0.1);
-  color: #6366f1;
+  color: var(--accent-ai);
   border-color: rgba(99,102,241,0.2);
   letter-spacing: -0.02em;
 }
@@ -301,7 +301,7 @@
 .float-calc__save-btn {
   width: 100%;
   padding: 9px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   border: none;
   background: var(--bg-secondary);
   color: var(--text-secondary);
@@ -314,9 +314,9 @@
 }
 
 .float-calc__save-btn:not(:disabled):hover {
-  background: rgba(5,150,105,0.1);
-  color: var(--accent-personal, #059669);
-  border-color: var(--accent-personal, #059669);
+  background: var(--success-dim);
+  color: var(--accent-personal, var(--success));
+  border-color: var(--accent-personal, var(--success));
 }
 
 .float-calc__save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -351,7 +351,7 @@
   transition: color 0.12s;
 }
 
-.float-calc__history-header button:hover { color: #dc2626; }
+.float-calc__history-header button:hover { color: var(--danger); }
 
 .float-calc__history-list {
   display: flex;
@@ -364,7 +364,7 @@
 .float-calc__history-item {
   padding: 5px 8px;
   background: var(--bg-secondary);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 11px;
   color: var(--text-secondary);
   font-family: monospace;
@@ -414,14 +414,14 @@
 }
 
 .float-calc__save-result strong {
-  color: var(--accent-personal, #059669);
+  color: var(--accent-personal, var(--success));
   font-size: 15px;
 }
 
 .float-calc__save-input {
   width: 100%;
   padding: 8px 11px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--bg-secondary);
   color: var(--text-primary);
@@ -433,8 +433,8 @@
 }
 
 .float-calc__save-input:focus {
-  border-color: var(--accent-personal, #059669);
-  box-shadow: 0 0 0 3px rgba(5,150,105,0.1);
+  border-color: var(--accent-personal, var(--success));
+  box-shadow: 0 0 0 3px var(--success-dim);
 }
 
 .float-calc__save-actions {
@@ -445,10 +445,10 @@
 
 .fc-btn-primary {
   padding: 7px 16px;
-  background: linear-gradient(135deg, #059669, #10b981);
+  background: linear-gradient(135deg, var(--success), var(--success));
   color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-family: var(--font-display);
   font-size: 13px;
   font-weight: 700;
@@ -456,14 +456,14 @@
   transition: all 0.12s;
 }
 
-.fc-btn-primary:hover { box-shadow: 0 4px 12px rgba(5,150,105,0.35); }
+.fc-btn-primary:hover { box-shadow: 0 4px 12px var(--success-dim); }
 
 .fc-btn-sec {
   padding: 7px 14px;
   background: var(--bg-secondary);
   color: var(--text-secondary);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 13px;
   cursor: pointer;
   transition: all 0.12s;
@@ -481,7 +481,7 @@
   .calc-btn {
     height: 58px;
     font-size: 17px;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
   }
 
   .calc-btn--op,

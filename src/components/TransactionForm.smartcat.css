@@ -29,24 +29,24 @@
   font-size: 10px;
   font-weight: 700;
   padding: 0.15rem 0.45rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   pointer-events: none;
 }
 
 .txform__cat-badge--new {
-  background: rgba(245, 158, 11, 0.15);
+  background: var(--accent-umkm-dim);
   color: #b45309;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  border: 1px solid var(--accent-umkm-dim);
 }
 
 .txform__cat-badge--exists {
-  background: rgba(16, 185, 129, 0.15);
-  color: #059669;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: var(--success-dim);
+  color: var(--success);
+  border: 1px solid var(--success-dim);
 }
 
 .txform__input--custom-cat {
-  border-color: rgba(245, 158, 11, 0.5) !important;
+  border-color: var(--accent-umkm-dim) !important;
 }
 
 .txform__cat-dropdown {
@@ -92,7 +92,7 @@
   color: var(--text-muted);
   background: var(--bg-secondary);
   padding: 0.1rem 0.4rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   border: 1px solid var(--border);
 }
 

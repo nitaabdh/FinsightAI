@@ -22,8 +22,8 @@
 
 .metric-card--umkm::before     { background: var(--accent-umkm); }
 .metric-card--personal::before { background: var(--accent-personal); }
-.metric-card--positive::before { background: #10b981; }
-.metric-card--negative::before { background: #ef4444; }
+.metric-card--positive::before { background: var(--success); }
+.metric-card--negative::before { background: var(--danger); }
 
 .metric-card:hover { border-color: var(--border-light); transform: translateY(-2px); }
 .metric-card:hover::before { opacity: 1; }

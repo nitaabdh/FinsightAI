@@ -3,7 +3,7 @@
 /* Total nilai aset */
 .asetusaha__total {
   background: var(--accent-umkm-dim);
-  border: 1px solid rgba(245,158,11,0.25);
+  border: 1px solid var(--accent-umkm-dim);
   border-radius: var(--radius-lg);
   padding: 0.85rem 1.25rem;
   display: flex;
@@ -74,9 +74,9 @@
 .asetusaha__input:focus { border-color: var(--accent-umkm); box-shadow: 0 0 0 3px var(--accent-umkm-dim); }
 
 .asetusaha__error {
-  background: rgba(239,68,68,0.1);
-  border: 1px solid rgba(239,68,68,0.25);
-  color: #f87171;
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-dim);
+  color: var(--danger);
   font-size: 13px;
   padding: 0.6rem 0.9rem;
   border-radius: var(--radius-sm);
@@ -91,7 +91,7 @@
   font-size: 13px;
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(135deg, #d97706, #f59e0b);
+  background: linear-gradient(135deg, var(--accent-umkm), var(--accent-umkm));
   box-shadow: 0 4px 16px var(--accent-umkm-glow);
   transition: var(--transition);
 }
@@ -116,12 +116,12 @@
   font-family: var(--font-display);
   font-size: 13px;
   font-weight: 600;
-  color: #f87171;
-  background: rgba(239,68,68,0.15);
-  border: 1px solid rgba(239,68,68,0.3);
+  color: var(--danger);
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-dim);
   transition: var(--transition);
 }
-.asetusaha__btn-danger:hover { background: rgba(239,68,68,0.25); }
+.asetusaha__btn-danger:hover { background: var(--danger-dim); }
 
 /* Filters */
 .asetusaha__filters {
@@ -181,7 +181,7 @@
   background: var(--accent-umkm-dim);
   color: var(--accent-umkm);
   padding: 1px 7px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font-size: 11px;
   font-weight: 500;
 }
@@ -206,13 +206,13 @@
   font-size: 10px;
   font-weight: 700;
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   white-space: nowrap;
 }
 
-.asetusaha__badge--baik        { background: rgba(16,185,129,0.15); color: #10b981; }
-.asetusaha__badge--rusakRingan { background: rgba(245,158,11,0.15); color: var(--accent-umkm); }
-.asetusaha__badge--rusakBerat  { background: rgba(239,68,68,0.15); color: #f87171; }
+.asetusaha__badge--baik        { background: var(--success-dim); color: var(--success); }
+.asetusaha__badge--rusakRingan { background: var(--accent-umkm-dim); color: var(--accent-umkm); }
+.asetusaha__badge--rusakBerat  { background: var(--danger-dim); color: var(--danger); }
 
 .asetusaha__item-actions {
   display: flex;
@@ -229,7 +229,7 @@
   color: var(--text-muted);
 }
 .asetusaha__item-edit:hover { background: rgba(129,140,248,0.1); color: var(--accent-ai); }
-.asetusaha__item-del:hover  { background: rgba(239,68,68,0.1); color: #f87171; }
+.asetusaha__item-del:hover  { background: var(--danger-dim); color: var(--danger); }
 
 /* Modal */
 .asetusaha__modal-overlay {
@@ -265,11 +265,11 @@
 .asetusaha__modal-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 1.25rem; }
 .asetusaha__del-reason { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1rem; }
 .asetusaha__del-reason-btn {
-  padding: 10px; border-radius: 10px; border: 1px solid var(--border-color, #e5e7eb);
+  padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color, #e5e7eb);
   background: var(--bg-secondary, #f8f9fa); color: var(--text-primary); font-size: 13px; font-weight: 600;
   cursor: pointer; transition: all .15s;
 }
-.asetusaha__del-reason-btn--active { border-color: var(--umkm-accent, #6366f1); background: var(--umkm-accent, #6366f1); color: #fff; }
+.asetusaha__del-reason-btn--active { border-color: var(--umkm-accent, var(--accent-ai)); background: var(--umkm-accent, var(--accent-ai)); color: #fff; }
 .asetusaha__checkbox-row { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.5; cursor: pointer; }
 .asetusaha__checkbox-row input { margin-top: 2px; flex-shrink: 0; }
 

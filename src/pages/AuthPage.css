@@ -24,8 +24,8 @@
   transform: translate(-50%, -50%);
 }
 
-.auth__orb--umkm     { background: radial-gradient(circle, #f59e0b, transparent); }
-.auth__orb--personal { background: radial-gradient(circle, #10b981, transparent); }
+.auth__orb--umkm     { background: radial-gradient(circle, var(--accent-umkm), transparent); }
+.auth__orb--personal { background: radial-gradient(circle, var(--success), transparent); }
 
 .auth__grid {
   position: absolute;
@@ -83,20 +83,20 @@
   font-size: 12px;
   font-weight: 500;
   padding: 0.3rem 0.8rem;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   margin-bottom: 1rem;
 }
 
 .auth__mode-badge--umkm {
   background: var(--accent-umkm-dim);
   color: var(--accent-umkm);
-  border: 1px solid rgba(245,158,11,0.25);
+  border: 1px solid var(--accent-umkm-dim);
 }
 
 .auth__mode-badge--personal {
   background: var(--accent-personal-dim);
   color: var(--accent-personal);
-  border: 1px solid rgba(16,185,129,0.25);
+  border: 1px solid var(--success-dim);
 }
 
 .auth__logo {
@@ -175,9 +175,9 @@
 .auth__input--personal:focus { border-color: var(--accent-personal); box-shadow: 0 0 0 3px var(--accent-personal-dim); }
 
 .auth__error {
-  background: rgba(239,68,68,0.1);
-  border: 1px solid rgba(239,68,68,0.25);
-  color: #f87171;
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-dim);
+  color: var(--danger);
   font-size: 13px;
   padding: 0.6rem 0.9rem;
   border-radius: var(--radius-sm);
@@ -199,7 +199,7 @@
 .auth__submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .auth__submit--umkm {
-  background: linear-gradient(135deg, #d97706, #f59e0b);
+  background: linear-gradient(135deg, var(--accent-umkm), var(--accent-umkm));
   box-shadow: 0 4px 20px var(--accent-umkm-glow);
 }
 
@@ -209,7 +209,7 @@
 }
 
 .auth__submit--personal {
-  background: linear-gradient(135deg, #059669, #10b981);
+  background: linear-gradient(135deg, var(--success), var(--success));
   box-shadow: 0 4px 20px var(--accent-personal-glow);
 }
 
@@ -281,9 +281,9 @@
 
 /* Success message */
 .auth__success {
-  background: rgba(16,185,129,0.1);
-  border: 1px solid rgba(16,185,129,0.25);
-  color: #10b981;
+  background: var(--success-dim);
+  border: 1px solid var(--success-dim);
+  color: var(--success);
   font-size: 13px;
   padding: 0.6rem 0.9rem;
   border-radius: var(--radius-sm);

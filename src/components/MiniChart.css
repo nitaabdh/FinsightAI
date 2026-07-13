@@ -48,7 +48,7 @@
 
 .mini-chart__bar--income.mini-chart__bar--umkm     { background: var(--accent-umkm); opacity: 0.85; }
 .mini-chart__bar--income.mini-chart__bar--personal { background: var(--accent-personal); opacity: 0.85; }
-.mini-chart__bar--expense { background: #ef4444; opacity: 0.6; }
+.mini-chart__bar--expense { background: var(--danger); opacity: 0.6; }
 
 .mini-chart__label {
   font-size: 10px;
@@ -73,4 +73,4 @@
 
 .mini-chart__legend-dot--umkm     { background: var(--accent-umkm); }
 .mini-chart__legend-dot--personal { background: var(--accent-personal); }
-.mini-chart__legend-dot--expense  { background: #ef4444; opacity: 0.7; }
+.mini-chart__legend-dot--expense  { background: var(--danger); opacity: 0.7; }

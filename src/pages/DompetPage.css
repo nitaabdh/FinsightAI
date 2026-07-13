@@ -12,7 +12,7 @@
   --accent-umkm:      var(--accent-personal);
   --accent-umkm-dim:  var(--accent-personal-dim);
   --accent-umkm-glow: var(--accent-personal-glow);
-  --dompet-btn-gradient: linear-gradient(135deg, #059669, #10b981);
+  --dompet-btn-gradient: linear-gradient(135deg, var(--success), var(--success));
 }
 
 @media (max-width: 767px) {

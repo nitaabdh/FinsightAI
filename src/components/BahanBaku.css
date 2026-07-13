@@ -57,9 +57,9 @@
 .bahanbaku__preview { font-size: 12px; color: var(--accent-umkm); font-weight: 600; }
 
 .bahanbaku__error {
-  background: rgba(239,68,68,0.1);
-  border: 1px solid rgba(239,68,68,0.25);
-  color: #f87171;
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-dim);
+  color: var(--danger);
   font-size: 13px;
   padding: 0.6rem 0.9rem;
   border-radius: var(--radius-sm);
@@ -74,7 +74,7 @@
   font-size: 13px;
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(135deg, #d97706, #f59e0b);
+  background: linear-gradient(135deg, var(--accent-umkm), var(--accent-umkm));
   box-shadow: 0 4px 16px var(--accent-umkm-glow);
   transition: var(--transition);
 }
@@ -99,17 +99,17 @@
   font-family: var(--font-display);
   font-size: 13px;
   font-weight: 600;
-  color: #f87171;
-  background: rgba(239,68,68,0.15);
-  border: 1px solid rgba(239,68,68,0.3);
+  color: var(--danger);
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-dim);
   transition: var(--transition);
 }
-.bahanbaku__btn-danger:hover { background: rgba(239,68,68,0.25); }
+.bahanbaku__btn-danger:hover { background: var(--danger-dim); }
 
 /* Total nilai stok */
 .bahanbaku__stok-summary {
   background: var(--accent-umkm-dim);
-  border: 1px solid rgba(245,158,11,0.25);
+  border: 1px solid var(--accent-umkm-dim);
   border-radius: var(--radius-lg);
   padding: 0.85rem 1.25rem;
   display: flex;
@@ -153,7 +153,7 @@
 }
 .bahanbaku__item:last-child { border-bottom: none; }
 .bahanbaku__item:hover { background: var(--bg-secondary); }
-.bahanbaku__item--minus { background: rgba(239,68,68,0.05); }
+.bahanbaku__item--minus { background: var(--danger-dim); }
 
 .bahanbaku__item-info { flex: 1; min-width: 160px; }
 .bahanbaku__item-nama { font-size: 14px; color: var(--text-primary); font-weight: 600; }
@@ -169,7 +169,7 @@
 }
 
 .bahanbaku__item-stokval { font-size: 13px; font-weight: 700; color: var(--text-primary); font-family: var(--font-display); }
-.bahanbaku__item-stokval--minus { color: #f87171; }
+.bahanbaku__item-stokval--minus { color: var(--danger); }
 .bahanbaku__item-nilaistok { font-size: 11px; color: var(--text-muted); }
 
 .bahanbaku__item-actions {
@@ -181,7 +181,7 @@
 .bahanbaku__item-restok {
   background: var(--accent-umkm-dim);
   color: var(--accent-umkm);
-  border: 1px solid rgba(245,158,11,0.3);
+  border: 1px solid var(--accent-umkm-dim);
   font-size: 11px;
   font-weight: 700;
   padding: 0.3rem 0.6rem;
@@ -189,7 +189,7 @@
   transition: var(--transition);
   white-space: nowrap;
 }
-.bahanbaku__item-restok:hover { background: rgba(245,158,11,0.18); }
+.bahanbaku__item-restok:hover { background: var(--accent-umkm-dim); }
 
 .bahanbaku__item-edit, .bahanbaku__item-del {
   background: none;
@@ -200,7 +200,7 @@
   color: var(--text-muted);
 }
 .bahanbaku__item-edit:hover { background: rgba(129,140,248,0.1); color: var(--accent-ai); }
-.bahanbaku__item-del:hover  { background: rgba(239,68,68,0.1); color: #f87171; }
+.bahanbaku__item-del:hover  { background: var(--danger-dim); color: var(--danger); }
 
 /* Modal (restock & confirm hapus) */
 .bahanbaku__modal-overlay {
@@ -259,8 +259,8 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   padding: 0.65rem 0.9rem;
-  background: rgba(245,158,11,0.08);
-  border: 1px solid rgba(245,158,11,0.2);
+  background: var(--accent-umkm-dim);
+  border: 1px solid var(--accent-umkm-dim);
   border-radius: var(--radius-sm);
   font-size: 12px;
   color: var(--text-primary);
@@ -274,7 +274,7 @@
 .bahanbaku__hpp-value {
   font-family: var(--font-display);
   font-weight: 800;
-  color: #f59e0b;
+  color: var(--accent-umkm);
   font-size: 14px;
 }
 
@@ -285,7 +285,7 @@
 }
 
 .bahanbaku__item-kemasan {
-  color: #f59e0b;
+  color: var(--accent-umkm);
   font-weight: 600;
 }
 
@@ -294,18 +294,18 @@
 .bahanbaku__example {
   font-size: 12.5px;
   color: var(--text-secondary);
-  background: rgba(245,158,11,0.06);
-  border: 1px dashed rgba(245,158,11,0.3);
+  background: var(--accent-umkm-dim);
+  border: 1px dashed var(--accent-umkm-dim);
   border-radius: var(--radius-sm);
   padding: 0.6rem 0.85rem;
   line-height: 1.6;
 }
-.bahanbaku__example strong { color: #f59e0b; font-weight: 700; }
+.bahanbaku__example strong { color: var(--accent-umkm); font-weight: 700; }
 
 /* Kotak khusus "isinya berapa" — dipisah visual dari field dasar biar jelas ini opsional/kondisional */
 .bahanbaku__kemasan-box {
-  background: rgba(245,158,11,0.06);
-  border: 1px solid rgba(245,158,11,0.25);
+  background: var(--accent-umkm-dim);
+  border: 1px solid var(--accent-umkm-dim);
   border-radius: var(--radius-md);
   padding: 0.85rem 1rem;
   display: flex;
@@ -316,7 +316,7 @@
 .bahanbaku__kemasan-title {
   font-size: 13px;
   font-weight: 700;
-  color: #f59e0b;
+  color: var(--accent-umkm);
 }
 
 .bahanbaku__kemasan-row {
@@ -376,7 +376,7 @@
   text-decoration: underline;
   flex-shrink: 0;
 }
-.bahanbaku__yield-close:hover { color: #f87171; }
+.bahanbaku__yield-close:hover { color: var(--danger); }
 
 /* ── Halaman Detail Bahan ─────────────────────────────────────────────────
    Class-class ini tadinya belum ada sama sekali di stylesheet, jadi elemennya
@@ -451,7 +451,7 @@
   font-weight: 800;
   color: var(--text-primary);
 }
-.bahanbaku__detail-stat-value--minus { color: #f87171; }
+.bahanbaku__detail-stat-value--minus { color: var(--danger); }
 
 .bahanbaku__detail-actions {
   display: flex;
@@ -471,9 +471,9 @@
 
 /* Versi "− Kurangi Stok" (belum ada sebelumnya, makanya putih polos) */
 .bahanbaku__item-kurangi {
-  background: rgba(239,68,68,0.1);
-  color: #f87171;
-  border: 1px solid rgba(239,68,68,0.25);
+  background: var(--danger-dim);
+  color: var(--danger);
+  border: 1px solid var(--danger-dim);
   font-size: 11px;
   font-weight: 700;
   padding: 0.3rem 0.6rem;
@@ -481,7 +481,7 @@
   transition: var(--transition);
   white-space: nowrap;
 }
-.bahanbaku__item-kurangi:hover { background: rgba(239,68,68,0.18); }
+.bahanbaku__item-kurangi:hover { background: var(--danger-dim); }
 
 /* ── Riwayat Keluar-Masuk Stok ────────────────────────────────────────────── */
 
@@ -516,7 +516,7 @@
   border-radius: var(--radius-md);
 }
 .bahanbaku__history-item--tambah { border-left: 3px solid #34d399; }
-.bahanbaku__history-item--kurang { border-left: 3px solid #f87171; }
+.bahanbaku__history-item--kurang { border-left: 3px solid var(--danger); }
 
 .bahanbaku__history-icon {
   flex-shrink: 0;
@@ -530,7 +530,7 @@
   font-size: 12px;
 }
 .bahanbaku__history-item--tambah .bahanbaku__history-icon { color: #34d399; }
-.bahanbaku__history-item--kurang .bahanbaku__history-icon { color: #f87171; }
+.bahanbaku__history-item--kurang .bahanbaku__history-icon { color: var(--danger); }
 
 .bahanbaku__history-info { flex: 1; min-width: 0; }
 
@@ -559,14 +559,14 @@
   font-size: 10px;
   font-weight: 700;
   padding: 0.15rem 0.55rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   text-transform: uppercase;
   letter-spacing: 0.03em;
   white-space: nowrap;
 }
 .bahanbaku__history-badge--transaksi {
   background: rgba(129,140,248,0.15);
-  color: var(--accent-ai, #818cf8);
+  color: var(--accent-ai);
 }
 .bahanbaku__history-badge--manual_tambah,
 .bahanbaku__history-badge--manual_kurang {
@@ -591,11 +591,11 @@
   transition: var(--transition);
   white-space: nowrap;
 }
-.bahanbaku__item-detail:hover { color: var(--accent-umkm); border-color: rgba(245,158,11,0.3); }
+.bahanbaku__item-detail:hover { color: var(--accent-umkm); border-color: var(--accent-umkm-dim); }
 
 /* Label "*wajib" di form Kurangi Stok — juga belum ada sebelumnya */
 .bahanbaku__label-required {
-  color: #f87171;
+  color: var(--danger);
   font-weight: 700;
   font-size: 11px;
 }

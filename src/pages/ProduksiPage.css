@@ -38,10 +38,10 @@
   font-size: 12px;
   font-weight: 500;
   padding: 0.3rem 0.8rem;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   background: var(--accent-umkm-dim);
   color: var(--accent-umkm);
-  border: 1px solid rgba(245,158,11,0.25);
+  border: 1px solid var(--accent-umkm-dim);
   white-space: nowrap;
 }
 

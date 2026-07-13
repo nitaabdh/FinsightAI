@@ -3,7 +3,7 @@
 /* Total nilai aset */
 .dompet__total {
   background: var(--accent-umkm-dim);
-  border: 1px solid rgba(245,158,11,0.25);
+  border: 1px solid var(--accent-umkm-dim);
   border-radius: var(--radius-lg);
   padding: 0.85rem 1.25rem;
   display: flex;
@@ -74,9 +74,9 @@
 .dompet__input:focus { border-color: var(--accent-umkm); box-shadow: 0 0 0 3px var(--accent-umkm-dim); }
 
 .dompet__error {
-  background: rgba(239,68,68,0.1);
-  border: 1px solid rgba(239,68,68,0.25);
-  color: #f87171;
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-dim);
+  color: var(--danger);
   font-size: 13px;
   padding: 0.6rem 0.9rem;
   border-radius: var(--radius-sm);
@@ -91,7 +91,7 @@
   font-size: 13px;
   font-weight: 700;
   color: #fff;
-  background: var(--dompet-btn-gradient, linear-gradient(135deg, #d97706, #f59e0b));
+  background: var(--dompet-btn-gradient, linear-gradient(135deg, var(--accent-umkm), var(--accent-umkm)));
   box-shadow: 0 4px 16px var(--accent-umkm-glow);
   transition: var(--transition);
 }
@@ -117,12 +117,12 @@
   font-family: var(--font-display);
   font-size: 13px;
   font-weight: 600;
-  color: #f87171;
-  background: rgba(239,68,68,0.15);
-  border: 1px solid rgba(239,68,68,0.3);
+  color: var(--danger);
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-dim);
   transition: var(--transition);
 }
-.dompet__btn-danger:hover { background: rgba(239,68,68,0.25); }
+.dompet__btn-danger:hover { background: var(--danger-dim); }
 
 /* Filters */
 .dompet__filters {
@@ -222,7 +222,7 @@
   background: var(--accent-umkm-dim);
   color: var(--accent-umkm);
   padding: 1px 7px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font-size: 11px;
   font-weight: 500;
 }
@@ -231,14 +231,14 @@
   font-size: 10px;
   font-weight: 700;
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   white-space: nowrap;
 }
 
-.dompet__badge--baik        { background: rgba(16,185,129,0.15); color: #10b981; }
-.dompet__badge--rusakRingan { background: rgba(245,158,11,0.15); color: var(--accent-umkm); }
-.dompet__badge--rusakBerat  { background: rgba(239,68,68,0.15); color: #f87171; }
-.dompet__item-saldo--neg { color: #f87171 !important; }
+.dompet__badge--baik        { background: var(--success-dim); color: var(--success); }
+.dompet__badge--rusakRingan { background: var(--accent-umkm-dim); color: var(--accent-umkm); }
+.dompet__badge--rusakBerat  { background: var(--danger-dim); color: var(--danger); }
+.dompet__item-saldo--neg { color: var(--danger) !important; }
 
 .dompet__item-edit, .dompet__item-del {
   background: none;
@@ -249,7 +249,7 @@
   color: var(--text-muted);
 }
 .dompet__item-edit:hover { background: rgba(129,140,248,0.1); color: var(--accent-ai); }
-.dompet__item-del:hover  { background: rgba(239,68,68,0.1); color: #f87171; }
+.dompet__item-del:hover  { background: var(--danger-dim); color: var(--danger); }
 
 /* Modal */
 .dompet__modal-overlay {

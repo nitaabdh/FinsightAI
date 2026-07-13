@@ -45,7 +45,7 @@
   width: 42px; height: 42px;
   border-radius: 50%;
   cursor: pointer;
-  border: 2px solid var(--accent-umkm, #f59e0b);
+  border: 2px solid var(--accent-umkm);
   overflow: hidden;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
@@ -56,8 +56,8 @@
   display: flex; align-items: center; justify-content: center;
   font-family: var(--font-display);
   font-size: 16px; font-weight: 800;
-  color: var(--accent-umkm, #f59e0b);
-  background: rgba(245,158,11,0.12);
+  color: var(--accent-umkm);
+  background: var(--accent-umkm-dim);
 }
 .du__avatar-dropdown {
   position: absolute; top: calc(100% + 10px); right: 0;
@@ -72,7 +72,7 @@
 .du__avatar-dropdown-av {
   width: 38px; height: 38px; border-radius: 50%; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(245,158,11,0.12); flex-shrink: 0;
+  background: var(--accent-umkm-dim); flex-shrink: 0;
 }
 .du__avatar-dropdown-name { font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 0; }
 .du__avatar-dropdown-email { font-size: 11px; color: var(--text-muted); margin: 0; }
@@ -84,7 +84,7 @@
   background: none; transition: background 0.12s;
 }
 .du__avatar-dropdown-item:hover { background: var(--bg-secondary); }
-.du__avatar-dropdown-item--danger { color: #ef4444; }
+.du__avatar-dropdown-item--danger { color: var(--danger); }
 
 /* ── 3 Metric Cards ── */
 .du__metrics {
@@ -107,27 +107,27 @@
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 0.3rem; flex-shrink: 0;
 }
-.du__metric-icon--omzet   { background: rgba(245,158,11,0.12); }
-.du__metric-icon--expense { background: rgba(239,68,68,0.12); }
-.du__metric-icon--laba    { background: rgba(16,185,129,0.12); }
-.du__metric-icon--rugi    { background: rgba(239,68,68,0.12); }
-.du__metric-icon--aset    { background: rgba(139,92,246,0.12); }
-.du__metric-icon--modal   { background: rgba(59,130,246,0.12); }
+.du__metric-icon--omzet   { background: var(--accent-umkm-dim); }
+.du__metric-icon--expense { background: var(--danger-dim); }
+.du__metric-icon--laba    { background: var(--success-dim); }
+.du__metric-icon--rugi    { background: var(--danger-dim); }
+.du__metric-icon--aset    { background: var(--accent-ai-dim); }
+.du__metric-icon--modal   { background: var(--info-dim); }
 .du__metric-label { font-size: 11px; color: var(--text-muted); font-family: var(--font-body); }
 .du__metric-value { font-family: var(--font-display); font-size: 17px; font-weight: 800; margin: 0.1rem 0; }
-.du__metric--omzet   .du__metric-value { color: #f59e0b; }
-.du__metric--expense .du__metric-value { color: #ef4444; }
-.du__metric--laba    .du__metric-value { color: #10b981; }
-.du__metric--rugi    .du__metric-value { color: #ef4444; }
-.du__metric--aset    .du__metric-value { color: #8b5cf6; }
-.du__metric--modal   .du__metric-value { color: #3b82f6; }
+.du__metric--omzet   .du__metric-value { color: var(--accent-umkm); }
+.du__metric--expense .du__metric-value { color: var(--danger); }
+.du__metric--laba    .du__metric-value { color: var(--success); }
+.du__metric--rugi    .du__metric-value { color: var(--danger); }
+.du__metric--aset    .du__metric-value { color: var(--accent-ai); }
+.du__metric--modal   .du__metric-value { color: var(--info); }
 .du__metric-sub { font-size: 10px; color: var(--text-muted); font-family: var(--font-body); }
 
 /* ── Jatuh Tempo ── */
 .du__jatuhtempo {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-left: 3px solid #f59e0b;
+  border-left: 3px solid var(--accent-umkm);
   border-radius: var(--radius-lg);
   padding: 1rem 1.25rem;
   display: flex; flex-direction: column; gap: 0.75rem;
@@ -146,11 +146,11 @@
 .du__jatuhtempo-sub  { font-size: 11px; color: var(--text-muted); margin: 0; }
 .du__jatuhtempo-badge {
   font-size: 11px; font-weight: 700; padding: 0.2rem 0.6rem;
-  border-radius: 999px; flex-shrink: 0;
+  border-radius: var(--radius-full); flex-shrink: 0;
 }
-.du__jatuhtempo-badge--danger  { background: rgba(239,68,68,0.15); color: #ef4444; }
-.du__jatuhtempo-badge--warning { background: rgba(245,158,11,0.15); color: #f59e0b; }
-.du__jatuhtempo-badge--safe    { background: rgba(16,185,129,0.15); color: #10b981; }
+.du__jatuhtempo-badge--danger  { background: var(--danger-dim); color: var(--danger); }
+.du__jatuhtempo-badge--warning { background: var(--accent-umkm-dim); color: var(--accent-umkm); }
+.du__jatuhtempo-badge--safe    { background: var(--success-dim); color: var(--success); }
 
 /* ── Row 2 kolom (Tren + Kategori) ── */
 .du__row2 {
@@ -212,14 +212,14 @@
   display: flex; align-items: center; justify-content: center;
   font-size: 16px; flex-shrink: 0;
 }
-.du__tx-icon--income  { background: rgba(16,185,129,0.12); }
-.du__tx-icon--expense { background: rgba(239,68,68,0.08); }
+.du__tx-icon--income  { background: var(--success-dim); }
+.du__tx-icon--expense { background: var(--danger-dim); }
 .du__tx-info { flex: 1; min-width: 0; }
 .du__tx-desc { font-size: 12px; font-weight: 600; color: var(--text-primary); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .du__tx-date { font-size: 10px; color: var(--text-muted); margin: 0; }
 .du__tx-amount { font-family: var(--font-display); font-size: 12px; font-weight: 800; white-space: nowrap; }
-.du__tx-amount--income  { color: #10b981; }
-.du__tx-amount--expense { color: #ef4444; }
+.du__tx-amount--income  { color: var(--success); }
+.du__tx-amount--expense { color: var(--danger); }
 .du__tx-cat { font-size: 10px; color: var(--text-muted); margin: 0; margin-top: 2px; }
 
 /* ── Section header & utilities ── */
@@ -234,7 +234,7 @@
 }
 .du__see-all {
   background: none; font-size: 12px;
-  color: var(--accent-umkm, #f59e0b);
+  color: var(--accent-umkm);
   font-family: var(--font-body); font-weight: 600;
   transition: var(--transition);
 }
@@ -284,8 +284,8 @@
 }
 
 .du__kas-card--minus {
-  border-color: rgba(239,68,68,0.35);
-  background: rgba(239,68,68,0.06);
+  border-color: var(--danger-dim);
+  background: var(--danger-dim);
 }
 
 .du__kas-icon {
@@ -311,4 +311,4 @@
   color: var(--text-primary);
 }
 
-.du__kas-saldo--minus { color: #f87171; }
+.du__kas-saldo--minus { color: var(--danger); }

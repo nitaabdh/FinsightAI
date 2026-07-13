@@ -77,13 +77,13 @@
 .page-header__avatar--umkm {
   background: var(--accent-umkm-dim);
   color: var(--accent-umkm);
-  border-color: rgba(245, 158, 11, 0.3);
+  border-color: var(--accent-umkm-dim);
 }
 
 .page-header__avatar--personal {
   background: var(--accent-personal-dim);
   color: var(--accent-personal);
-  border-color: rgba(16, 185, 129, 0.3);
+  border-color: var(--success-dim);
 }
 
 .page-header__avatar:hover {
@@ -206,8 +206,8 @@
 }
 
 .page-header__dropdown-item--danger:hover {
-  background: rgba(239, 68, 68, 0.1);
-  color: #f87171;
+  background: var(--danger-dim);
+  color: var(--danger);
 }
 
 /* ── Mobile ── */

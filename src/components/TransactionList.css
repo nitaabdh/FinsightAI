@@ -12,7 +12,7 @@
 
 .txlist__filter-btn {
   padding: 0.35rem 0.75rem;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   font-size: 12px;
   font-weight: 500;
   background: var(--bg-secondary);
@@ -76,7 +76,7 @@
   flex-shrink: 0;
 }
 .txlist__item-dot--income  { background: var(--accent-personal); }
-.txlist__item-dot--expense { background: #f87171; }
+.txlist__item-dot--expense { background: var(--danger); }
 
 .txlist__item-info {
   flex: 1;
@@ -113,7 +113,7 @@
   font-weight: 600;
 }
 .txlist__item-amount--income  { color: var(--accent-personal); }
-.txlist__item-amount--expense { color: #f87171; }
+.txlist__item-amount--expense { color: var(--danger); }
 
 .txlist__item-delete {
   background: transparent;
@@ -127,7 +127,7 @@
 }
 
 .txlist__item-delete:hover {
-  background: rgba(239,68,68,0.1);
-  border-color: rgba(239,68,68,0.3);
-  color: #f87171;
+  background: var(--danger-dim);
+  border-color: var(--danger-dim);
+  color: var(--danger);
 }
