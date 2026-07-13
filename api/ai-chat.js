@@ -18,7 +18,10 @@ const supabase = createClient(
 
 const JWT_SECRET   = process.env.JWT_SECRET;
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL        = "llama-3.3-70b-versatile";
+// llama-3.3-70b-versatile di-deprecate Groq per 17 Juni 2026 — pindah ke model
+// pengganti resmi yang direkomendasikan Groq (docs.groq.com/deprecations).
+// Kalau nanti Groq ganti lagi modelnya, cukup ubah baris ini aja.
+const MODEL        = "openai/gpt-oss-120b";
 
 function getUserId(req) {
   const auth = req.headers.authorization || "";

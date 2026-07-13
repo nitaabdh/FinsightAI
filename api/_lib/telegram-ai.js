@@ -8,6 +8,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { decryptSecret } from "./crypto.js";
 import { computeKasStats, calcSummary, getTransactions, formatRupiahTG } from "./telegram-data.js";
+import { getTelegramFileBase64 } from "./telegram.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -15,7 +16,14 @@ const supabase = createClient(
 );
 
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL        = "llama-3.3-70b-versatile";
+// llama-3.3-70b-versatile di-deprecate Groq per 17 Juni 2026 — pindah ke model
+// pengganti resmi yang direkomendasikan Groq (docs.groq.com/deprecations).
+const MODEL        = "openai/gpt-oss-120b";
+// Model vision buat baca foto struk — statusnya masih "preview" di Groq (bisa
+// berubah/dihentikan sewaktu-waktu tanpa banyak pemberitahuan), tapi ini yang
+// paling stabil buat sekarang. Kalau suatu saat error terus, cek daftar model
+// vision terbaru di console.groq.com/docs/vision.
+const VISION_MODEL = "qwen/qwen3.6-27b";
 const MAX_HISTORY_MESSAGES = 12; // ~6 giliran obrolan (user+assistant), biar prompt nggak kegedean
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -312,4 +320,113 @@ export async function undoLastTransaction(userId, mode) {
 // atau ngerasa AI-nya "bingung" gara-gara riwayat lama yang udah nggak relevan.
 export async function resetChatHistory(userId) {
   await supabase.from("telegram_chat_history").delete().eq("user_id", userId);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FOTO STRUK — user kirim foto, kita download dari Telegram, kirim ke model
+// vision Groq buat diekstrak (nama toko, total, item), lalu dicatat otomatis
+// sebagai transaksi pengeluaran (sama kayak alur teks: catat dulu, gampang
+// dibatalin lewat /batal kalau OCR-nya salah baca).
+// ═══════════════════════════════════════════════════════════════════════════
+const RECEIPT_PROMPT = `Ini foto struk/nota belanja. Baca dan ekstrak isinya, balas HANYA dalam format JSON (tanpa markdown code fence, tanpa teks lain):
+
+{
+  "is_receipt": true atau false (false kalau gambar ini BUKAN struk/nota belanja sama sekali),
+  "merchant": "<nama toko/warung, null kalau nggak kebaca>",
+  "total": <angka total belanja murni tanpa titik/koma/Rp, null kalau nggak ketemu>,
+  "items_summary": "<ringkasan singkat 3-5 item utama yang dibeli, dipisah koma>",
+  "confidence": "tinggi" atau "rendah" (pilih "rendah" kalau gambar buram, gelap, kepotong, atau kamu ragu sama angka totalnya)
+}`;
+
+export async function handleReceiptPhoto(userId, mode, fileId) {
+  const { data: profile } = await supabase.from("profiles").select("groq_api_key").eq("user_id", userId).maybeSingle();
+  if (!profile?.groq_api_key) return { type: "need_api_key" };
+
+  let apiKey;
+  try {
+    apiKey = decryptSecret(profile.groq_api_key);
+  } catch (err) {
+    console.error("[telegram-ai] gagal dekripsi key:", err);
+    return { type: "error", message: "Gagal membaca API key kamu. Coba atur ulang di halaman Profil ya." };
+  }
+  if (!apiKey) return { type: "need_api_key" };
+
+  let imageDataUri;
+  try {
+    imageDataUri = await getTelegramFileBase64(fileId);
+  } catch (err) {
+    console.error("[telegram-ai] gagal download foto:", err);
+    return { type: "error", message: "Gagal ambil foto dari Telegram, coba kirim ulang ya." };
+  }
+
+  let data;
+  try {
+    const res = await fetch(GROQ_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: VISION_MODEL,
+        messages: [{
+          role: "user",
+          content: [
+            { type: "text", text: RECEIPT_PROMPT },
+            { type: "image_url", image_url: { url: imageDataUri } },
+          ],
+        }],
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+      }),
+    });
+    data = await res.json();
+    if (!res.ok) {
+      console.error("[telegram-ai] Groq vision error:", data);
+      if (data?.error?.code === "invalid_api_key") {
+        return { type: "error", message: "API key Groq kamu kayaknya udah nggak valid. Coba cek/atur ulang di halaman Profil." };
+      }
+      return { type: "error", message: "Gagal membaca struk-nya lewat AI, coba lagi sebentar." };
+    }
+  } catch (err) {
+    console.error("[telegram-ai] fetch error (vision):", err);
+    return { type: "error", message: "Gagal menghubungi AI vision, coba lagi ya." };
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(data.choices[0].message.content);
+  } catch (err) {
+    return { type: "error", message: "Nggak bisa baca hasil analisa fotonya. Coba foto ulang yang lebih terang & fokus ke bagian totalnya." };
+  }
+
+  if (!parsed.is_receipt) {
+    return { type: "not_a_receipt" };
+  }
+  if (!parsed.total || parsed.confidence === "rendah") {
+    return { type: "receipt_unclear", data: parsed };
+  }
+
+  const description = parsed.merchant
+    ? `${parsed.merchant}${parsed.items_summary ? " — " + parsed.items_summary : ""}`
+    : (parsed.items_summary || "Belanja dari struk");
+
+  const { data: inserted, error } = await supabase
+    .from("transactions")
+    .insert({
+      user_id: userId,
+      mode,
+      type: "pengeluaran",
+      amount: Number(parsed.total),
+      category: "Belanja",
+      description,
+      date: new Date().toISOString().slice(0, 10),
+      kas: "Kas Tunai",
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[telegram-ai] gagal simpan transaksi dari struk:", error);
+    return { type: "error", message: "Kebaca struknya, tapi gagal nyimpen transaksinya. Coba lagi ya." };
+  }
+
+  return { type: "transaction_saved", data: inserted, reply: "", quick: false, fromReceipt: true };
 }

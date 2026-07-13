@@ -29,7 +29,7 @@ import {
   getSaldoText, getLaporanText, getUtangText, getTargetText,
   getStokText, getHargaText, getAsetText, formatRupiahTG,
 } from "./_lib/telegram-data.js";
-import { handleFreeText, undoLastTransaction, resetChatHistory } from "./_lib/telegram-ai.js";
+import { handleFreeText, undoLastTransaction, resetChatHistory, handleReceiptPhoto } from "./_lib/telegram-ai.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -144,7 +144,8 @@ const HELP_TEXT_PERSONAL =
   `/unlink — putuskan koneksi akun\n\n` +
   `Kamu juga bisa langsung ngetik bebas, misal:\n` +
   `_"beli kopi 20rb"_ → langsung kecatet (nggak butuh API key)\n` +
-  `_"gimana cara nabung yang efektif?"_ → tanya AI Agent (butuh API key Groq di Profil)`;
+  `_"gimana cara nabung yang efektif?"_ → tanya AI Agent (butuh API key Groq di Profil)\n\n` +
+  `📸 Kirim *foto struk belanja* juga bisa — otomatis kebaca & kecatet (butuh API key Groq juga)`;
 
 const HELP_TEXT_UMKM =
   `🤖 *Perintah yang tersedia:*\n\n` +
@@ -160,17 +161,63 @@ const HELP_TEXT_UMKM =
   `/unlink — putuskan koneksi akun\n\n` +
   `Kamu juga bisa langsung ngetik bebas, misal:\n` +
   `_"jual 2 kopi susu 40rb"_ → langsung kecatet (nggak butuh API key)\n` +
-  `_"gimana strategi naikin omzet?"_ → tanya AI Agent (butuh API key Groq di Profil)`;
+  `_"gimana strategi naikin omzet?"_ → tanya AI Agent (butuh API key Groq di Profil)\n\n` +
+  `📸 Kirim *foto struk belanja* juga bisa — otomatis kebaca & kecatet (butuh API key Groq juga)`;
 
 async function handleTelegramWebhook(req, res) {
   try {
     const update = req.body;
     const message = update?.message;
-    if (!message || !message.text) return res.status(200).json({ ok: true });
+    if (!message) return res.status(200).json({ ok: true });
 
     const chatId = message.chat.id;
-    const text = message.text.trim();
     const from = message.from || {};
+
+    // ── Foto dikirim -> kemungkinan struk belanja ──
+    if (message.photo && message.photo.length > 0) {
+      const { data: photoLink } = await supabase
+        .from("telegram_links")
+        .select("user_id")
+        .eq("telegram_chat_id", chatId)
+        .maybeSingle();
+
+      if (!photoLink) {
+        await sendTelegramMessage(chatId, HELP_TEXT_UNLINKED);
+        return res.status(200).json({ ok: true });
+      }
+
+      const { data: userRow2 } = await supabase.from("users").select("mode").eq("id", photoLink.user_id).maybeSingle();
+      const photoMode = userRow2?.mode || "personal";
+
+      await sendTelegramMessage(chatId, "📸 Foto diterima, aku baca dulu struknya...");
+      const biggestPhoto = message.photo[message.photo.length - 1]; // resolusi paling besar
+      const result = await handleReceiptPhoto(photoLink.user_id, photoMode, biggestPhoto.file_id);
+
+      if (result.type === "need_api_key") {
+        await sendTelegramMessage(chatId, "Fitur baca struk butuh API key Groq kamu dulu — atur di halaman *Profil* di web ya (gratis, tinggal daftar di console.groq.com).");
+      } else if (result.type === "not_a_receipt") {
+        await sendTelegramMessage(chatId, "Hmm, ini kayaknya bukan foto struk/nota belanja. Kirim foto struk yang jelas ya.");
+      } else if (result.type === "receipt_unclear") {
+        const d = result.data || {};
+        await sendTelegramMessage(chatId,
+          `🤔 Struknya kebaca tapi kurang jelas (mungkin buram/gelap/kepotong).\n` +
+          `${d.merchant ? `Toko: ${d.merchant}\n` : ""}${d.total ? `Total keliatan: ${formatRupiahTG(d.total)}\n` : ""}\n` +
+          `Coba foto ulang yang lebih terang & fokus ke bagian totalnya, atau catat manual aja lewat chat biasa.`
+        );
+      } else if (result.type === "error") {
+        await sendTelegramMessage(chatId, `⚠️ ${result.message}`);
+      } else if (result.type === "transaction_saved") {
+        const t = result.data;
+        await sendTelegramMessage(chatId,
+          `🧾 *Struk kebaca & tercatat!*\n${t.description}\n${formatRupiahTG(t.amount)} — ${t.category}\n\n` +
+          `_Salah baca? Ketik /batal buat ngehapus._`
+        );
+      }
+      return res.status(200).json({ ok: true });
+    }
+
+    if (!message.text) return res.status(200).json({ ok: true });
+    const text = message.text.trim();
 
     const { data: link } = await supabase
       .from("telegram_links")
