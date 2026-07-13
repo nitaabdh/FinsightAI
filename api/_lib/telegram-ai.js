@@ -16,6 +16,80 @@ const supabase = createClient(
 
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 const MODEL        = "llama-3.3-70b-versatile";
+const MAX_HISTORY_MESSAGES = 12; // ~6 giliran obrolan (user+assistant), biar prompt nggak kegedean
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PARSER CEPAT (regex, TANPA AI) — buat pola transaksi simpel & jelas kayak
+// "beli kopi 20rb" atau "gajian 3jt". Sengaja KONSERVATIF: cuma dianggap
+// "yakin" kalau nemu PERSIS 1 angka + ada kata kunci jenis transaksi yang jelas.
+// Kalau ragu dikit aja, return null -> baru dilempar ke AI (yang butuh API key).
+// ═══════════════════════════════════════════════════════════════════════════
+
+const PEMASUKAN_KEYWORDS = [
+  "gajian", "gaji", "dapat", "dapet", "terima", "nerima", "jual", "laku",
+  "untung", "profit", "bonus", "cair", "masuk", "hasil", "thr", "komisi",
+];
+const PENGELUARAN_KEYWORDS = [
+  "beli", "bayar", "byr", "belanja", "jajan", "keluar", "bensin", "isi",
+  "top up", "topup", "sewa", "kirim", "cicilan", "nyicil", "bensin", "parkir",
+];
+
+const CATEGORY_KEYWORDS = {
+  "Makanan & Minuman": ["makan","kopi","nasi","jajan","minum","warteg","resto","restoran","kfc","mcd","boba","teh","kue","snack","cemilan","sarapan","gorengan"],
+  "Transportasi": ["bensin","grab","gojek","ojek","taxi","taksi","parkir","tol","angkot","kereta","busway","mrt","krl"],
+  "Tagihan": ["pulsa","token","listrik","pdam","wifi","internet","bpjs","cicilan","tagihan","nyicil"],
+  "Belanja": ["belanja","baju","sepatu","tas","skincare","kosmetik","shopee","tokopedia"],
+  "Hiburan": ["nonton","bioskop","game","netflix","spotify","langganan"],
+  "Gaji": ["gajian","gaji","thr","bonus","komisi"],
+  "Kesehatan": ["obat","dokter","apotek","vitamin"],
+};
+
+function extractAmounts(text) {
+  const results = [];
+  // Prioritas 1: angka dengan akhiran rb/ribu/k/jt/juta — paling nggak ambigu
+  const withSuffix = [...text.matchAll(/(\d+(?:[.,]\d+)?)\s*(ribu|rb|k|juta|jt)\b/gi)];
+  withSuffix.forEach((m) => {
+    let num = parseFloat(m[1].replace(",", "."));
+    const unit = m[2].toLowerCase();
+    num *= (unit === "juta" || unit === "jt") ? 1000000 : 1000;
+    results.push(Math.round(num));
+  });
+  if (results.length > 0) return results;
+
+  // Prioritas 2 (fallback): format ribuan pakai titik (20.000) atau angka polos >= 1000
+  const bare = [...text.matchAll(/\b(\d{1,3}(?:\.\d{3})+|\d{4,})\b/g)];
+  bare.forEach((m) => results.push(parseInt(m[1].replace(/\./g, ""), 10)));
+  return results;
+}
+
+function detectType(text) {
+  const lower = text.toLowerCase();
+  const hasIn  = PEMASUKAN_KEYWORDS.some((k) => lower.includes(k));
+  const hasOut = PENGELUARAN_KEYWORDS.some((k) => lower.includes(k));
+  if (hasIn && !hasOut) return "pemasukan";
+  if (hasOut && !hasIn) return "pengeluaran";
+  return null; // ambigu (dua-duanya kedetect, atau nggak ada sama sekali)
+}
+
+function detectCategory(text) {
+  const lower = text.toLowerCase();
+  for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+    if (keywords.some((k) => lower.includes(k))) return cat;
+  }
+  return "Lainnya";
+}
+
+// Return null kalau nggak yakin (biar di-fallback ke AI), atau objek transaksi kalau yakin.
+export function tryQuickParse(text) {
+  const amounts = extractAmounts(text);
+  if (amounts.length !== 1) return null;      // 0 angka = nggak ketemu, >1 = ambigu angka mana yang dimaksud
+  if (amounts[0] < 500) return null;           // kemungkinan besar bukan nominal uang (misal "beli 2 kopi")
+
+  const type = detectType(text);
+  if (!type) return null;                      // nggak jelas pemasukan/pengeluaran
+
+  return { type, amount: amounts[0], category: detectCategory(text), description: text.trim() };
+}
 
 function isThisMonth(dateStr) {
   if (!dateStr) return false;
@@ -69,6 +143,32 @@ ${contextText}
 Kalau intent "transaction", isi reply dengan konfirmasi singkat kayak "Oke, tercatat!" — detail nominalnya nggak perlu diulang di reply karena udah ditampilin terpisah.`;
 
 export async function handleFreeText(userId, mode, text) {
+  // ── Coba parser cepat dulu (regex, gratis, nggak butuh API key) ──
+  const quick = tryQuickParse(text);
+  if (quick) {
+    const { data: inserted, error } = await supabase
+      .from("transactions")
+      .insert({
+        user_id: userId,
+        mode,
+        type: quick.type,
+        amount: quick.amount,
+        category: quick.category,
+        description: quick.description,
+        date: new Date().toISOString().slice(0, 10),
+        kas: "Kas Tunai",
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("[telegram-ai] gagal simpan transaksi (quick parse):", error);
+      return { type: "error", message: "Kedeteksi transaksi, tapi gagal nyimpen. Coba lagi ya." };
+    }
+    return { type: "transaction_saved", data: inserted, reply: "", quick: true };
+  }
+
+  // ── Nggak yakin dari pola sederhana -> lempar ke AI (butuh API key user) ──
   const { data: profile } = await supabase.from("profiles").select("groq_api_key").eq("user_id", userId).maybeSingle();
   if (!profile?.groq_api_key) {
     return { type: "need_api_key" };
@@ -91,6 +191,10 @@ export async function handleFreeText(userId, mode, text) {
     contextText = "(konteks nggak tersedia)";
   }
 
+  // ── Ambil riwayat obrolan sebelumnya biar AI-nya "inget" konteks chat ──
+  const { data: histRow } = await supabase.from("telegram_chat_history").select("messages").eq("user_id", userId).maybeSingle();
+  const history = Array.isArray(histRow?.messages) ? histRow.messages : [];
+
   let data;
   try {
     const res = await fetch(GROQ_API_URL, {
@@ -100,6 +204,7 @@ export async function handleFreeText(userId, mode, text) {
         model: MODEL,
         messages: [
           { role: "system", content: SYSTEM_PROMPT(mode, contextText) },
+          ...history,
           { role: "user", content: text },
         ],
         temperature: 0.3,
@@ -126,6 +231,19 @@ export async function handleFreeText(userId, mode, text) {
     // Kalau AI-nya nggak balas JSON valid (jarang tapi bisa kejadian), anggap aja itu chat biasa
     return { type: "chat", reply: data.choices[0]?.message?.content || "Maaf, aku kurang ngerti maksudnya. Coba diperjelas ya." };
   }
+
+  // ── Simpen riwayat: pesan user + balasan AI, di-trim biar nggak numpuk kepanjangan ──
+  // (assistant message disimpan versi mentah JSON-nya balik, biar AI konsisten liat format sama)
+  const newHistory = [
+    ...history,
+    { role: "user", content: text },
+    { role: "assistant", content: data.choices[0].message.content },
+  ].slice(-MAX_HISTORY_MESSAGES);
+
+  await supabase.from("telegram_chat_history").upsert(
+    { user_id: userId, messages: newHistory, updated_at: new Date().toISOString() },
+    { onConflict: "user_id" }
+  );
 
   if (parsed.intent === "transaction" && parsed.transaction && parsed.transaction.amount) {
     const t = parsed.transaction;
@@ -171,4 +289,10 @@ export async function undoLastTransaction(userId, mode) {
   const { error: delErr } = await supabase.from("transactions").delete().eq("id", last.id);
   if (delErr) return { success: false };
   return { success: true, data: last };
+}
+
+// Reset ingatan obrolan (buat command /lupa) — kalau user mau ganti topik total
+// atau ngerasa AI-nya "bingung" gara-gara riwayat lama yang udah nggak relevan.
+export async function resetChatHistory(userId) {
+  await supabase.from("telegram_chat_history").delete().eq("user_id", userId);
 }

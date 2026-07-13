@@ -29,7 +29,7 @@ import {
   getSaldoText, getLaporanText, getUtangText, getTargetText,
   getStokText, getHargaText, getAsetText, formatRupiahTG,
 } from "./_lib/telegram-data.js";
-import { handleFreeText, undoLastTransaction } from "./_lib/telegram-ai.js";
+import { handleFreeText, undoLastTransaction, resetChatHistory } from "./_lib/telegram-ai.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -140,10 +140,11 @@ const HELP_TEXT_PERSONAL =
   `/utang — daftar utang & cicilan aktif\n` +
   `/target — progress target tabungan\n` +
   `/batal — hapus transaksi terakhir yang salah kecatet\n` +
+  `/lupa — reset ingatan obrolan AI\n` +
   `/unlink — putuskan koneksi akun\n\n` +
   `Kamu juga bisa langsung ngetik bebas, misal:\n` +
-  `_"beli kopi 20rb"_ → otomatis kecatet jadi transaksi\n` +
-  `_"gimana cara nabung yang efektif?"_ → tanya AI Agent`;
+  `_"beli kopi 20rb"_ → langsung kecatet (nggak butuh API key)\n` +
+  `_"gimana cara nabung yang efektif?"_ → tanya AI Agent (butuh API key Groq di Profil)`;
 
 const HELP_TEXT_UMKM =
   `🤖 *Perintah yang tersedia:*\n\n` +
@@ -155,10 +156,11 @@ const HELP_TEXT_UMKM =
   `/harga — daftar harga produk\n` +
   `/aset — daftar aset usaha\n` +
   `/batal — hapus transaksi terakhir yang salah kecatet\n` +
+  `/lupa — reset ingatan obrolan AI\n` +
   `/unlink — putuskan koneksi akun\n\n` +
   `Kamu juga bisa langsung ngetik bebas, misal:\n` +
-  `_"jual 2 kopi susu 40rb"_ → otomatis kecatet jadi transaksi\n` +
-  `_"gimana strategi naikin omzet?"_ → tanya AI Agent`;
+  `_"jual 2 kopi susu 40rb"_ → langsung kecatet (nggak butuh API key)\n` +
+  `_"gimana strategi naikin omzet?"_ → tanya AI Agent (butuh API key Groq di Profil)`;
 
 async function handleTelegramWebhook(req, res) {
   try {
@@ -267,6 +269,13 @@ async function handleTelegramWebhook(req, res) {
       if (text === "/aset")  { await sendTelegramMessage(chatId, await getAsetText(userId));  return res.status(200).json({ ok: true }); }
     }
 
+    // ── Command: /lupa — reset ingatan obrolan AI (bukan hapus data transaksi/dll) ──
+    if (text === "/lupa") {
+      await resetChatHistory(userId);
+      await sendTelegramMessage(chatId, "🧹 Oke, ingatan obrolan aku direset. Data transaksi/utang/target kamu tetap aman ya, ini cuma reset konteks chat aja.");
+      return res.status(200).json({ ok: true });
+    }
+
     // ── Command: /batal — hapus transaksi terakhir yang dicatet lewat bot ──
     if (text === "/batal") {
       const undo = await undoLastTransaction(userId, mode);
@@ -285,7 +294,10 @@ async function handleTelegramWebhook(req, res) {
     }
 
     // ── Bukan command — coba pahami sebagai catat transaksi ATAU obrolan bebas ke AI ──
-    await sendTelegramMessage(chatId, "⌛ Sebentar, aku proses dulu...");
+    const quickPreview = /\d/.test(text); // ada angka -> kemungkinan transaksi, kasih indikator proses beda
+    if (!quickPreview) {
+      await sendTelegramMessage(chatId, "⌛ Sebentar, aku proses dulu...");
+    }
     const result = await handleFreeText(userId, mode, text);
 
     if (result.type === "need_api_key") {
@@ -295,8 +307,9 @@ async function handleTelegramWebhook(req, res) {
     } else if (result.type === "transaction_saved") {
       const t = result.data;
       const emoji = t.type === "pemasukan" ? "💰" : "🛒";
+      const tag = result.quick ? "⚡" : "🤖";
       await sendTelegramMessage(chatId,
-        `${emoji} *Tercatat!*\n${t.description || t.category}\n${formatRupiahTG(t.amount)} — ${t.category}\n\n` +
+        `${emoji} *Tercatat!* ${tag}\n${t.description || t.category}\n${formatRupiahTG(t.amount)} — ${t.category}\n\n` +
         `${result.reply || ""}\n\n_Salah catat? Ketik /batal buat ngehapus._`
       );
     } else {
