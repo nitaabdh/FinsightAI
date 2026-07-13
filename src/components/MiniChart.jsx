@@ -11,7 +11,9 @@ export default function MiniChart({ transactions = [], accent = "umkm" }) {
   if (grouped.length === 0) {
     return (
       <div className="mini-chart mini-chart--empty">
-        <p>Belum ada data transaksi</p>
+        <span className="mini-chart__empty-icon">📊</span>
+        <p>Belum ada transaksi buat ditampilin di sini</p>
+        <p className="mini-chart__empty-sub">Grafiknya bakal muncul otomatis begitu ada transaksi tercatat</p>
       </div>
     );
   }
@@ -22,17 +24,17 @@ export default function MiniChart({ transactions = [], accent = "umkm" }) {
   return (
     <div className="mini-chart">
       <div className="mini-chart__bars">
-        {grouped.map(([month, val]) => (
+        {grouped.map(([month, val], i) => (
           <div key={month} className="mini-chart__group">
             <div className="mini-chart__pair">
               <div
-                className={`mini-chart__bar mini-chart__bar--income mini-chart__bar--${accent}`}
-                style={{ height: `${(val.pemasukan / maxVal) * 100}%` }}
+                className={`mini-chart__bar mini-chart__bar--income mini-chart__bar--${accent} chart-bar-grow`}
+                style={{ height: `${(val.pemasukan / maxVal) * 100}%`, animationDelay: `${i * 0.05}s` }}
                 title={`Pemasukan: ${val.pemasukan.toLocaleString("id-ID")}`}
               />
               <div
-                className="mini-chart__bar mini-chart__bar--expense"
-                style={{ height: `${(val.pengeluaran / maxVal) * 100}%` }}
+                className="mini-chart__bar mini-chart__bar--expense chart-bar-grow"
+                style={{ height: `${(val.pengeluaran / maxVal) * 100}%`, animationDelay: `${i * 0.05 + 0.03}s` }}
                 title={`Pengeluaran: ${val.pengeluaran.toLocaleString("id-ID")}`}
               />
             </div>

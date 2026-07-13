@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
+import CountUp from "../components/CountUp";
 import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, Tooltip, CartesianGrid, XAxis, YAxis } from "recharts";
 import { getTransactions, calcSummary, formatRupiah, groupByCategory, computeKasStats, getKasEmoji } from "../utils/storage";
 import "./Dashboard.css";
@@ -248,7 +249,7 @@ export default function DashboardPersonal() {
             </div>
             <div className="dp2__hero-saldo-row">
               <h2 className="dp2__hero-saldo">
-                {showSaldo ? formatRupiah(displaySaldo) : "Rp ••••••"}
+                {showSaldo ? <CountUp value={displaySaldo} format={formatRupiah} /> : "Rp ••••••"}
               </h2>
               <button className="dp2__hero-toggle" onClick={() => setShowSaldo(p => !p)}>
                 {showSaldo ? "👁️" : "🙈"}
@@ -291,17 +292,17 @@ export default function DashboardPersonal() {
         </div>
 
         {/* ── 3 CARDS: Pemasukan | Pengeluaran | Budget ── */}
-        <div className="dp2__metrics dp2__metrics--3col">
+        <div className="dp2__metrics dp2__metrics--3col stagger-list">
           <div className="dp2__metric dp2__metric--income">
             <div className="dp2__metric-icon dp2__metric-icon--income">💰</div>
             <p className="dp2__metric-label">Total Pemasukan</p>
-            <p className="dp2__metric-value">{formatRupiah(summary.pemasukan)}</p>
+            <p className="dp2__metric-value"><CountUp value={summary.pemasukan} format={formatRupiah} /></p>
             <p className="dp2__metric-sub">Gaji, freelance, dll</p>
           </div>
           <div className="dp2__metric dp2__metric--expense">
             <div className="dp2__metric-icon dp2__metric-icon--expense">🛒</div>
             <p className="dp2__metric-label">Total Pengeluaran</p>
-            <p className="dp2__metric-value">{formatRupiah(summary.pengeluaran)}</p>
+            <p className="dp2__metric-value"><CountUp value={summary.pengeluaran} format={formatRupiah} /></p>
             <p className="dp2__metric-sub">{budgetPersenLabel}% dari pemasukan</p>
           </div>
           <div className={"dp2__metric dp2__metric--budget dp2__metric--budget-" + budgetStatus}>
@@ -341,7 +342,7 @@ export default function DashboardPersonal() {
             {incomeSorted.length === 0 ? (
               <p className="dp2__empty">Belum ada pemasukan bulan ini</p>
             ) : (
-              <div className="dp2__income-list">
+              <div className="dp2__income-list stagger-list">
                 {incomeSorted.map(([cat, amount]) => {
                   const persen  = totalPemasukanIni > 0 ? (amount / totalPemasukanIni) * 100 : 0;
                   const lastAmt = incomeLastMonth[cat] || 0;
@@ -414,7 +415,7 @@ export default function DashboardPersonal() {
           {upcomingEvents.length === 0 ? (
             <p className="dp2__empty">Tidak ada acara dalam 7 hari ke depan</p>
           ) : (
-            <div className="dp2__acara-grid">
+            <div className="dp2__acara-grid stagger-list">
               {upcomingEvents.map(ev => (
                 <div key={ev.id} className="dp2__event-item">
                   <div className="dp2__event-date">
@@ -508,7 +509,7 @@ export default function DashboardPersonal() {
                   <span className="dp2__pie-total">{formatRupiah(summary.pengeluaran)}</span>
                 </div>
               </div>
-              <div className="dp2__cat-list" style={{ flex: 1, minWidth: 0 }}>
+              <div className="dp2__cat-list stagger-list" style={{ flex: 1, minWidth: 0 }}>
                 {topCategories.map(([cat, amount], i) => {
                   const pct = summary.pengeluaran > 0 ? (amount / summary.pengeluaran) * 100 : 0;
                   return (
@@ -546,7 +547,7 @@ export default function DashboardPersonal() {
               <p style={{fontSize:"12px"}}>Mulai catat dari menu <strong>Transaksi</strong>.</p>
             </div>
           ) : (
-            <div className="dp2__tx-list">
+            <div className="dp2__tx-list stagger-list">
               {recentTx.map(tx => (
                 <div key={tx.id} className="dp2__tx-item">
                   <div className={"dp2__tx-icon " + (tx.type==="pemasukan" ? "dp2__tx-icon--income" : "dp2__tx-icon--expense")}>

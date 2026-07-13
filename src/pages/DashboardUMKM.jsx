@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
+import CountUp from "../components/CountUp";
 import { BarChart, Bar, ResponsiveContainer, Tooltip, CartesianGrid, XAxis, YAxis } from "recharts";
 import { getTransactions, calcSummary, formatRupiah, groupByCategory, isModalUsaha, computeKasStats, getKasEmoji } from "../utils/storage";
 import { labelJatuhTempo, selisihHari } from "../utils/umkmCalc";
@@ -202,35 +203,35 @@ export default function DashboardUMKM() {
         </div>
 
         {/* ── 3 METRIC CARDS ── */}
-        <div className="du__metrics">
+        <div className="du__metrics stagger-list">
           <div className="du__metric du__metric--omzet">
             <div className="du__metric-icon du__metric-icon--omzet">📈</div>
             <p className="du__metric-label">Total Omzet</p>
-            <p className="du__metric-value">{formatRupiah(summary.pemasukan)}</p>
+            <p className="du__metric-value"><CountUp value={summary.pemasukan} format={formatRupiah} /></p>
             <p className="du__metric-sub">Total pemasukan tercatat</p>
           </div>
           <div className="du__metric du__metric--expense">
             <div className="du__metric-icon du__metric-icon--expense">📉</div>
             <p className="du__metric-label">Total Pengeluaran</p>
-            <p className="du__metric-value">{formatRupiah(summary.pengeluaran)}</p>
+            <p className="du__metric-value"><CountUp value={summary.pengeluaran} format={formatRupiah} /></p>
             <p className="du__metric-sub">Modal + operasional</p>
           </div>
           <div className={"du__metric " + (labaBulanIni >= 0 ? "du__metric--laba" : "du__metric--rugi")}>
             <div className={"du__metric-icon " + (labaBulanIni >= 0 ? "du__metric-icon--laba" : "du__metric-icon--rugi")}>💰</div>
             <p className="du__metric-label">Laba Bersih Bulan Ini</p>
-            <p className="du__metric-value">{formatRupiah(labaBulanIni)}</p>
+            <p className="du__metric-value"><CountUp value={labaBulanIni} format={formatRupiah} /></p>
             <p className="du__metric-sub">{labaSub}</p>
           </div>
           <div className="du__metric du__metric--modal">
             <div className="du__metric-icon du__metric-icon--modal">🏦</div>
             <p className="du__metric-label">Modal Usaha</p>
-            <p className="du__metric-value">{formatRupiah(modalUsaha)}</p>
+            <p className="du__metric-value"><CountUp value={modalUsaha} format={formatRupiah} /></p>
             <p className="du__metric-sub">{modalTx.length} setoran modal tercatat</p>
           </div>
           <div className="du__metric du__metric--aset">
             <div className="du__metric-icon du__metric-icon--aset">💎</div>
             <p className="du__metric-label">Total Aset Usaha</p>
-            <p className="du__metric-value">{formatRupiah(totalNilaiAset)}</p>
+            <p className="du__metric-value"><CountUp value={totalNilaiAset} format={formatRupiah} /></p>
             <p className="du__metric-sub">{asetUsaha.length} item peralatan tercatat</p>
           </div>
         </div>
@@ -246,7 +247,7 @@ export default function DashboardUMKM() {
                 </button>
               )}
             </div>
-            <div className="du__kas-grid">
+            <div className="du__kas-grid stagger-list">
               {kasVisible.map(k => (
                 <div key={k.nama} className={"du__kas-card" + (k.saldo < 0 ? " du__kas-card--minus" : "")}>
                   <span className="du__kas-icon">{getKasEmoji(k.nama)}</span>
@@ -330,7 +331,7 @@ export default function DashboardUMKM() {
             {topCategories.length === 0 ? (
               <p className="du__empty">Belum ada data pengeluaran</p>
             ) : (
-              <div className="du__cat-list">
+              <div className="du__cat-list stagger-list">
                 {topCategories.map(([cat, amount], i) => {
                   const pct = summary.pengeluaran > 0 ? (amount/summary.pengeluaran*100) : 0;
                   return (
@@ -368,7 +369,7 @@ export default function DashboardUMKM() {
               <p style={{fontSize:"12px"}}>Mulai catat dari menu <strong>Transaksi</strong>.</p>
             </div>
           ) : (
-            <div className="du__tx-list">
+            <div className="du__tx-list stagger-list">
               {recentTx.map(tx => (
                 <div key={tx.id} className="du__tx-item">
                   <div className={"du__tx-icon " + (tx.type==="pemasukan"?"du__tx-icon--income":"du__tx-icon--expense")}>

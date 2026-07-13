@@ -27,21 +27,23 @@ export default function BarChart({ transactions, accent = "personal" }) {
             <div className="barchart__bar-pair">
               {/* Income bar */}
               <div
-                className="barchart__bar"
+                className="barchart__bar chart-bar-grow"
                 style={{
                   height: `${(d.income / maxVal) * 100}%`,
                   background: incomeColor,
                   opacity: 0.85,
+                  animationDelay: `${i * 0.04}s`,
                 }}
                 title={`Pemasukan: ${formatRupiah(d.income)}`}
               />
               {/* Expense bar */}
               <div
-                className="barchart__bar"
+                className="barchart__bar chart-bar-grow"
                 style={{
                   height: `${(d.expense / maxVal) * 100}%`,
                   background: expenseColor,
                   opacity: 0.75,
+                  animationDelay: `${i * 0.04 + 0.03}s`,
                 }}
                 title={`Pengeluaran: ${formatRupiah(d.expense)}`}
               />
