@@ -47,7 +47,7 @@ export function calcSummary(transactions) {
   return { pemasukan, pengeluaran, saldo: pemasukan - pengeluaran };
 }
 
-async function getTransactions(userId, mode) {
+export async function getTransactions(userId, mode) {
   const { data, error } = await supabase
     .from("transactions")
     .select("*")
@@ -76,17 +76,66 @@ export async function getSaldoText(userId, mode) {
   return out;
 }
 
-// ── LAPORAN BULAN INI ────────────────────────────────────────────────────────
-export async function getLaporanText(userId, mode) {
-  const tx = await getTransactions(userId, mode);
-  const txBulanIni = tx.filter(t => isThisMonth(t.date));
-  const summary = calcSummary(txBulanIni);
-  const namaBulan = new Date().toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+const BULAN_ID = ["januari","februari","maret","april","mei","juni","juli","agustus","september","oktober","november","desember"];
 
-  let out = `📈 *Laporan ${namaBulan}*\n\n`;
+// Terima argumen periode dari user, contoh: "", "semua", "2026-06", "juni", "juni 2026", "bulan lalu"
+// Return: { mode: "bulan"|"semua", year, month (0-11) } — month/year null kalau mode "semua"
+export function parsePeriodArg(arg) {
+  const a = (arg || "").trim().toLowerCase();
+  const now = new Date();
+
+  if (!a) return { mode: "bulan", year: now.getFullYear(), month: now.getMonth() };
+  if (a === "semua" || a === "all") return { mode: "semua" };
+  if (a === "bulan lalu" || a === "kemarin") {
+    const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return { mode: "bulan", year: d.getFullYear(), month: d.getMonth() };
+  }
+
+  // Format yyyy-mm
+  const isoMatch = a.match(/^(\d{4})-(\d{1,2})$/);
+  if (isoMatch) {
+    return { mode: "bulan", year: Number(isoMatch[1]), month: Number(isoMatch[2]) - 1 };
+  }
+
+  // Nama bulan Indonesia, dengan/tanpa tahun. Contoh: "juni" atau "juni 2026"
+  const parts = a.split(/\s+/);
+  const monthIdx = BULAN_ID.findIndex(b => b.startsWith(parts[0]));
+  if (monthIdx !== -1) {
+    const year = parts[1] && /^\d{4}$/.test(parts[1]) ? Number(parts[1]) : now.getFullYear();
+    return { mode: "bulan", year, month: monthIdx };
+  }
+
+  return null; // format nggak dikenali
+}
+
+// ── LAPORAN — sekarang bisa pilih periode ("" = bulan ini, "semua", "yyyy-mm", "juni", dst) ──
+export async function getLaporanText(userId, mode, periodArg = "") {
+  const period = parsePeriodArg(periodArg);
+  if (!period) {
+    return `Format periode nggak dikenali. Contoh: \`/laporan\` (bulan ini), \`/laporan semua\`, \`/laporan juni\`, \`/laporan 2026-06\`.`;
+  }
+
+  const tx = await getTransactions(userId, mode);
+  let txFiltered, labelPeriode;
+
+  if (period.mode === "semua") {
+    txFiltered = tx;
+    labelPeriode = "Semua Periode";
+  } else {
+    txFiltered = tx.filter(t => {
+      if (!t.date) return false;
+      const d = new Date(t.date);
+      return d.getFullYear() === period.year && d.getMonth() === period.month;
+    });
+    labelPeriode = `${BULAN_ID[period.month][0].toUpperCase()}${BULAN_ID[period.month].slice(1)} ${period.year}`;
+  }
+
+  const summary = calcSummary(txFiltered);
+  let out = `📈 *Laporan ${labelPeriode}*\n\n`;
   out += `💰 Pemasukan: ${formatRupiahTG(summary.pemasukan)}\n`;
   out += `🛒 Pengeluaran: ${formatRupiahTG(summary.pengeluaran)}\n`;
   out += `${summary.saldo >= 0 ? "📈" : "📉"} Selisih: ${formatRupiahTG(summary.saldo)}\n`;
+  if (txFiltered.length === 0) out += `\n_Belum ada transaksi di periode ini._`;
   return out;
 }
 

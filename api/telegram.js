@@ -27,8 +27,9 @@ import jwt from "jsonwebtoken";
 import { sendTelegramMessage, escapeMd } from "./_lib/telegram.js";
 import {
   getSaldoText, getLaporanText, getUtangText, getTargetText,
-  getStokText, getHargaText, getAsetText,
+  getStokText, getHargaText, getAsetText, formatRupiahTG,
 } from "./_lib/telegram-data.js";
+import { handleFreeText, undoLastTransaction } from "./_lib/telegram-ai.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -134,19 +135,30 @@ const HELP_TEXT_PERSONAL =
   `🤖 *Perintah yang tersedia:*\n\n` +
   `/saldo — saldo tiap dompet\n` +
   `/laporan — ringkasan bulan ini\n` +
+  `/laporan semua — semua periode\n` +
+  `/laporan juni — bulan tertentu (atau \`2026-06\`)\n` +
   `/utang — daftar utang & cicilan aktif\n` +
   `/target — progress target tabungan\n` +
+  `/batal — hapus transaksi terakhir yang salah kecatet\n` +
   `/unlink — putuskan koneksi akun\n\n` +
-  `Kamu juga bisa langsung ngetik transaksi, misal:\n_"beli kopi 20rb"_ atau _"gajian 3jt"_ (fitur ini nyusul ya 🙏)`;
+  `Kamu juga bisa langsung ngetik bebas, misal:\n` +
+  `_"beli kopi 20rb"_ → otomatis kecatet jadi transaksi\n` +
+  `_"gimana cara nabung yang efektif?"_ → tanya AI Agent`;
 
 const HELP_TEXT_UMKM =
   `🤖 *Perintah yang tersedia:*\n\n` +
   `/saldo — saldo tiap kas/dompet usaha\n` +
   `/laporan — omzet & pengeluaran bulan ini\n` +
+  `/laporan semua — semua periode\n` +
+  `/laporan juni — bulan tertentu (atau \`2026-06\`)\n` +
   `/stok — stok bahan baku\n` +
   `/harga — daftar harga produk\n` +
   `/aset — daftar aset usaha\n` +
-  `/unlink — putuskan koneksi akun`;
+  `/batal — hapus transaksi terakhir yang salah kecatet\n` +
+  `/unlink — putuskan koneksi akun\n\n` +
+  `Kamu juga bisa langsung ngetik bebas, misal:\n` +
+  `_"jual 2 kopi susu 40rb"_ → otomatis kecatet jadi transaksi\n` +
+  `_"gimana strategi naikin omzet?"_ → tanya AI Agent`;
 
 async function handleTelegramWebhook(req, res) {
   try {
@@ -238,8 +250,9 @@ async function handleTelegramWebhook(req, res) {
       return res.status(200).json({ ok: true });
     }
 
-    if (text === "/laporan") {
-      await sendTelegramMessage(chatId, await getLaporanText(userId, mode));
+    if (text === "/laporan" || text.startsWith("/laporan ")) {
+      const arg = text.replace("/laporan", "").trim();
+      await sendTelegramMessage(chatId, await getLaporanText(userId, mode, arg));
       return res.status(200).json({ ok: true });
     }
 
@@ -254,7 +267,41 @@ async function handleTelegramWebhook(req, res) {
       if (text === "/aset")  { await sendTelegramMessage(chatId, await getAsetText(userId));  return res.status(200).json({ ok: true }); }
     }
 
-    await sendTelegramMessage(chatId, `Perintah belum dikenali. Ketik /help buat lihat daftar perintah yang bisa dipakai.`);
+    // ── Command: /batal — hapus transaksi terakhir yang dicatet lewat bot ──
+    if (text === "/batal") {
+      const undo = await undoLastTransaction(userId, mode);
+      if (!undo.success) {
+        await sendTelegramMessage(chatId, "Nggak ada transaksi yang bisa dibatalin.");
+      } else {
+        await sendTelegramMessage(chatId, `🗑 Dibatalin: *${undo.data.description || undo.data.category}* — ${formatRupiahTG(undo.data.amount)}`);
+      }
+      return res.status(200).json({ ok: true });
+    }
+
+    // ── Command lain yang diawali "/" tapi nggak dikenal ──
+    if (text.startsWith("/")) {
+      await sendTelegramMessage(chatId, `Perintah belum dikenali. Ketik /help buat lihat daftar perintah yang bisa dipakai.`);
+      return res.status(200).json({ ok: true });
+    }
+
+    // ── Bukan command — coba pahami sebagai catat transaksi ATAU obrolan bebas ke AI ──
+    await sendTelegramMessage(chatId, "⌛ Sebentar, aku proses dulu...");
+    const result = await handleFreeText(userId, mode, text);
+
+    if (result.type === "need_api_key") {
+      await sendTelegramMessage(chatId, "Fitur ini butuh API key Groq kamu dulu — atur di halaman *Profil* di web ya (gratis, tinggal daftar di console.groq.com).");
+    } else if (result.type === "error") {
+      await sendTelegramMessage(chatId, `⚠️ ${result.message}`);
+    } else if (result.type === "transaction_saved") {
+      const t = result.data;
+      const emoji = t.type === "pemasukan" ? "💰" : "🛒";
+      await sendTelegramMessage(chatId,
+        `${emoji} *Tercatat!*\n${t.description || t.category}\n${formatRupiahTG(t.amount)} — ${t.category}\n\n` +
+        `${result.reply || ""}\n\n_Salah catat? Ketik /batal buat ngehapus._`
+      );
+    } else {
+      await sendTelegramMessage(chatId, result.reply || "Maaf, aku kurang paham maksudnya.");
+    }
     return res.status(200).json({ ok: true });
 
   } catch (err) {
