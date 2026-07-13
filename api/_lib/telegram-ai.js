@@ -44,6 +44,20 @@ const CATEGORY_KEYWORDS = {
   "Kesehatan": ["obat","dokter","apotek","vitamin"],
 };
 
+// Kata/tanda yang nunjukkin ini kemungkinan besar PERTANYAAN/OBROLAN, BUKAN
+// pernyataan transaksi — walau kebetulan nyebut angka & kata "dapet"/"beli" dst
+// (kayak "aku dapet uang saku 350rb, gimana caranya nabung?").
+const QUESTION_INDICATORS = [
+  "?", "gimana", "bagaimana", "kenapa", "kok ", "apakah", "apa ya", "caranya",
+  "tolong", "minta saran", "menurut", "sebaiknya", "baiknya", "mending",
+  "kira-kira", "kira kira", "boleh gak", "boleh ga", "bisa gak", "bisa ga",
+];
+
+function looksLikeQuestion(text) {
+  const lower = text.toLowerCase();
+  return QUESTION_INDICATORS.some((q) => lower.includes(q));
+}
+
 function extractAmounts(text) {
   const results = [];
   // Prioritas 1: angka dengan akhiran rb/ribu/k/jt/juta — paling nggak ambigu
@@ -81,6 +95,9 @@ function detectCategory(text) {
 
 // Return null kalau nggak yakin (biar di-fallback ke AI), atau objek transaksi kalau yakin.
 export function tryQuickParse(text) {
+  if (looksLikeQuestion(text)) return null;    // kedengeran kayak pertanyaan/obrolan, bukan pernyataan transaksi
+  if (text.trim().split(/\s+/).length > 12) return null; // transaksi beneran biasanya pendek & to-the-point
+
   const amounts = extractAmounts(text);
   if (amounts.length !== 1) return null;      // 0 angka = nggak ketemu, >1 = ambigu angka mana yang dimaksud
   if (amounts[0] < 500) return null;           // kemungkinan besar bukan nominal uang (misal "beli 2 kopi")
