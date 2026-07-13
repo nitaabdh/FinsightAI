@@ -43,7 +43,6 @@ export default function CountUp({ value = 0, format = (n) => String(Math.round(n
 
     rafRef.current = requestAnimationFrame(tick);
     return () => rafRef.current && cancelAnimationFrame(rafRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   return <>{format(display)}</>;
