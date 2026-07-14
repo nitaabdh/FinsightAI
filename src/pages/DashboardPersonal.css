@@ -14,7 +14,7 @@
   box-sizing: border-box;
 }
 @media (max-width: 767px) {
-  .dp2 { padding: 1rem; padding-bottom: 0.5rem; }
+  .dp2 { padding: 1rem; padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* ── Skeleton ── */
@@ -54,7 +54,7 @@
 }
 .dp2__greeting-sub {
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin: 0.2rem 0 0;
 }
 .dp2__header-right {
@@ -378,10 +378,18 @@
 .dp2__metric-icon--budget-warning { background: rgba(224,142,11,0.12); }
 .dp2__metric-icon--budget-danger  { background: rgba(229,72,77,0.12); }
 
-.dp2__metric-value--budget { color: var(--text-primary); }
-.dp2__metric--budget-safe    .dp2__metric-value--budget { color: #0ea56f; }
-.dp2__metric--budget-warning .dp2__metric-value--budget { color: #e08e0b; }
-.dp2__metric--budget-danger  .dp2__metric-value--budget { color: #e5484d; }
+.dp2__metric-value--budget {
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+}
+.dp2__metric--budget-safe    .dp2__metric-value--budget { color: #0ea56f; background: rgba(14,165,111,0.12); }
+.dp2__metric--budget-warning .dp2__metric-value--budget { color: #e08e0b; background: rgba(224,142,11,0.12); }
+.dp2__metric--budget-danger  .dp2__metric-value--budget { color: #e5484d; background: rgba(229,72,77,0.12); }
 
 .dp2__budget-bar--mini {
   height: 5px;
@@ -420,7 +428,7 @@
 .dp2__metric-icon--expense { background: rgba(229,72,77,0.12); }
 .dp2__metric-label {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-family: var(--font-body);
 }
 .dp2__metric-value {
@@ -808,13 +816,22 @@
 @media (max-width: 640px) {
   .dp2 { gap: 0.85rem; }
   .dp2__greeting { font-size: 18px; }
-  .dp2__hero { padding: 1.1rem 1.1rem; gap: 0.75rem; }
-  .dp2__hero-saldo { font-size: 20px; }
-  .dp2__card { width: 120px; height: 76px; }
-  .dp2__card-action-btn { font-size: 9px; padding: 0.35rem 0.3rem; }
-  .dp2__wallet-select { max-width: 110px; font-size: 10px; }
-  .dp2__card-brand { font-size: 8px; }
-  .dp2__card-number { font-size: 7px; }
+
+  /* Hero: dari row (teks + kartu VISA sejajar) jadi stack vertikal
+     biar gak berdesakan/wrap aneh di layar sempit */
+  .dp2__hero { flex-direction: column; align-items: stretch; padding: 1.1rem 1.1rem; gap: 1rem; }
+  .dp2__hero-left { width: 100%; }
+  .dp2__hero-saldo { font-size: 26px; }
+  .dp2__hero-meta { flex-wrap: wrap; }
+
+  .dp2__card-visual { width: 100%; flex-direction: column; }
+  .dp2__card { width: 100%; height: 92px; align-self: stretch; }
+  .dp2__card-actions { width: 100%; }
+  .dp2__card-action-btn { flex: 1; font-size: 11px; padding: 0.55rem 0.5rem; }
+  .dp2__wallet-select { max-width: 130px; font-size: 10px; }
+  .dp2__card-brand { font-size: 10px; }
+  .dp2__card-number { font-size: 9px; }
+
   .dp2__metrics { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
   .dp2__metrics--3col .dp2__metric--budget { grid-column: span 2; }
   .dp2__metric { padding: 0.8rem 0.85rem; }

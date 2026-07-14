@@ -259,7 +259,7 @@ export default function DashboardPersonal() {
               <span className="dp2__hero-type">{displaySaldoLabel}</span>
               <span className="dp2__hero-type">Digital Card</span>
             </div>
-            <label className="dp2__hero-nominal-toggle">
+            <label className="dp2__hero-nominal-toggle ticket-tear">
               <span>Tampilkan Nominal</span>
               <div className={"dp2__toggle " + (showSaldo ? "dp2__toggle--on" : "")} onClick={() => setShowSaldo(p => !p)}>
                 <div className="dp2__toggle-knob" />
