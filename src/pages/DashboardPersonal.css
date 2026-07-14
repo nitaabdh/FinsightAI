@@ -517,7 +517,14 @@
 .dp2__income-list { display: flex; flex-direction: column; gap: 0.75rem; }
 .dp2__income-row { display: flex; flex-direction: column; gap: 0.25rem; }
 .dp2__income-row-top { display: flex; align-items: center; justify-content: space-between; }
-.dp2__income-cat { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.dp2__income-cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
 .dp2__income-amount { font-family: var(--font-display); font-size: 13px; font-weight: 800; color: var(--accent-personal); }
 .dp2__income-bar { height: 5px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden; }
 .dp2__income-bar-fill { height: 100%; background: linear-gradient(90deg, #0c8f5f, #0ea56f); border-radius: 3px; transition: width 0.5s ease; }
@@ -563,7 +570,11 @@
   color: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
 }
+.dp2__section-title svg { flex-shrink: 0; opacity: 0.85; }
 .dp2__see-all {
   background: none;
   font-size: 12px;

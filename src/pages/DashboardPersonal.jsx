@@ -4,6 +4,12 @@ import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import CountUp from "../components/CountUp";
 import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, Tooltip, CartesianGrid, XAxis, YAxis } from "recharts";
+import {
+  Eye, EyeOff, Wallet, ShoppingCart, PieChart as PieChartIcon,
+  TrendingUp, Target, Calendar, Sparkles, Landmark, CreditCard,
+  UtensilsCrossed, Car, ShoppingBag, Gamepad2, Pill, BookOpen,
+  Receipt, Lightbulb, Droplet, Wifi, Smartphone, Briefcase, Gift, FolderClosed, BarChart3,
+} from "lucide-react";
 import { getTransactions, calcSummary, formatRupiah, groupByCategory, computeKasStats, getKasEmoji } from "../utils/storage";
 import "./Dashboard.css";
 import "./DashboardPersonal.css";
@@ -18,6 +24,20 @@ const CATEGORY_EMOJI = {
 function getCategoryEmoji(cat) {
   if (!cat) return "🗂️";
   return CATEGORY_EMOJI[String(cat).toLowerCase().trim()] || "🗂️";
+}
+
+// Versi ikon (lucide) buat konteks JSX — dipakai gantiin emoji di UI,
+// getCategoryEmoji tetap ada buat konteks teks polos (insight AI, <option>).
+const CATEGORY_ICON = {
+  "makan": UtensilsCrossed, "makanan": UtensilsCrossed, "transportasi": Car, "transport": Car,
+  "belanja": ShoppingBag, "hiburan": Gamepad2, "kesehatan": Pill, "pendidikan": BookOpen,
+  "tagihan": Receipt, "listrik": Lightbulb, "air": Droplet, "internet": Wifi,
+  "pulsa": Smartphone, "gaji": Wallet, "freelance": Briefcase, "investasi": TrendingUp,
+  "tabungan": Landmark, "hadiah": Gift, "lainnya": FolderClosed,
+};
+function getCategoryIcon(cat, size = 15) {
+  const Icon = CATEGORY_ICON[String(cat || "").toLowerCase().trim()] || FolderClosed;
+  return <Icon size={size} strokeWidth={2} />;
 }
 
 function daysUntil(dateStr) {
@@ -252,7 +272,7 @@ export default function DashboardPersonal() {
                 {showSaldo ? <CountUp value={displaySaldo} format={formatRupiah} /> : "Rp ••••••"}
               </h2>
               <button className="dp2__hero-toggle" onClick={() => setShowSaldo(p => !p)}>
-                {showSaldo ? "👁️" : "🙈"}
+                {showSaldo ? <Eye size={18} /> : <EyeOff size={18} />}
               </button>
             </div>
             <div className="dp2__hero-meta">
@@ -294,19 +314,19 @@ export default function DashboardPersonal() {
         {/* ── 3 CARDS: Pemasukan | Pengeluaran | Budget ── */}
         <div className="dp2__metrics dp2__metrics--3col stagger-list">
           <div className="dp2__metric dp2__metric--income">
-            <div className="dp2__metric-icon dp2__metric-icon--income">💰</div>
+            <div className="dp2__metric-icon dp2__metric-icon--income"><Wallet size={17} /></div>
             <p className="dp2__metric-label">Total Pemasukan</p>
             <p className="dp2__metric-value"><CountUp value={summary.pemasukan} format={formatRupiah} /></p>
             <p className="dp2__metric-sub">Gaji, freelance, dll</p>
           </div>
           <div className="dp2__metric dp2__metric--expense">
-            <div className="dp2__metric-icon dp2__metric-icon--expense">🛒</div>
+            <div className="dp2__metric-icon dp2__metric-icon--expense"><ShoppingCart size={17} /></div>
             <p className="dp2__metric-label">Total Pengeluaran</p>
             <p className="dp2__metric-value"><CountUp value={summary.pengeluaran} format={formatRupiah} /></p>
             <p className="dp2__metric-sub">{budgetPersenLabel}% dari pemasukan</p>
           </div>
           <div className={"dp2__metric dp2__metric--budget dp2__metric--budget-" + budgetStatus}>
-            <div className={"dp2__metric-icon dp2__metric-icon--budget-" + budgetStatus}>📊</div>
+            <div className={"dp2__metric-icon dp2__metric-icon--budget-" + budgetStatus}><PieChartIcon size={17} /></div>
             <p className="dp2__metric-label">Budget Bulan Ini</p>
             <p className="dp2__metric-value dp2__metric-value--budget">{budgetPersenLabel}%</p>
             <div className="dp2__budget-bar dp2__budget-bar--mini">
@@ -321,7 +341,7 @@ export default function DashboardPersonal() {
           {/* Income Tracker */}
           <div className="dp2__income">
             <div className="dp2__section-header">
-              <span className="dp2__section-title">💰 Income Tracker</span>
+              <span className="dp2__section-title"><TrendingUp size={14} /> Income Tracker</span>
               {incomeDelta !== null && (
                 <span className={"dp2__delta " + (incomeDelta >= 0 ? "dp2__delta--up" : "dp2__delta--down")}>
                   {incomeDelta >= 0 ? "▲" : "▼"} {Math.abs(incomeDelta).toFixed(0)}% vs lalu
@@ -350,7 +370,7 @@ export default function DashboardPersonal() {
                   return (
                     <div key={cat} className="dp2__income-row">
                       <div className="dp2__income-row-top">
-                        <span className="dp2__income-cat">{getCategoryEmoji(cat)} {cat}</span>
+                        <span className="dp2__income-cat">{getCategoryIcon(cat)} {cat}</span>
                         <div style={{ display:"flex", alignItems:"center", gap:"0.4rem" }}>
                           {delta !== null && (
                             <span className={"dp2__delta " + (delta >= 0 ? "dp2__delta--up" : "dp2__delta--down")}>
@@ -375,7 +395,7 @@ export default function DashboardPersonal() {
           {/* Target Tabungan Aktif */}
           <div className="dp2__card-section">
             <div className="dp2__section-header">
-              <span className="dp2__section-title">🎯 Target Tabungan</span>
+              <span className="dp2__section-title"><Target size={14} /> Target Tabungan</span>
             </div>
             {activeTargets.length === 0 ? (
               <p className="dp2__empty">Belum ada target aktif</p>
@@ -387,7 +407,7 @@ export default function DashboardPersonal() {
                     <div className="dp2__target-top">
                       <div>
                         <p className="dp2__target-nama">{t.nama}</p>
-                        {t.penempatan && <p className="dp2__target-penempatan">🏦 {t.penempatan}</p>}
+                        {t.penempatan && <p className="dp2__target-penempatan"><Landmark size={11} style={{verticalAlign:"-1px"}} /> {t.penempatan}</p>}
                       </div>
                       <span className="dp2__target-pct">{persen.toFixed(0)}%</span>
                     </div>
@@ -409,7 +429,7 @@ export default function DashboardPersonal() {
         {/* ── ACARA MENDATANG (sendiri, full width) ── */}
         <div className="dp2__card-section">
           <div className="dp2__section-header">
-            <span className="dp2__section-title">📅 Acara Mendatang (7 Hari)</span>
+            <span className="dp2__section-title"><Calendar size={14} /> Acara Mendatang (7 Hari)</span>
             <button className="dp2__see-all-sm" onClick={() => navigate("/dashboard/personal/catatan")}>Lihat semua →</button>
           </div>
           {upcomingEvents.length === 0 ? (
@@ -444,7 +464,7 @@ export default function DashboardPersonal() {
 
           {tren6Bulan.every(d => d.pemasukan === 0 && d.pengeluaran === 0) ? (
             <div className="dp2__tren-empty">
-              <span className="dp2__tren-empty-icon">📊</span>
+              <span className="dp2__tren-empty-icon"><BarChart3 size={28} /></span>
               <p>Belum ada data transaksi untuk ditampilkan.</p>
               <p>Mulai catat transaksi agar tren keuanganmu terlihat di sini.</p>
             </div>
@@ -478,7 +498,7 @@ export default function DashboardPersonal() {
               </ResponsiveContainer>
               {insightText && (
                 <div className="dp2__insight">
-                  <span className="dp2__insight-icon">✨</span>
+                  <span className="dp2__insight-icon"><Sparkles size={14} /></span>
                   <span>{insightText}</span>
                 </div>
               )}
@@ -489,7 +509,7 @@ export default function DashboardPersonal() {
         {/* ── PENGELUARAN PER KATEGORI ── */}
         <div className="dp2__card-section">
           <div className="dp2__section-header">
-            <span className="dp2__section-title">📊 Pengeluaran per Kategori</span>
+            <span className="dp2__section-title"><PieChartIcon size={14} /> Pengeluaran per Kategori</span>
             <button className="dp2__see-all-sm" onClick={() => navigate("/dashboard/personal/transaksi")}>Lihat semua →</button>
           </div>
           {topCategories.length === 0 ? (
@@ -517,7 +537,7 @@ export default function DashboardPersonal() {
                       <div className="dp2__cat-item-top">
                         <span className="dp2__cat-name">
                           <span className="dp2__cat-dot" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                          {getCategoryEmoji(cat)} {cat}
+                          {getCategoryIcon(cat)} {cat}
                         </span>
                         <div className="dp2__cat-right">
                           <span className="dp2__cat-pct">{pct.toFixed(0)}%</span>
@@ -543,7 +563,7 @@ export default function DashboardPersonal() {
           </div>
           {recentTx.length === 0 ? (
             <div className="dp2__empty-state">
-              <p>💳</p><p>Belum ada transaksi.</p>
+              <CreditCard size={26} style={{opacity:0.5}} /><p>Belum ada transaksi.</p>
               <p style={{fontSize:"12px"}}>Mulai catat dari menu <strong>Transaksi</strong>.</p>
             </div>
           ) : (
@@ -551,7 +571,7 @@ export default function DashboardPersonal() {
               {recentTx.map(tx => (
                 <div key={tx.id} className="dp2__tx-item">
                   <div className={"dp2__tx-icon " + (tx.type==="pemasukan" ? "dp2__tx-icon--income" : "dp2__tx-icon--expense")}>
-                    {getCategoryEmoji(tx.category)}
+                    {getCategoryIcon(tx.category, 16)}
                   </div>
                   <div className="dp2__tx-info">
                     <p className="dp2__tx-desc">{tx.description || tx.category || "-"}</p>
