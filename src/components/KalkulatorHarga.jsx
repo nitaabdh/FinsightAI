@@ -5,6 +5,7 @@ import {
   biayaOpsItem, totalBiayaOperasional,
 } from "../utils/umkmCalc";
 import RupiahInput from "./RupiahInput";
+import CountUp from "./CountUp";
 import "./KalkulatorHarga.css";
 
 const emptyForm = {
@@ -312,7 +313,7 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
         </div>
 
         {form.items.length > 0 && (
-          <div className="kalkharga__items">
+          <div className="kalkharga__items stagger-list">
             {form.items.map((it, idx) => {
               const b = bahanMap[it.bahanId];
               const biaya = b ? biayaItem(b, it.jumlahPakai, it.satuanPakai) : 0;
@@ -347,7 +348,7 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
         </div>
 
         {form.biayaOperasionalItems.length > 0 && (
-          <div className="kalkharga__items">
+          <div className="kalkharga__items stagger-list">
             {form.biayaOperasionalItems.map((it, idx) => {
               const o = opsMap[it.opsId];
               const biaya = o ? biayaOpsItem(o, it.jumlah) : 0;
@@ -393,7 +394,7 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
           <div className="kalkharga__sum-row"><span>Biaya Operasional</span><span>{formatRupiah(biayaOpsNum)}</span></div>
           <div className="kalkharga__sum-row kalkharga__sum-row--sub"><span>Total Biaya</span><span>{formatRupiah(totalBiaya)}</span></div>
           <div className="kalkharga__sum-row"><span>Target Untung</span><span>{formatRupiah(targetNum)}</span></div>
-          <div className="kalkharga__sum-row kalkharga__sum-row--final"><span>Harga Jual</span><span>{formatRupiah(hargaJual)}</span></div>
+          <div className="kalkharga__sum-row kalkharga__sum-row--final"><span>Harga Jual</span><span><CountUp value={hargaJual} format={formatRupiah} /></span></div>
         </div>
 
         {error && <p className="kalkharga__error">⚠️ {error}</p>}
@@ -410,7 +411,7 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
       {/* Daftar Produk */}
       <div className="kalkharga__list">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
-          <h3 className="kalkharga__list-title" style={{ margin: 0 }}>Daftar Produk</h3>
+          <h3 className="kalkharga__list-title stagger-list" style={{ margin: 0 }}>Daftar Produk</h3>
           {produkList.length > 0 && (
             <input className="kalkharga__input" type="text" placeholder="🔍 Cari produk..."
               style={{ maxWidth: "240px" }}
@@ -426,7 +427,7 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
         ) : filteredProdukList.length === 0 ? (
           <div className="kalkharga__empty"><p>🔍</p><p>Tidak ada produk yang cocok dengan pencarian.</p></div>
         ) : (
-          <div className="kalkharga__produk-grid">
+          <div className="kalkharga__produk-grid stagger-list">
             {filteredProdukList.map(p => (
               <div key={p.id} className="kalkharga__produk-card">
                 <div className="kalkharga__produk-header">

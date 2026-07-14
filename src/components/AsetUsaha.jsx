@@ -231,7 +231,7 @@ export default function AsetUsaha() {
             🔒 Harga beli aset ini sudah tercatat sebagai transaksi pengeluaran di Keuangan, jadi tidak bisa diubah dari sini.
           </p>
         )}
-        <div className="asetusaha__grid">
+        <div className="asetusaha__grid stagger-list">
           <div className="asetusaha__field asetusaha__field--wide">
             <label className="asetusaha__label">Nama Alat</label>
             <input className="asetusaha__input" type="text" name="nama"
@@ -310,7 +310,7 @@ export default function AsetUsaha() {
         </div>
       )}
 
-      <div className="asetusaha__list">
+      <div className="asetusaha__list stagger-list">
         {list.length === 0 ? (
           <div className="asetusaha__empty">
             <p>🧰</p>

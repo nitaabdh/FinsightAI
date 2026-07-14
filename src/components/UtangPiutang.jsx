@@ -185,8 +185,8 @@ const toggleLunas = async (id) => {
       )}
 
       {/* List header + toggle riwayat */}
-      <div className="utangpiutang__list-header">
-        <span className="utangpiutang__list-title">
+      <div className="utangpiutang__list-header stagger-list">
+        <span className="utangpiutang__list-title stagger-list">
           {showRiwayat ? "Riwayat Lunas" : "Daftar Aktif"} — {filtered.length} catatan
         </span>
         <button className="utangpiutang__riwayat-toggle" onClick={() => setShowRiwayat((v) => !v)}>
@@ -195,7 +195,7 @@ const toggleLunas = async (id) => {
       </div>
 
       {/* List */}
-      <div className="utangpiutang__list">
+      <div className="utangpiutang__list stagger-list">
         {filtered.length === 0 ? (
           <div className="utangpiutang__empty">
             <p>{showRiwayat ? "📋" : sisi === "piutang" ? "📥" : "📤"}</p>

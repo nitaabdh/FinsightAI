@@ -145,6 +145,7 @@ Tugas kamu: KLASIFIKASIKAN pesan user jadi salah satu dari ${mode === "umkm" ? "
 
 {
   "intent": "transaction" | "note" | "event" | ${mode === "umkm" ? `"stock_adjust" | ` : ""}"chat",
+  "confidence": "tinggi" atau "rendah" (WAJIB diisi buat SEMUA intent kecuali "chat" — pilih "rendah" kalau kalimatnya bisa ditafsirin lebih dari satu cara, ada bagian yang nggak jelas/kurang lengkap, atau kamu ragu ini beneran maksud user),
   "transaction": {
     "type": "pemasukan" atau "pengeluaran",
     "amount": <angka murni tanpa titik/koma/Rp>,
@@ -160,8 +161,9 @@ Aturan klasifikasi:
 - "transaction" kalau user cerita udah BELANJA/BAYAR/TERIMA UANG sesuatu dengan nominal jelas (boleh singkatan "20rb"=20000, "1jt"=1000000, "1,5jt"=1500000)
 - "note" kalau user minta DICATETIN sesuatu yang BUKAN soal uang/tanggal spesifik (pengingat umum, ide, to-do). Kata kunci: "catat", "inget", "jangan lupa" TANPA ada tanggal jelas
 - "event" kalau user nyebut acara/jadwal DENGAN tanggal/waktu spesifik (hari ini, besok, lusa, atau tanggal jelas)
-${mode === "umkm" ? `- "stock_adjust" kalau user bilang nambah/kurang STOK BAHAN BAKU (bukan uang). Kata kunci: "stok", "restock", "abis", "kurangin", "tambahin" + nama bahan + jumlah\n` : ""}- "chat" kalau user nanya sesuatu, curhat, minta saran, atau nggak jelas termasuk kategori mana
-- Kalau ragu-ragu, pilih "chat" dan di reply-nya tanya balik buat klarifikasi
+${mode === "umkm" ? `- "stock_adjust" kalau user bilang nambah/kurang STOK BAHAN BAKU (bukan uang). Kata kunci: "stok", "restock", "abis", "kurangin", "tambahin" + nama bahan + jumlah\n` : ""}- "chat" kalau user nanya sesuatu, curhat, minta saran, atau nggak jelas termasuk kategori mana SAMA SEKALI
+- Kalau kamu YAKIN termasuk salah satu kategori (transaction/note/event${mode === "umkm" ? "/stock_adjust" : ""}) tapi ada detail yang kurang jelas/lengkap (contoh: nominal kedengeran tapi bisa ke-mix sama angka lain, atau nama barang/bahan agak beda dari yang biasa dicatet), pilih intent yang sesuai TAPI kasih confidence "rendah" — JANGAN dialihkan ke "chat"
+- Kalau kamu bener-bener nggak tau ini masuk kategori mana (bisa "note" atau bisa "chat", dst), baru pilih "chat" dan di reply-nya tanya balik buat klarifikasi
 - Mode akun ini: ${mode === "umkm" ? "UMKM (bisnis)" : "Keuangan Pribadi"}
 
 Konteks keuangan user saat ini:
@@ -270,6 +272,49 @@ export async function handleFreeText(userId, mode, text) {
     { onConflict: "user_id" }
   );
 
+  // ── Kalau AI-nya sendiri ragu (confidence "rendah"), JANGAN langsung eksekusi —
+  // simpen dulu sebagai "pending", minta konfirmasi user lewat tombol dulu ──
+  if (parsed.intent !== "chat" && parsed.confidence === "rendah") {
+    let payload = null;
+    let previewText = "";
+
+    if (parsed.intent === "transaction" && parsed.transaction?.amount) {
+      const t = parsed.transaction;
+      payload = { type: t.type === "pemasukan" ? "pemasukan" : "pengeluaran", amount: Number(t.amount), category: t.category || "Lainnya", description: t.description || text };
+      const emoji = payload.type === "pemasukan" ? "💰" : "🛒";
+      previewText = `${emoji} Transaksi: ${payload.description}\n${formatRupiahTG(payload.amount)} — ${payload.category}`;
+    } else if (parsed.intent === "note" && parsed.note?.title) {
+      payload = { title: parsed.note.title };
+      previewText = `📝 Catatan: ${payload.title}`;
+    } else if (parsed.intent === "event" && parsed.event?.title) {
+      const dateStr = parseFlexibleDate(parsed.event.date_text || "");
+      if (!dateStr) {
+        return { type: "chat", reply: `Aku ngerti kamu mau nyatet acara "${parsed.event.title}", tapi tanggalnya kurang jelas. Bisa disebutin lagi tanggalnya?` };
+      }
+      const tglLabel = new Date(dateStr).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+      payload = { title: parsed.event.title, dateStr };
+      previewText = `📅 Acara: ${payload.title} — ${tglLabel}`;
+    } else if (parsed.intent === "stock_adjust" && parsed.stock_adjust?.item && parsed.stock_adjust?.quantity) {
+      const s = parsed.stock_adjust;
+      payload = { item: s.item, quantity: Number(s.quantity), direction: s.direction === "kurang" ? "kurang" : "tambah" };
+      previewText = `📦 Stok: ${payload.direction === "tambah" ? "+" : "-"}${payload.quantity} ${payload.item}`;
+    }
+
+    if (payload) {
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 menit
+      const { data: pending, error: pendingErr } = await supabase
+        .from("telegram_pending_actions")
+        .insert({ user_id: userId, mode, action_type: parsed.intent, payload, original_text: text, expires_at: expiresAt })
+        .select()
+        .single();
+
+      if (!pendingErr && pending) {
+        return { type: "needs_confirmation", pendingId: pending.id, previewText, reply: parsed.reply };
+      }
+      // kalau gagal nyimpen pending (jarang), lanjut aja jalur normal di bawah daripada gagal total
+    }
+  }
+
   if (parsed.intent === "transaction" && parsed.transaction && parsed.transaction.amount) {
     const t = parsed.transaction;
     const { data: inserted, error } = await supabase
@@ -356,6 +401,58 @@ export async function undoLastTransaction(userId, mode) {
 // atau ngerasa AI-nya "bingung" gara-gara riwayat lama yang udah nggak relevan.
 export async function resetChatHistory(userId) {
   await supabase.from("telegram_chat_history").delete().eq("user_id", userId);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EKSEKUSI/BATAL PENDING ACTION — dipanggil pas user tap tombol "✅ Benar"
+// atau "❌ Bukan" di pesan konfirmasi (lihat callback_query handler di telegram.js).
+// ═══════════════════════════════════════════════════════════════════════════
+export async function executePendingAction(pendingId) {
+  const { data: pending, error: findErr } = await supabase
+    .from("telegram_pending_actions").select("*").eq("id", pendingId).maybeSingle();
+  if (findErr || !pending) return { success: false, message: "Konfirmasi ini udah nggak berlaku (mungkin kepencet dobel atau kelamaan)." };
+
+  if (new Date(pending.expires_at) < new Date()) {
+    await supabase.from("telegram_pending_actions").delete().eq("id", pendingId);
+    return { success: false, message: "Konfirmasi ini udah kedaluwarsa (lebih dari 10 menit). Coba kirim ulang pesannya." };
+  }
+
+  const { user_id: userId, mode, action_type, payload } = pending;
+  await supabase.from("telegram_pending_actions").delete().eq("id", pendingId);
+
+  try {
+    if (action_type === "transaction") {
+      const { data, error } = await supabase.from("transactions").insert({
+        user_id: userId, mode, type: payload.type, amount: payload.amount,
+        category: payload.category, description: payload.description,
+        date: new Date().toISOString().slice(0, 10), kas: "Kas Tunai",
+      }).select().single();
+      if (error) throw error;
+      return { success: true, type: "transaction_saved", data };
+    }
+    if (action_type === "note") {
+      const data = await addCatatan(userId, mode, payload.title);
+      return { success: true, type: "note_saved", data };
+    }
+    if (action_type === "event") {
+      const data = await addAcara(userId, mode, payload.title, payload.dateStr);
+      return { success: true, type: "event_saved", data, dateStr: payload.dateStr };
+    }
+    if (action_type === "stock_adjust") {
+      const result = await adjustStok(userId, payload.item, payload.quantity, payload.direction);
+      if (!result.success) return { success: false, message: result.message };
+      return { success: true, type: "stock_adjusted", data: result };
+    }
+  } catch (err) {
+    console.error("[telegram-ai] gagal eksekusi pending action:", err);
+    return { success: false, message: "Gagal nyimpen, coba lagi ya." };
+  }
+
+  return { success: false, message: "Jenis aksi nggak dikenali." };
+}
+
+export async function cancelPendingAction(pendingId) {
+  await supabase.from("telegram_pending_actions").delete().eq("id", pendingId);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

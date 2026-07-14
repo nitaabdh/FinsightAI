@@ -130,7 +130,7 @@ export default function BiayaOperasional() {
         ) : filteredList.length === 0 ? (
           <div className="biayaops__empty"><p>🔍</p><p>Tidak ada yang cocok dengan pencarian.</p></div>
         ) : (
-          <div className="biayaops__rows">
+          <div className="biayaops__rows stagger-list">
             {filteredList.map(o => (
               <div key={o.id} className="biayaops__row">
                 <span className="biayaops__row-nama">{o.nama}</span>

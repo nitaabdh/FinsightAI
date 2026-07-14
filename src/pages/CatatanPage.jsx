@@ -352,7 +352,7 @@ const updateOpenNoteMeta = async (field, value) => {
             <h2 className="cal-title">{MONTHS[curMonth]} <span className="cal-year">{curYear}</span></h2>
             <button className="cal-nav-btn" onClick={nextMonth}>›</button>
           </div>
-          <div className="cal-grid">
+          <div className="cal-grid stagger-list">
             {DAYS.map(d => <div key={d} className="cal-day-label">{d}</div>)}
             {cells.map((day,idx) => {
               if (!day) return <div key={`e${idx}`} className="cal-cell empty" />;
@@ -392,8 +392,8 @@ const updateOpenNoteMeta = async (field, value) => {
 
         {/* Cards acara */}
         <div className="cal-cards-section" ref={cardsRef}>
-          <div className="cal-cards-header">
-            <h3 className="cal-cards-title">
+          <div className="cal-cards-header stagger-list">
+            <h3 className="cal-cards-title stagger-list">
               {filterDate
                 ? `📌 ${parseInt(filterDate.split("-")[2])} ${MONTHS[parseInt(filterDate.split("-")[1])-1]} ${filterDate.split("-")[0]}`
                 : "📋 Semua Acara"}
@@ -406,13 +406,13 @@ const updateOpenNoteMeta = async (field, value) => {
           </div>
 
           {displayedCalNotes.length === 0 && (
-            <div className="cal-cards-empty">
+            <div className="cal-cards-empty stagger-list">
               <span>🗓️</span>
               <p>{filterDate ? "Tidak ada acara di tanggal ini." : "Belum ada acara. Klik tanggal di kalender untuk menambah!"}</p>
             </div>
           )}
 
-          <div className="cal-cards-list">
+          <div className="cal-cards-list stagger-list">
             {displayedCalNotes.map(note => {
               const cd      = getCountdown(note.date);
               const cat     = getCat(note.category);
@@ -471,11 +471,11 @@ const updateOpenNoteMeta = async (field, value) => {
         </div>
 
         {/* Riwayat Kalkulasi */}
-        <div className="calc-history-section">
-          <div className="calc-history-header">
+        <div className="calc-history-section stagger-list">
+          <div className="calc-history-header stagger-list">
             <h3 className="calc-saved-title">🕓 Riwayat Kalkulasi</h3>
             {calcHistory.length > 0 && (
-              <button className="calc-history-clear" onClick={() => {
+              <button className="calc-history-clear stagger-list" onClick={() => {
                 setCalcHistory([]);
                 saveData(`finsight_calcHistory_${userId}`, []);
               }}>Hapus semua</button>
@@ -487,11 +487,11 @@ const updateOpenNoteMeta = async (field, value) => {
               <p>Belum ada riwayat. Gunakan kalkulator untuk mulai menghitung.</p>
             </div>
           ) : (
-            <div className="calc-history-list">
+            <div className="calc-history-list stagger-list">
               {calcHistory.slice(0, 20).map(h => (
-                <div key={h.id} className="calc-history-item">
-                  <span className="calc-history-expr">{h.expr}</span>
-                  <span className="calc-history-time">
+                <div key={h.id} className="calc-history-item stagger-list">
+                  <span className="calc-history-expr stagger-list">{h.expr}</span>
+                  <span className="calc-history-time stagger-list">
                     {new Date(h.createdAt).toLocaleTimeString("id-ID", {hour:"2-digit", minute:"2-digit"})}
                   </span>
                 </div>
@@ -509,7 +509,7 @@ const updateOpenNoteMeta = async (field, value) => {
               <p>Belum ada perhitungan tersimpan. Gunakan kalkulator lalu tekan "Simpan Perhitungan".</p>
             </div>
           ) : (
-            <div className="calc-saved-list">
+            <div className="calc-saved-list stagger-list">
               {savedCalcs.map(c => (
                 <div key={c.id} className="calc-saved-card">
                   <div className="calc-saved-card__header">
@@ -573,7 +573,7 @@ const updateOpenNoteMeta = async (field, value) => {
       )}
 
       {notesView==="grid" && filteredNotes.length>0 && (
-        <div className="notes-grid">
+        <div className="notes-grid stagger-list">
           {filteredNotes.map(n => {
             const cat = getCat(n.category);
             // Strip HTML tags untuk preview plain text
@@ -596,7 +596,7 @@ const updateOpenNoteMeta = async (field, value) => {
       )}
 
       {notesView==="list" && filteredNotes.length>0 && (
-        <div className="notes-list">
+        <div className="notes-list stagger-list">
           {filteredNotes.map(n => {
             const cat = getCat(n.category);
             return (

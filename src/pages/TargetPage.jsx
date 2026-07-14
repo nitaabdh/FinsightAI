@@ -474,7 +474,7 @@ export default function TargetPage() {
 
         {activeTab === "tabungan" && (loading ? (
           <div className="dashboard__skeleton">
-            <div className="targetpage__skeleton-grid">
+            <div className="targetpage__skeleton-grid stagger-list">
               {[1,2,3].map(i => <div key={i} className="targetpage__skeleton-card skel" />)}
             </div>
           </div>
@@ -487,7 +487,7 @@ export default function TargetPage() {
             </button>
           </div>
         ) : (
-          <div className="targetpage__grid">
+          <div className="targetpage__grid stagger-list">
             {targets.map((t) => {
               const persen   = Math.min((t.terkumpul / t.target) * 100, 100);
               const daysLeft = getDaysLeft(t.deadline);
@@ -738,7 +738,7 @@ export default function TargetPage() {
           <div className="targetpage__inline-form">
             <h3 className="targetpage__inline-form-title">{editingDebtId ? "✏️ Edit Utang/Kredit/Paylater" : "+ Tambah Utang/Kredit/Paylater"}</h3>
 
-            <div className="targetpage__inline-form-grid">
+            <div className="targetpage__inline-form-grid stagger-list">
               <div className="targetpage__field">
                 <label>Jenis</label>
                 <select name="jenis" value={debtForm.jenis} onChange={handleDebtChange}>
@@ -827,7 +827,7 @@ export default function TargetPage() {
 
         {activeTab === "utang" && (loading ? (
           <div className="dashboard__skeleton">
-            <div className="targetpage__skeleton-grid">
+            <div className="targetpage__skeleton-grid stagger-list">
               {[1,2,3].map(i => <div key={i} className="targetpage__skeleton-card skel" />)}
             </div>
           </div>
@@ -840,7 +840,7 @@ export default function TargetPage() {
             </button>
           </div>
         ) : (
-          <div className="targetpage__grid">
+          <div className="targetpage__grid stagger-list">
             {debts.map((d) => {
               const persen = d.totalUtang
                 ? Math.min((d.terbayar / d.totalUtang) * 100, 100)

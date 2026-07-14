@@ -33,6 +33,31 @@ export async function sendTelegramMessage(chatId, text, options = {}) {
   }
 }
 
+// Kirim pesan dengan tombol interaktif di bawahnya (dipakai buat konfirmasi
+// pas AI ragu-ragu). `buttons` = [{ text: "✅ Benar", data: "confirm:xxx" }, ...]
+export async function sendTelegramMessageWithButtons(chatId, text, buttons) {
+  return sendTelegramMessage(chatId, text, {
+    reply_markup: { inline_keyboard: [buttons.map(b => ({ text: b.text, callback_data: b.data }))] },
+  });
+}
+
+// Wajib dipanggil tiap ada callback_query masuk, biar tombolnya berhenti "loading"
+// di HP user. `text` opsional, kalau diisi muncul notif kecil di atas layar user.
+export async function answerCallbackQuery(callbackQueryId, text = "") {
+  if (!process.env.TELEGRAM_BOT_TOKEN) return { ok: false };
+  try {
+    const res = await fetch(`${TELEGRAM_API}/answerCallbackQuery`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ callback_query_id: callbackQueryId, text }),
+    });
+    return await res.json();
+  } catch (err) {
+    console.error("[telegram] answerCallbackQuery error:", err);
+    return { ok: false };
+  }
+}
+
 // Escape karakter spesial Markdown biar nama/keterangan user nggak ngerusak format pesan.
 export function escapeMd(text = "") {
   return String(text).replace(/([_*[\]()~`>#+=|{}.!-])/g, "\\$1");

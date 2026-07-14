@@ -8,6 +8,7 @@ import {
   formatRupiah, marginKontribusi, biayaVariabelPerUnit,
   hitungBEPProduk, hitungBEPGabungan, dataGrafikBEP,
 } from "../utils/umkmCalc";
+import CountUp from "./CountUp";
 import "./BreakEvenPoint.css";
 
 async function apiFetch(url, options = {}) {
@@ -116,7 +117,7 @@ export default function BreakEvenPoint() {
         <>
           <div className="bep__field">
             <label className="bep__label">Pilih Produk yang Dihitung Gabungan</label>
-            <div className="bep__checklist">
+            <div className="bep__checklist stagger-list">
               {produkList.map(p => (
                 <label key={p.id} className="bep__check-item">
                   <input type="checkbox" checked={selGabungan.has(p.id)} onChange={() => toggleGabungan(p.id)} />
@@ -202,7 +203,7 @@ function BEPResultGabungan({ produkList, hasil, biayaTetap }) {
       <div className="bep__result-row"><span>Rata-rata Margin Kontribusi</span><span>{formatRupiah(hasil.rataMargin)}/unit</span></div>
       <div className="bep__result-row"><span>Rasio Margin Kontribusi</span><span>{(hasil.rasioMargin * 100).toFixed(1)}%</span></div>
       <div className="bep__result-row"><span>Biaya Tetap Bulanan</span><span>{formatRupiah(biayaTetap)}</span></div>
-      <div className="bep__result-row bep__result-row--final"><span>BEP (Rupiah)</span><span>{formatRupiah(hasil.bepRupiah)}/bulan</span></div>
+      <div className="bep__result-row bep__result-row--final"><span>BEP (Rupiah)</span><span><CountUp value={hasil.bepRupiah} format={formatRupiah} />/bulan</span></div>
       <div className="bep__result-row bep__result-row--final"><span>BEP (Unit, estimasi)</span><span>{bepUnitBulat.toLocaleString("id-ID")} unit/bulan</span></div>
       <p className="bep__conclusion">
         Kamu perlu jual sekitar <strong>{bepUnitBulat.toLocaleString("id-ID")} unit</strong> (gabungan semua produk terpilih)

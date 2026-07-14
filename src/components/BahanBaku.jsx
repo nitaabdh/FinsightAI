@@ -470,8 +470,8 @@ export default function BahanBaku() {
               </div>
             </div>
 
-            <div className="bahanbaku__history">
-              <h4 className="bahanbaku__history-title">Riwayat Keluar-Masuk Stok</h4>
+            <div className="bahanbaku__history stagger-list">
+              <h4 className="bahanbaku__history-title stagger-list">Riwayat Keluar-Masuk Stok</h4>
               {historyLoading ? (
                 <p className="bahanbaku__hint-small" style={{ padding: "1rem 0" }}>Memuat riwayat...</p>
               ) : historyList.length === 0 ? (
@@ -480,7 +480,7 @@ export default function BahanBaku() {
                   <p>Belum ada riwayat perubahan stok.</p>
                 </div>
               ) : (
-                <div className="bahanbaku__history-list">
+                <div className="bahanbaku__history-list stagger-list">
                   {historyList.map(h => (
                     <div key={h.id} className={"bahanbaku__history-item bahanbaku__history-item--" + h.tipe}>
                       <span className="bahanbaku__history-icon">{h.tipe === "tambah" ? "▲" : "▼"}</span>
@@ -633,7 +633,7 @@ export default function BahanBaku() {
         </div>
       )}
 
-      <div className="bahanbaku__list">
+      <div className="bahanbaku__list stagger-list">
         {list.length === 0 ? (
           <div className="bahanbaku__empty">
             <p>🧺</p>

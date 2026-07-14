@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { formatRupiah } from "../utils/umkmCalc";
 import RupiahInput from "./RupiahInput";
+import CountUp from "./CountUp";
 import {
   PLATFORM_PRESETS, buatFeeRowsDariPreset, genFeeId,
   hitungDanaBersih, hitungHargaJualMundur,
@@ -113,7 +114,7 @@ export default function KalkulatorOnline() {
             ⚠️ Persennya sengaja dikosongin — isi sesuai rate yang beneran berlaku di toko kamu sekarang
             (cek dashboard marketplace-nya), soalnya sering berubah & beda per kategori produk.
           </p>
-          <div className="komarket__fee-rows">
+          <div className="komarket__fee-rows stagger-list">
             {feeRows.map(row => (
               <div key={row.id} className="komarket__fee-row">
                 <input className="komarket__input komarket__input--nama" type="text" placeholder="Nama potongan"
@@ -160,7 +161,7 @@ export default function KalkulatorOnline() {
                 <span>Total Potongan</span><span>− {formatRupiah(hasilMaju.totalPotongan)}</span>
               </div>
               <div className="komarket__sum-row komarket__sum-row--final">
-                <span>Dana Bersih Diterima</span><span>{formatRupiah(hasilMaju.danaBersih)}</span>
+                <span>Dana Bersih Diterima</span><span><CountUp value={hasilMaju.danaBersih} format={formatRupiah} /></span>
               </div>
               {produk && (
                 <>
@@ -199,7 +200,7 @@ export default function KalkulatorOnline() {
               ) : (
                 <>
                   <div className="komarket__sum-row komarket__sum-row--final">
-                    <span>Harga Jual yang Harus Dipasang</span><span>{formatRupiah(hargaJualHasil)}</span>
+                    <span>Harga Jual yang Harus Dipasang</span><span><CountUp value={hargaJualHasil} format={formatRupiah} /></span>
                   </div>
                   {hasilMundurDetail.detail.map(d => (
                     <div key={d.id} className="komarket__sum-row">
@@ -217,13 +218,13 @@ export default function KalkulatorOnline() {
       </div>
 
       {produkList.length > 0 && (
-        <div className="komarket__form komarket__list-card">
+        <div className="komarket__form komarket__list-card stagger-list">
           <h3 className="komarket__form-title">💾 Daftar Harga Jual Online</h3>
           <p className="komarket__hint">
             Simpen harga jual listing per produk di sini sekali aja. Nanti pas centang "Ini penjualan online?"
             di form Transaksi dan pilih produknya, harga ini otomatis keisi sendiri — nggak perlu ngetik ulang tiap kali.
           </p>
-          <div className="komarket__online-list">
+          <div className="komarket__online-list stagger-list">
             {produkList.map(p => (
               <HargaOnlineRow key={p.id} produk={p} onSave={saveHargaOnline} />
             ))}

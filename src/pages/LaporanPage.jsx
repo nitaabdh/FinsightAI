@@ -9,6 +9,7 @@ import UtangPiutang from "../components/UtangPiutang";
 import Dompet from "../components/Dompet";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import CountUp from "../components/CountUp";
 import "./LaporanPage.css";
 import "./DashboardSkeleton.css";
 
@@ -498,23 +499,23 @@ export default function LaporanPage() {
                 </div>
 
                 {/* Summary Cards */}
-                <div className="laporanpage__summary">
+                <div className="laporanpage__summary stagger-list">
                   <div className="laporanpage__sum-card laporanpage__sum-card--income">
                     <span className="laporanpage__sum-label">📈 Total Omzet</span>
-                    <span className="laporanpage__sum-value">{formatRupiah(summary.pemasukan)}</span>
+                    <span className="laporanpage__sum-value"><CountUp value={summary.pemasukan} format={formatRupiah} /></span>
                   </div>
                   <div className="laporanpage__sum-card laporanpage__sum-card--expense">
                     <span className="laporanpage__sum-label">📉 Total Pengeluaran</span>
-                    <span className="laporanpage__sum-value">{formatRupiah(summary.pengeluaran)}</span>
+                    <span className="laporanpage__sum-value"><CountUp value={summary.pengeluaran} format={formatRupiah} /></span>
                   </div>
                   <div className={"laporanpage__sum-card " + (summary.saldo >= 0 ? "laporanpage__sum-card--profit" : "laporanpage__sum-card--loss")}>
                     <span className="laporanpage__sum-label">💰 Laba Bersih</span>
-                    <span className="laporanpage__sum-value">{formatRupiah(summary.saldo)}</span>
+                    <span className="laporanpage__sum-value"><CountUp value={summary.saldo} format={formatRupiah} /></span>
                     <span className="laporanpage__sum-sub">Margin {margin}%</span>
                   </div>
                   <div className="laporanpage__sum-card laporanpage__sum-card--neutral">
                     <span className="laporanpage__sum-label">🧾 Transaksi</span>
-                    <span className="laporanpage__sum-value">{filtered.length}</span>
+                    <span className="laporanpage__sum-value"><CountUp value={filtered.length} /></span>
                     <span className="laporanpage__sum-sub">entri tercatat</span>
                   </div>
                 </div>
@@ -522,15 +523,15 @@ export default function LaporanPage() {
                 {/* Modal & Aset — dipisah dari Omzet/Laba karena beda sifat (bukan hasil usaha) */}
                 <div className="laporanpage__section">
                   <h3 className="laporanpage__section-title">Modal &amp; Aset Usaha</h3>
-                  <div className="laporanpage__submetrics">
+                  <div className="laporanpage__submetrics stagger-list">
                     <div className="laporanpage__sum-card laporanpage__sum-card--modal">
                       <span className="laporanpage__sum-label">🏦 Modal Usaha</span>
-                      <span className="laporanpage__sum-value">{formatRupiah(totalModal)}</span>
+                      <span className="laporanpage__sum-value"><CountUp value={totalModal} format={formatRupiah} /></span>
                       <span className="laporanpage__sum-sub">{filterMonth === "semua" ? "Total keseluruhan" : `Periode ${monthLabel(filterMonth)}`} · tidak dihitung sebagai omzet</span>
                     </div>
                     <div className="laporanpage__sum-card laporanpage__sum-card--aset">
                       <span className="laporanpage__sum-label">💎 Total Aset Usaha</span>
-                      <span className="laporanpage__sum-value">{formatRupiah(totalNilaiAset)}</span>
+                      <span className="laporanpage__sum-value"><CountUp value={totalNilaiAset} format={formatRupiah} /></span>
                       <span className="laporanpage__sum-sub">{asetUsaha.length} item peralatan · nilai per hari ini</span>
                     </div>
                   </div>

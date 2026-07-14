@@ -10,6 +10,7 @@ import {
   getTransactions, calcSummary, formatRupiah, groupByMonth, groupByCategoryType, monthLabel,
   computeKasStats, getKasEmoji,
 } from "../utils/storage";
+import CountUp from "../components/CountUp";
 import "./LaporanPersonalPage.css";
 import "./DashboardSkeleton.css";
 
@@ -241,29 +242,29 @@ export default function LaporanPersonalPage() {
 
         {loading ? (
           <div className="dashboard__skeleton">
-            <div className="lapper__skel-grid">
+            <div className="lapper__skel-grid stagger-list">
               {[1,2,3,4].map(i => <div key={i} className="lapper__skel-card skel" />)}
             </div>
           </div>
         ) : (
           <>
             {/* ── RINGKASAN ARUS KAS ── */}
-            <div className="lapper__summary-grid">
+            <div className="lapper__summary-grid stagger-list">
               <div className="lapper__summary-card lapper__summary-card--income">
                 <span className="lapper__summary-label">💰 Pemasukan</span>
-                <span className="lapper__summary-value">{formatRupiah(summary.pemasukan)}</span>
+                <span className="lapper__summary-value"><CountUp value={summary.pemasukan} format={formatRupiah} /></span>
               </div>
               <div className="lapper__summary-card lapper__summary-card--expense">
                 <span className="lapper__summary-label">🛒 Pengeluaran</span>
-                <span className="lapper__summary-value">{formatRupiah(summary.pengeluaran)}</span>
+                <span className="lapper__summary-value"><CountUp value={summary.pengeluaran} format={formatRupiah} /></span>
               </div>
               <div className={"lapper__summary-card " + (summary.saldo >= 0 ? "lapper__summary-card--positive" : "lapper__summary-card--negative")}>
                 <span className="lapper__summary-label">{summary.saldo >= 0 ? "📈" : "📉"} Selisih</span>
-                <span className="lapper__summary-value">{formatRupiah(summary.saldo)}</span>
+                <span className="lapper__summary-value"><CountUp value={summary.saldo} format={formatRupiah} /></span>
               </div>
               <div className="lapper__summary-card lapper__summary-card--wallet">
                 <span className="lapper__summary-label">👛 Total Saldo Dompet</span>
-                <span className="lapper__summary-value">{formatRupiah(totalSaldo)}</span>
+                <span className="lapper__summary-value"><CountUp value={totalSaldo} format={formatRupiah} /></span>
               </div>
             </div>
 
@@ -318,7 +319,7 @@ export default function LaporanPersonalPage() {
                 {cicilanTx.length === 0 ? (
                   <p className="lapper__empty">Belum ada pembayaran cicilan periode ini.</p>
                 ) : (
-                  <div className="lapper__mini-list">
+                  <div className="lapper__mini-list stagger-list">
                     {cicilanTx.slice(0, 6).map(t => (
                       <div key={t.id} className="lapper__mini-item">
                         <span>{t.description || t.category}</span>
@@ -347,7 +348,7 @@ export default function LaporanPersonalPage() {
                 {tabunganTx.length === 0 ? (
                   <p className="lapper__empty">Belum ada setoran tabungan periode ini.</p>
                 ) : (
-                  <div className="lapper__mini-list">
+                  <div className="lapper__mini-list stagger-list">
                     {tabunganTx.slice(0, 6).map(t => (
                       <div key={t.id} className="lapper__mini-item">
                         <span>{t.description || t.category}</span>
@@ -364,7 +365,7 @@ export default function LaporanPersonalPage() {
               <div className="lapper__card">
                 <div className="lapper__card-header"><span className="lapper__card-title">💰 Pemasukan per Kategori</span></div>
                 {incomeByCat.length === 0 ? <p className="lapper__empty">Belum ada data.</p> : (
-                  <div className="lapper__cat-list">
+                  <div className="lapper__cat-list stagger-list">
                     {incomeByCat.map(([cat, amt]) => {
                       const pct = summary.pemasukan > 0 ? (amt / summary.pemasukan) * 100 : 0;
                       return (
@@ -384,7 +385,7 @@ export default function LaporanPersonalPage() {
               <div className="lapper__card">
                 <div className="lapper__card-header"><span className="lapper__card-title">🛒 Pengeluaran per Kategori</span></div>
                 {expenseByCat.length === 0 ? <p className="lapper__empty">Belum ada data.</p> : (
-                  <div className="lapper__cat-list">
+                  <div className="lapper__cat-list stagger-list">
                     {expenseByCat.map(([cat, amt]) => {
                       const pct = summary.pengeluaran > 0 ? (amt / summary.pengeluaran) * 100 : 0;
                       return (
@@ -411,7 +412,7 @@ export default function LaporanPersonalPage() {
               {kasStats.length === 0 ? (
                 <p className="lapper__empty">Belum ada transaksi dengan dompet tercatat.</p>
               ) : (
-                <div className="lapper__wallet-grid">
+                <div className="lapper__wallet-grid stagger-list">
                   {kasStats.map(k => (
                     <div key={k.nama} className={"lapper__wallet-item" + (k.saldo < 0 ? " lapper__wallet-item--neg" : "")}>
                       <span className="lapper__wallet-icon">{getKasEmoji(k.nama)}</span>

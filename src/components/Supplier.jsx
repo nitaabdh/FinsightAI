@@ -169,7 +169,7 @@ export default function Supplier() {
         </div>
       )}
 
-      <div className="supplier__list">
+      <div className="supplier__list stagger-list">
         {list.length === 0 ? (
           <div className="supplier__empty">
             <p>📇</p>
@@ -179,7 +179,7 @@ export default function Supplier() {
         ) : filteredList.length === 0 ? (
           <div className="supplier__empty"><p>🔍</p><p>Tidak ada supplier yang cocok.</p></div>
         ) : (
-          <div className="supplier__grid-list">
+          <div className="supplier__grid-list stagger-list">
             {filteredList.map(s => (
               <div key={s.id} className="supplier__card">
                 <div className="supplier__card-header">

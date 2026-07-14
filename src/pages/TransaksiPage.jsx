@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import TransactionForm from "../components/TransactionForm";
 import { getTransactions, addTransaction, deleteTransaction, editTransaction, calcSummary, formatRupiah, formatDate } from "../utils/storage";
+import CountUp from "../components/CountUp";
 import { applyStokDelta, genId, baseUnitLabel } from "../utils/umkmCalc";
 import "./TransaksiPage.css";
 
@@ -168,20 +169,20 @@ export default function TransaksiPage() {
           </button>
         </div>
 
-        <div className="txpage__summary">
+        <div className="txpage__summary stagger-list">
           <div className="txpage__summary-item txpage__summary-item--income">
             <span>⬆ Pemasukan</span>
-            <strong>{formatRupiah(summary.pemasukan)}</strong>
+            <strong><CountUp value={summary.pemasukan} format={formatRupiah} /></strong>
           </div>
           <div className="txpage__summary-divider" />
           <div className="txpage__summary-item txpage__summary-item--expense">
             <span>⬇ Pengeluaran</span>
-            <strong>{formatRupiah(summary.pengeluaran)}</strong>
+            <strong><CountUp value={summary.pengeluaran} format={formatRupiah} /></strong>
           </div>
           <div className="txpage__summary-divider" />
           <div className={"txpage__summary-item " + (summary.saldo >= 0 ? "txpage__summary-item--income" : "txpage__summary-item--expense")}>
             <span>💰 Saldo</span>
-            <strong>{formatRupiah(summary.saldo)}</strong>
+            <strong><CountUp value={summary.saldo} format={formatRupiah} /></strong>
           </div>
         </div>
 
@@ -204,7 +205,7 @@ export default function TransaksiPage() {
           </select>
         </div>
 
-        <div className="txpage__list">
+        <div className="txpage__list stagger-list">
           {loading ? (
             <div className="txpage__skeleton-wrap">
               {Array.from({ length: 6 }).map((_, i) => (

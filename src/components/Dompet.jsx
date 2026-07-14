@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { genId, formatRupiah } from "../utils/umkmCalc";
+import CountUp from "./CountUp";
 import { getTransactions, computeKasStats, getKasEmoji } from "../utils/storage";
 import "./Dompet.css";
 
@@ -125,7 +126,7 @@ export default function Dompet({ mode = "umkm" }) {
       {semuaDompet.length > 0 && (
         <div className="dompet__total">
           <span className="dompet__total-label">💰 Total Saldo Semua Dompet</span>
-          <span className="dompet__total-value">{formatRupiah(totalSaldo)}</span>
+          <span className="dompet__total-value"><CountUp value={totalSaldo} format={formatRupiah} /></span>
         </div>
       )}
 
@@ -136,7 +137,7 @@ export default function Dompet({ mode = "umkm" }) {
       ) : (
         <div className="dompet__form" ref={formRef}>
           <h3 className="dompet__form-title">{editId ? "✏️ Edit Dompet" : "+ Tambah Dompet Baru"}</h3>
-          <div className="dompet__grid">
+          <div className="dompet__grid stagger-list">
             <div className="dompet__field dompet__field--wide">
               <label className="dompet__label">Nama Dompet</label>
               <input className="dompet__input" type="text" name="nama"
@@ -164,7 +165,7 @@ export default function Dompet({ mode = "umkm" }) {
         </div>
       )}
 
-      <div className="dompet__grid-cards">
+      <div className="dompet__grid-cards stagger-list">
         {loading ? (
           <div className="dompet__empty"><p>⏳</p><p>Memuat data dompet...</p></div>
         ) : semuaDompet.length === 0 ? (

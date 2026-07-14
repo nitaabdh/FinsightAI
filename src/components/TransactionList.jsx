@@ -15,10 +15,10 @@ export default function TransactionList({ transactions, onDelete, accent = "pers
   });
 
   return (
-    <div className="txlist">
+    <div className="txlist stagger-list">
       {/* Controls */}
-      <div className="txlist__controls">
-        <div className="txlist__filters">
+      <div className="txlist__controls stagger-list">
+        <div className="txlist__filters stagger-list">
           {[
             { key: "all", label: "Semua" },
             { key: "income", label: "Pemasukan" },
@@ -43,12 +43,12 @@ export default function TransactionList({ transactions, onDelete, accent = "pers
 
       {/* List */}
       {filtered.length === 0 ? (
-        <div className="txlist__empty">
+        <div className="txlist__empty stagger-list">
           <span>📭</span>
           <p>Belum ada transaksi</p>
         </div>
       ) : (
-        <div className="txlist__items">
+        <div className="txlist__items stagger-list">
           {filtered.map((t) => (
             <div key={t.id} className="txlist__item animate-fadeIn">
               <div className={`txlist__item-dot txlist__item-dot--${t.type}`} />

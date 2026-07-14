@@ -397,6 +397,102 @@ export async function editCatatanByIndex(userId, mode, index, newText) {
   return { success: true, data };
 }
 
+// ── BAYAR CICILAN lewat bot (personal) — mirror logic handleBayarCicilan di TargetPage.jsx ──
+export async function payCicilan(userId, namaUtang) {
+  const { data: debts, error: findErr } = await supabase.from("debts").select("*").eq("user_id", userId).eq("lunas", false);
+  if (findErr) throw findErr;
+
+  const lower = namaUtang.toLowerCase().trim();
+  const matches = (debts || []).filter(d => d.nama.toLowerCase().includes(lower));
+  if (matches.length === 0) return { success: false, message: `Utang "${namaUtang}" nggak ketemu atau udah lunas. Cek /utang dulu buat lihat nama persisnya.` };
+  if (matches.length > 1) return { success: false, message: `Ada ${matches.length} utang yang cocok sama "${namaUtang}": ${matches.map(d => d.nama).join(", ")}. Coba lebih spesifik.` };
+
+  const d = matches[0];
+  const amount = Number(d.cicilan_per_bulan);
+  const jenisLabel = { utang: "Utang", kredit: "Kredit", paylater: "Paylater" };
+
+  const { error: txErr } = await supabase.from("transactions").insert({
+    user_id: userId, mode: "personal", type: "pengeluaran", amount,
+    category: `Cicilan ${jenisLabel[d.jenis] || d.jenis}`, description: `Cicilan ${d.nama}`,
+    date: new Date().toISOString().slice(0, 10), kas: d.dompet || "Kas Tunai",
+  });
+  if (txErr) throw txErr;
+
+  const newTerbayar = Number(d.terbayar || 0) + amount;
+  const newBulanTerbayar = Number(d.bulan_terbayar || 0) + 1;
+  const newLunas = d.tenor ? newBulanTerbayar >= d.tenor : (d.total_utang ? newTerbayar >= d.total_utang : false);
+
+  const { error: updErr } = await supabase.from("debts")
+    .update({ terbayar: newTerbayar, bulan_terbayar: newBulanTerbayar, lunas: newLunas })
+    .eq("id", d.id);
+  if (updErr) throw updErr;
+
+  // Sinkronin reminder kalender — konsisten sama yang di web (id tetap `debt-{id}`)
+  try {
+    if (newLunas) {
+      await supabase.from("cal_notes").delete().eq("id", `debt-${d.id}`);
+    } else if (d.tanggal_jatuh_tempo) {
+      const now = new Date(); now.setHours(0, 0, 0, 0);
+      let due = new Date(now.getFullYear(), now.getMonth(), d.tanggal_jatuh_tempo);
+      if (due < now) due = new Date(now.getFullYear(), now.getMonth() + 1, d.tanggal_jatuh_tempo);
+      await supabase.from("cal_notes").upsert({
+        id: `debt-${d.id}`, user_id: userId, mode: "personal",
+        title: `💳 Bayar ${jenisLabel[d.jenis] || d.jenis}: ${d.nama}`,
+        body: `Cicilan ${formatRupiahTG(amount)}${d.dompet ? " · " + d.dompet : ""}`,
+        category: "tagihan", date: due.toISOString().slice(0, 10),
+      }, { onConflict: "id" });
+    }
+  } catch (reminderErr) {
+    console.error("[telegram-data] gagal sync reminder pas bayar cicilan:", reminderErr);
+    // nggak fatal, pembayarannya sendiri tetep berhasil
+  }
+
+  return { success: true, nama: d.nama, amount, newTerbayar, newBulanTerbayar, newLunas, tenor: d.tenor, totalUtang: d.total_utang };
+}
+
+// ── NABUNG KE TARGET lewat bot (personal) — mirror logic handleTabung di TargetPage.jsx ──
+export async function nabungTarget(userId, mode, namaTarget, jumlah) {
+  const { data: targets, error: findErr } = await supabase.from("targets").select("*").eq("user_id", userId);
+  if (findErr) throw findErr;
+
+  const lower = namaTarget.toLowerCase().trim();
+  const matches = (targets || []).filter(t => t.nama.toLowerCase().includes(lower) && Number(t.terkumpul) < Number(t.target));
+  if (matches.length === 0) return { success: false, message: `Target "${namaTarget}" nggak ketemu atau udah tercapai. Cek /target dulu buat lihat nama persisnya.` };
+  if (matches.length > 1) return { success: false, message: `Ada ${matches.length} target yang cocok sama "${namaTarget}": ${matches.map(t => t.nama).join(", ")}. Coba lebih spesifik.` };
+
+  const t = matches[0];
+  const newTerkumpul = Math.min(Number(t.terkumpul) + jumlah, Number(t.target));
+
+  const { error: updErr } = await supabase.from("targets").update({ terkumpul: newTerkumpul }).eq("id", t.id);
+  if (updErr) throw updErr;
+
+  // Konsisten sama web: nabung ke target otomatis kecatet sebagai transaksi pengeluaran
+  await supabase.from("transactions").insert({
+    user_id: userId, mode, type: "pengeluaran", amount: jumlah, category: "Tabungan",
+    description: `Nabung ke target: ${t.nama}`, date: new Date().toISOString().slice(0, 10),
+    kas: t.penempatan || "Kas Tunai",
+  });
+
+  return { success: true, nama: t.nama, jumlah, newTerkumpul, target: Number(t.target) };
+}
+
+// ── RIWAYAT TRANSAKSI TERAKHIR ────────────────────────────────────────────────
+export async function getRiwayatText(userId, mode) {
+  const { data, error } = await supabase
+    .from("transactions").select("*").eq("user_id", userId).eq("mode", mode)
+    .order("date", { ascending: false }).limit(10);
+  if (error) throw error;
+  if (!data || data.length === 0) return "Belum ada transaksi tercatat.";
+
+  let out = `📜 *10 Transaksi Terakhir*\n\n`;
+  data.forEach(t => {
+    const emoji = t.type === "pemasukan" ? "💰" : t.type === "transfer" ? "🔁" : "🛒";
+    const tglLabel = new Date(t.date).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+    out += `${emoji} ${tglLabel} — ${t.description || t.category}: ${formatRupiahTG(t.amount)}\n`;
+  });
+  return out;
+}
+
 // ── ASET USAHA (umkm) ────────────────────────────────────────────────────────
 export async function getAsetText(userId) {
   const { data, error } = await supabase.from("aset_usaha").select("*").eq("user_id", userId).order("nama");

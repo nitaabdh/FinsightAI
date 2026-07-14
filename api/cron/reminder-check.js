@@ -36,8 +36,24 @@ export default async function handler(req, res) {
     return res.status(401).json({ ok: false });
   }
 
+  // Cron ini dipanggil Vercel 2x sehari dengan job berbeda (lihat vercel.json):
+  // - pagi (default, tanpa ?job=)  -> cek jatuh tempo cicilan/utang-piutang
+  // - malam (?job=daily-nudge)     -> ingetin user buat catat transaksi hari ini
+  if (req.query.job === "daily-nudge") {
+    return handleDailyNudge(req, res);
+  }
+
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const todayStr = today.toISOString().slice(0, 10);
+
+  // Beres-beres data lama biar tabel nggak numpuk terus — jalan 1x/hari nebeng cron pagi ini
+  try {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    await supabase.from("telegram_processed_updates").delete().lt("processed_at", sevenDaysAgo);
+    await supabase.from("telegram_pending_actions").delete().lt("expires_at", new Date().toISOString());
+  } catch (cleanupErr) {
+    console.error("[cron/reminder-check] gagal cleanup:", cleanupErr);
+  }
 
   let sent = 0, skipped = 0, errors = 0;
 
@@ -159,6 +175,47 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, checkedDebts: (debts || []).length, checkedUtangPiutang: (utangPiutang || []).length, sent, skipped, errors, date: todayStr });
   } catch (err) {
     console.error("[cron/reminder-check] error:", err);
+    return res.status(500).json({ ok: false, message: err.message });
+  }
+}
+
+// ── Job malam: ingetin user yang BELUM catat transaksi apa-apa hari ini ──
+// Sengaja cuma kirim ke yang beneran belum nyatet apa-apa (bukan spam ke semua
+// orang tiap hari), biar nggak ganggu yang udah rajin.
+async function handleDailyNudge(req, res) {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  let sent = 0, skipped = 0, errors = 0;
+
+  try {
+    const { data: links, error } = await supabase.from("telegram_links").select("user_id, telegram_chat_id, daily_nudge_enabled");
+    if (error) throw error;
+
+    for (const link of links || []) {
+      try {
+        if (link.daily_nudge_enabled === false) { skipped++; continue; }
+
+        const { data: txToday } = await supabase
+          .from("transactions").select("id").eq("user_id", link.user_id).eq("date", todayStr).limit(1);
+        if (txToday && txToday.length > 0) { skipped++; continue; } // udah nyatet, skip
+
+        const { data: userRow } = await supabase.from("users").select("mode").eq("id", link.user_id).maybeSingle();
+        const mode = userRow?.mode || "personal";
+
+        const text = mode === "umkm"
+          ? "🌙 Udah malem nih! Ada penjualan atau pengeluaran usaha hari ini? Jangan lupa dicatet ya biar laporan bulan ini tetep akurat 📊"
+          : "🌙 Udah malem nih! Ada pemasukan atau pengeluaran apa aja hari ini? Jangan lupa dicatet keuangannya ya 💰\n\nTinggal ketik aja langsung, misal \"beli kopi 20rb\".";
+
+        const result = await sendTelegramMessage(link.telegram_chat_id, text);
+        if (result.ok) sent++; else errors++;
+      } catch (innerErr) {
+        console.error("[cron/daily-nudge] gagal proses user", link.user_id, innerErr);
+        errors++;
+      }
+    }
+
+    return res.status(200).json({ ok: true, job: "daily-nudge", checked: (links || []).length, sent, skipped, errors, date: todayStr });
+  } catch (err) {
+    console.error("[cron/daily-nudge] error:", err);
     return res.status(500).json({ ok: false, message: err.message });
   }
 }

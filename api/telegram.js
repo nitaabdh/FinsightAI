@@ -24,15 +24,16 @@
 
 import { createClient } from "@supabase/supabase-js";
 import jwt from "jsonwebtoken";
-import { sendTelegramMessage, escapeMd } from "./_lib/telegram.js";
+import { sendTelegramMessage, sendTelegramMessageWithButtons, answerCallbackQuery, escapeMd } from "./_lib/telegram.js";
 import {
   getSaldoText, getLaporanText, getUtangText, getTargetText,
   getStokText, getHargaText, getAsetText, formatRupiahTG,
   getUtangPiutangText, getBiayaText, adjustStok,
   parseFlexibleDate, getUpcomingAcaraText, addAcara,
   getCatatanListText, addCatatan, editCatatanByIndex,
+  payCicilan, nabungTarget, getRiwayatText,
 } from "./_lib/telegram-data.js";
-import { handleFreeText, undoLastTransaction, resetChatHistory, handleReceiptPhoto } from "./_lib/telegram-ai.js";
+import { handleFreeText, undoLastTransaction, resetChatHistory, handleReceiptPhoto, executePendingAction, cancelPendingAction } from "./_lib/telegram-ai.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -141,7 +142,10 @@ const HELP_TEXT_PERSONAL =
   `/laporan semua — semua periode\n` +
   `/laporan juni — bulan tertentu (atau \`2026-06\`)\n` +
   `/utang — daftar utang & cicilan aktif\n` +
+  `/bayar nama_utang — bayar cicilan (contoh: \`/bayar KTA Bank Jago\`)\n` +
   `/target — progress target tabungan\n` +
+  `/nabung nama_target jumlah — nabung ke target (contoh: \`/nabung Dana Darurat 100rb\`)\n` +
+  `/riwayat — 10 transaksi terakhir\n` +
   `/acara — acara terdekat\n` +
   `/acara+ tanggal judul — tambah acara (contoh: \`/acara+ 25 juli Rapat\`)\n` +
   `/catatan — lihat catatan (bernomor)\n` +
@@ -149,7 +153,8 @@ const HELP_TEXT_PERSONAL =
   `/catatanedit nomor isi_baru — edit catatan\n` +
   `/batal — hapus transaksi terakhir yang salah kecatet\n` +
   `/lupa — reset ingatan obrolan AI\n` +
-  `/unlink — putuskan koneksi akun\n\n` +
+  `/unlink — putuskan koneksi akun\n` +
+  `/nudgeoff — matiin reminder malam catat keuangan\n\n` +
   `Kamu juga bisa langsung ngetik bebas, misal:\n` +
   `_"beli kopi 20rb"_ → langsung kecatet (nggak butuh API key)\n` +
   `_"inget rapat sama klien besok"_ → otomatis jadi acara (butuh API key)\n` +
@@ -163,6 +168,7 @@ const HELP_TEXT_UMKM =
   `/laporan — omzet & pengeluaran bulan ini\n` +
   `/laporan semua — semua periode\n` +
   `/laporan juni — bulan tertentu (atau \`2026-06\`)\n` +
+  `/riwayat — 10 transaksi terakhir\n` +
   `/stok — stok bahan baku\n` +
   `/stok+ nama jumlah — tambah stok (contoh: \`/stok+ kopi arabika 5\`)\n` +
   `/stok- nama jumlah — kurangi stok\n` +
@@ -177,7 +183,8 @@ const HELP_TEXT_UMKM =
   `/catatanedit nomor isi_baru — edit catatan\n` +
   `/batal — hapus transaksi terakhir yang salah kecatet\n` +
   `/lupa — reset ingatan obrolan AI\n` +
-  `/unlink — putuskan koneksi akun\n\n` +
+  `/unlink — putuskan koneksi akun\n` +
+  `/nudgeoff — matiin reminder malam catat keuangan\n\n` +
   `Kamu juga bisa langsung ngetik bebas, misal:\n` +
   `_"jual 2 kopi susu 40rb"_ → langsung kecatet (nggak butuh API key)\n` +
   `_"tambahin stok kopi arabika 5kg"_ → otomatis update stok (butuh API key)\n` +
@@ -188,6 +195,56 @@ const HELP_TEXT_UMKM =
 async function handleTelegramWebhook(req, res) {
   try {
     const update = req.body;
+
+    // ── Anti proses-dobel: kalau update_id ini udah pernah diproses, skip.
+    // Telegram kadang ngirim ulang update yang sama kalau respon kita lambat. ──
+    if (update?.update_id) {
+      const { error: dupErr } = await supabase.from("telegram_processed_updates").insert({ update_id: update.update_id });
+      if (dupErr) {
+        // gagal insert karena PK udah ada = update ini udah pernah diproses sebelumnya
+        return res.status(200).json({ ok: true, duplicate: true });
+      }
+    }
+
+    // ── Tap tombol konfirmasi (✅/❌) ──
+    if (update?.callback_query) {
+      const cq = update.callback_query;
+      const cqChatId = cq.message?.chat?.id;
+      const [action, pendingId] = (cq.data || "").split(":");
+
+      if (action === "confirm" && pendingId) {
+        const result = await executePendingAction(pendingId);
+        await answerCallbackQuery(cq.id);
+        if (!result.success) {
+          await sendTelegramMessage(cqChatId, `⚠️ ${result.message}`);
+        } else if (result.type === "transaction_saved") {
+          const t = result.data;
+          const emoji = t.type === "pemasukan" ? "💰" : "🛒";
+          await sendTelegramMessage(cqChatId, `${emoji} *Tercatat!*\n${t.description || t.category}\n${formatRupiahTG(t.amount)} — ${t.category}\n\n_Salah catat? Ketik /batal buat ngehapus._`);
+        } else if (result.type === "note_saved") {
+          await sendTelegramMessage(cqChatId, `📝 *Catatan tersimpan!*\n${result.data.title}`);
+        } else if (result.type === "event_saved") {
+          const tglLabel = new Date(result.dateStr).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+          await sendTelegramMessage(cqChatId, `📅 *Acara tersimpan!*\n${result.data.title} — ${tglLabel}`);
+        } else if (result.type === "stock_adjusted") {
+          const s = result.data;
+          const arrow = s.stokBaru >= s.stokLama ? "📈" : "📉";
+          await sendTelegramMessage(cqChatId, `${arrow} *Stok ${s.nama} diperbarui!*\n${s.stokLama} → *${s.stokBaru}* ${s.satuan}`);
+        }
+        return res.status(200).json({ ok: true });
+      }
+
+      if (action === "cancel" && pendingId) {
+        await cancelPendingAction(pendingId);
+        await answerCallbackQuery(cq.id, "Dibatalin");
+        await sendTelegramMessage(cqChatId, "Oke, dibatalin. Nggak ada yang kesimpen. 👍");
+        return res.status(200).json({ ok: true });
+      }
+
+      await answerCallbackQuery(cq.id);
+      return res.status(200).json({ ok: true });
+    }
+
     const message = update?.message;
     if (!message) return res.status(200).json({ ok: true });
 
@@ -310,6 +367,17 @@ async function handleTelegramWebhook(req, res) {
       return res.status(200).json({ ok: true });
     }
 
+    if (text === "/nudgeoff") {
+      await supabase.from("telegram_links").update({ daily_nudge_enabled: false }).eq("telegram_chat_id", chatId);
+      await sendTelegramMessage(chatId, "🔕 Oke, reminder malam \"jangan lupa catat keuangan\" aku matiin. Ketik /nudgeon kalau mau nyalain lagi.");
+      return res.status(200).json({ ok: true });
+    }
+    if (text === "/nudgeon") {
+      await supabase.from("telegram_links").update({ daily_nudge_enabled: true }).eq("telegram_chat_id", chatId);
+      await sendTelegramMessage(chatId, "🔔 Oke, reminder malam aku nyalain lagi.");
+      return res.status(200).json({ ok: true });
+    }
+
     if (text === "/help") {
       await sendTelegramMessage(chatId, mode === "umkm" ? HELP_TEXT_UMKM : HELP_TEXT_PERSONAL);
       return res.status(200).json({ ok: true });
@@ -383,9 +451,72 @@ async function handleTelegramWebhook(req, res) {
       return res.status(200).json({ ok: true });
     }
 
+    // ── Riwayat transaksi (universal) ──
+    if (text === "/riwayat") {
+      await sendTelegramMessage(chatId, await getRiwayatText(userId, mode));
+      return res.status(200).json({ ok: true });
+    }
+
     if (mode === "personal") {
       if (text === "/utang")  { await sendTelegramMessage(chatId, await getUtangText(userId));  return res.status(200).json({ ok: true }); }
       if (text === "/target") { await sendTelegramMessage(chatId, await getTargetText(userId)); return res.status(200).json({ ok: true }); }
+
+      // /bayar <nama utang>
+      if (text.startsWith("/bayar")) {
+        const nama = text.replace("/bayar", "").trim();
+        if (!nama) {
+          await sendTelegramMessage(chatId, `Format: \`/bayar nama utang\`\nContoh: \`/bayar KTA Bank Jago\`\n\nCek nama persisnya di /utang.`);
+          return res.status(200).json({ ok: true });
+        }
+        try {
+          const result = await payCicilan(userId, nama);
+          if (!result.success) {
+            await sendTelegramMessage(chatId, `⚠️ ${result.message}`);
+          } else {
+            const sisaTenor = result.tenor ? `\nSisa tenor: ${Math.max(result.tenor - result.newBulanTerbayar, 0)} bulan` : "";
+            await sendTelegramMessage(chatId,
+              `💸 *Cicilan ${result.nama} dibayar!*\n${formatRupiahTG(result.amount)}${sisaTenor}\n\n` +
+              (result.newLunas ? "🎉 *LUNAS!* Selamat, utang ini udah beres." : "")
+            );
+          }
+        } catch (err) {
+          console.error("[telegram] gagal bayar cicilan:", err);
+          await sendTelegramMessage(chatId, "Gagal proses pembayaran, coba lagi ya.");
+        }
+        return res.status(200).json({ ok: true });
+      }
+
+      // /nabung <nama target> <jumlah>
+      if (text.startsWith("/nabung")) {
+        const rest = text.replace("/nabung", "").trim();
+        const match = rest.match(/^(.+?)\s+(\d+(?:[.,]\d+)?)\s*(rb|ribu|k|jt|juta)?$/i);
+        if (!match) {
+          await sendTelegramMessage(chatId, `Format: \`/nabung nama target jumlah\`\nContoh: \`/nabung Dana Darurat 100rb\`\n\nCek nama persisnya di /target.`);
+          return res.status(200).json({ ok: true });
+        }
+        const namaTarget = match[1].trim();
+        let jumlah = parseFloat(match[2].replace(",", "."));
+        const unit = (match[3] || "").toLowerCase();
+        if (unit === "rb" || unit === "ribu" || unit === "k") jumlah *= 1000;
+        else if (unit === "jt" || unit === "juta") jumlah *= 1000000;
+
+        try {
+          const result = await nabungTarget(userId, mode, namaTarget, jumlah);
+          if (!result.success) {
+            await sendTelegramMessage(chatId, `⚠️ ${result.message}`);
+          } else {
+            const pct = result.target > 0 ? ((result.newTerkumpul / result.target) * 100).toFixed(0) : 0;
+            await sendTelegramMessage(chatId,
+              `🎯 *Nabung ke ${result.nama} berhasil!*\n${formatRupiahTG(result.jumlah)} ditambahkan\n` +
+              `Progress: ${formatRupiahTG(result.newTerkumpul)} / ${formatRupiahTG(result.target)} (${pct}%)`
+            );
+          }
+        } catch (err) {
+          console.error("[telegram] gagal nabung:", err);
+          await sendTelegramMessage(chatId, "Gagal proses nabung, coba lagi ya.");
+        }
+        return res.status(200).json({ ok: true });
+      }
     }
 
     if (mode === "umkm") {
@@ -477,6 +608,15 @@ async function handleTelegramWebhook(req, res) {
       const s = result.data;
       const arrow = s.stokBaru >= s.stokLama ? "📈" : "📉";
       await sendTelegramMessage(chatId, `${arrow} *Stok ${s.nama} diperbarui!* 🤖\n${s.stokLama} → *${s.stokBaru}* ${s.satuan}\n\n${result.reply || ""}`);
+    } else if (result.type === "needs_confirmation") {
+      await sendTelegramMessageWithButtons(
+        chatId,
+        `🤔 *Aku kurang yakin, ini maksudnya gini kan?*\n\n${result.previewText}\n\n${result.reply || ""}`,
+        [
+          { text: "✅ Benar", data: `confirm:${result.pendingId}` },
+          { text: "❌ Bukan", data: `cancel:${result.pendingId}` },
+        ]
+      );
     } else {
       await sendTelegramMessage(chatId, result.reply || "Maaf, aku kurang paham maksudnya.");
     }
