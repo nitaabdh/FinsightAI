@@ -4,6 +4,7 @@
 // webhook Telegram udah tervalidasi lewat secret token sendiri (lihat telegram-webhook.js).
 
 import { createClient } from "@supabase/supabase-js";
+import { randomUUID } from "crypto";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -205,6 +206,195 @@ export async function getHargaText(userId) {
     out += `\n`;
   });
   return out;
+}
+
+// ── UTANG/PIUTANG USAHA (umkm) — beda dari debts Personal, ini lump-sum + jatuh tempo tanggal pasti ──
+export async function getUtangPiutangText(userId) {
+  const { data, error } = await supabase.from("utang_piutang").select("*").eq("user_id", userId).eq("lunas", false).order("jatuh_tempo");
+  if (error) throw error;
+  if (!data || data.length === 0) return "🎉 Nggak ada utang/piutang usaha yang aktif. Bersih!";
+
+  const jenisLabel = { utang: "Utang (kita berutang)", piutang: "Piutang (orang berutang ke kita)" };
+  let out = `📋 *Utang & Piutang Usaha Aktif (${data.length})*\n\n`;
+  data.forEach(u => {
+    const jatuhTempo = u.jatuh_tempo ? new Date(u.jatuh_tempo).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "-";
+    out += `• *${u.nama}* (${jenisLabel[u.jenis] || u.jenis})\n  ${formatRupiahTG(u.nominal)} — jatuh tempo ${jatuhTempo}\n`;
+    if (u.catatan) out += `  📝 ${u.catatan}\n`;
+    out += `\n`;
+  });
+  return out;
+}
+
+// ── BIAYA OPERASIONAL (umkm) ─────────────────────────────────────────────────
+export async function getBiayaText(userId) {
+  const { data, error } = await supabase.from("biaya_operasional").select("*").eq("user_id", userId).order("nama");
+  if (error) throw error;
+  if (!data || data.length === 0) return "Belum ada biaya operasional yang tercatat.";
+
+  let out = `🧾 *Biaya Operasional*\n\n`;
+  let total = 0;
+  data.forEach(b => {
+    total += Number(b.biaya || 0);
+    out += `• ${b.nama}: ${formatRupiahTG(b.biaya)}\n`;
+  });
+  out += `\nTotal: *${formatRupiahTG(total)}*`;
+  return out;
+}
+
+// ── TAMBAH/KURANGI STOK (umkm) — dipakai command /stok+ dan /stok- ───────────
+// Fuzzy match nama bahan (case-insensitive, partial), biar user nggak perlu ketik persis.
+export async function adjustStok(userId, namaBahan, jumlah, tipe) {
+  const { data: bahanList, error: findErr } = await supabase
+    .from("bahan_baku").select("*").eq("user_id", userId);
+  if (findErr) throw findErr;
+
+  const lower = namaBahan.toLowerCase().trim();
+  const matches = (bahanList || []).filter(b => b.nama.toLowerCase().includes(lower));
+
+  if (matches.length === 0) {
+    return { success: false, message: `Bahan baku "${namaBahan}" nggak ketemu. Cek nama persisnya di halaman Bahan Baku ya.` };
+  }
+  if (matches.length > 1) {
+    const daftar = matches.map(b => b.nama).join(", ");
+    return { success: false, message: `Ada ${matches.length} bahan yang cocok sama "${namaBahan}": ${daftar}. Coba lebih spesifik.` };
+  }
+
+  const bahan = matches[0];
+  const stokLama = Number(bahan.stok || 0);
+  const delta = tipe === "tambah" ? jumlah : -jumlah;
+  const stokBaru = Math.max(0, stokLama + delta);
+
+  const { error: updateErr } = await supabase.from("bahan_baku").update({ stok: stokBaru }).eq("id", bahan.id);
+  if (updateErr) throw updateErr;
+
+  // Catat juga di stok_history biar konsisten sama riwayat yang di web
+  await supabase.from("stok_history").insert({
+    user_id: userId,
+    bahan_id: bahan.id,
+    tipe,
+    sumber: tipe === "tambah" ? "manual_tambah" : "manual_kurang_lain",
+    jumlah,
+    satuan_label: bahan.satuan_beli || bahan.hasil_label || "",
+    alasan: "Lewat bot Telegram",
+  });
+
+  return {
+    success: true,
+    nama: bahan.nama,
+    stokLama,
+    stokBaru,
+    satuan: bahan.hasil_label || bahan.satuan_beli || "",
+  };
+}
+
+// Parse tanggal fleksibel dari teks user: "2026-07-25", "25/07/2026", "25/07",
+// "25 juli", "25 juli 2026", "besok", "lusa", "hari ini". Return "yyyy-mm-dd" atau null.
+export function parseFlexibleDate(text) {
+  const a = (text || "").trim().toLowerCase();
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+
+  if (a === "hari ini" || a === "hariini") return now.toISOString().slice(0, 10);
+  if (a === "besok") { const d = new Date(now); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); }
+  if (a === "lusa")  { const d = new Date(now); d.setDate(d.getDate() + 2); return d.toISOString().slice(0, 10); }
+
+  let m = a.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m) return `${m[1]}-${String(m[2]).padStart(2,"0")}-${String(m[3]).padStart(2,"0")}`;
+
+  m = a.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) return `${m[3]}-${String(m[2]).padStart(2,"0")}-${String(m[1]).padStart(2,"0")}`;
+
+  m = a.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
+  if (m) {
+    let year = now.getFullYear();
+    let d = new Date(year, Number(m[2]) - 1, Number(m[1]));
+    if (d < now) d = new Date(year + 1, Number(m[2]) - 1, Number(m[1]));
+    return d.toISOString().slice(0, 10);
+  }
+
+  m = a.match(/^(\d{1,2})\s+([a-z]+)(?:\s+(\d{4}))?$/);
+  if (m) {
+    const monthIdx = BULAN_ID.findIndex(b => b.startsWith(m[2]));
+    if (monthIdx !== -1) {
+      let year = m[3] ? Number(m[3]) : now.getFullYear();
+      let d = new Date(year, monthIdx, Number(m[1]));
+      if (!m[3] && d < now) d = new Date(year + 1, monthIdx, Number(m[1]));
+      return d.toISOString().slice(0, 10);
+    }
+  }
+
+  return null;
+}
+
+// ── ACARA TERDEKAT (cal_notes, mode-aware) ──────────────────────────────────
+export async function getUpcomingAcaraText(userId, mode) {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const { data, error } = await supabase
+    .from("cal_notes").select("*").eq("user_id", userId).eq("mode", mode)
+    .gte("date", todayStr).order("date", { ascending: true }).limit(8);
+  if (error) throw error;
+  if (!data || data.length === 0) return "Nggak ada acara mendatang yang tercatat. 🎉";
+
+  let out = `📅 *Acara Terdekat*\n\n`;
+  data.forEach(a => {
+    const d = new Date(a.date); d.setHours(0,0,0,0);
+    const now = new Date(); now.setHours(0,0,0,0);
+    const diff = Math.round((d - now) / (1000*60*60*24));
+    const label = diff === 0 ? "Hari ini" : diff === 1 ? "Besok" : `${diff} hari lagi`;
+    const tgl = d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+    out += `• *${a.title}* — ${tgl} (${label})\n`;
+    if (a.body) out += `  ${a.body}\n`;
+  });
+  return out;
+}
+
+export async function addAcara(userId, mode, title, dateStr) {
+  const { data, error } = await supabase.from("cal_notes").insert({
+    id: randomUUID(), user_id: userId, mode, title, body: "", category: "umum", date: dateStr,
+  }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+// ── CATATAN (notes, mode-aware) — list bernomor biar bisa dirujuk pas edit ──
+export async function getCatatanListText(userId, mode) {
+  const { data, error } = await supabase
+    .from("notes").select("*").eq("user_id", userId).eq("mode", mode)
+    .order("created_at", { ascending: false }).limit(10);
+  if (error) throw error;
+  if (!data || data.length === 0) return "Belum ada catatan. Tambah pakai `/catatan+ isi catatannya`.";
+
+  let out = `📋 *Catatan Kamu*\n\n`;
+  data.forEach((n, i) => {
+    const preview = n.body ? n.body.slice(0, 60) : "";
+    out += `*${i + 1}.* ${n.title}${preview ? `\n   ${preview}${n.body.length > 60 ? "..." : ""}` : ""}\n`;
+  });
+  out += `\n_Edit: \`/catatanedit <nomor> isi baru\`_`;
+  return out;
+}
+
+export async function addCatatan(userId, mode, title) {
+  const { data, error } = await supabase.from("notes").insert({
+    id: randomUUID(), user_id: userId, mode, title, body: "", category: "umum", color: "yellow",
+  }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+// Edit catatan berdasarkan NOMOR urut dari /catatan (list ter-fresh, urutan sama persis).
+export async function editCatatanByIndex(userId, mode, index, newText) {
+  const { data: list, error: listErr } = await supabase
+    .from("notes").select("*").eq("user_id", userId).eq("mode", mode)
+    .order("created_at", { ascending: false }).limit(10);
+  if (listErr) throw listErr;
+
+  const target = list?.[index - 1];
+  if (!target) return { success: false, message: `Catatan nomor ${index} nggak ketemu. Cek lagi pakai /catatan.` };
+
+  const { data, error } = await supabase.from("notes")
+    .update({ title: newText, updated_at: new Date().toISOString() })
+    .eq("id", target.id).eq("user_id", userId).select().single();
+  if (error) throw error;
+  return { success: true, data };
 }
 
 // ── ASET USAHA (umkm) ────────────────────────────────────────────────────────

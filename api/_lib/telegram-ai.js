@@ -7,8 +7,9 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { decryptSecret } from "./crypto.js";
-import { computeKasStats, calcSummary, getTransactions, formatRupiahTG } from "./telegram-data.js";
+import { computeKasStats, calcSummary, getTransactions, formatRupiahTG, parseFlexibleDate, addAcara, addCatatan, adjustStok } from "./telegram-data.js";
 import { getTelegramFileBase64 } from "./telegram.js";
+import { interpretGroqError, logGroqError } from "./groq-error.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -16,14 +17,11 @@ const supabase = createClient(
 );
 
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-// llama-3.3-70b-versatile di-deprecate Groq per 17 Juni 2026 — pindah ke model
-// pengganti resmi yang direkomendasikan Groq (docs.groq.com/deprecations).
-const MODEL        = "openai/gpt-oss-120b";
-// Model vision buat baca foto struk — statusnya masih "preview" di Groq (bisa
-// berubah/dihentikan sewaktu-waktu tanpa banyak pemberitahuan), tapi ini yang
-// paling stabil buat sekarang. Kalau suatu saat error terus, cek daftar model
-// vision terbaru di console.groq.com/docs/vision.
-const VISION_MODEL = "qwen/qwen3.6-27b";
+// Sama kayak di ai-chat.js — defaultnya openai/gpt-oss-120b & qwen/qwen3.6-27b,
+// TAPI bisa di-override tanpa redeploy kode lewat env var GROQ_TEXT_MODEL /
+// GROQ_VISION_MODEL di Vercel Settings kalau Groq deprecate/ganti model lagi.
+const MODEL        = process.env.GROQ_TEXT_MODEL   || "openai/gpt-oss-120b";
+const VISION_MODEL = process.env.GROQ_VISION_MODEL || "qwen/qwen3.6-27b";
 const MAX_HISTORY_MESSAGES = 12; // ~6 giliran obrolan (user+assistant), biar prompt nggak kegedean
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -143,29 +141,33 @@ async function buildContext(userId, mode) {
 }
 
 const SYSTEM_PROMPT = (mode, contextText) => `Kamu adalah asisten keuangan FinSight yang menerima pesan bebas dari Telegram.
-Tugas kamu: KLASIFIKASIKAN pesan user jadi salah satu dari 2 intent, lalu balas HANYA dalam format JSON (tanpa markdown code fence, tanpa teks lain di luar JSON):
+Tugas kamu: KLASIFIKASIKAN pesan user jadi salah satu dari ${mode === "umkm" ? "5" : "4"} intent, lalu balas HANYA dalam format JSON (tanpa markdown code fence, tanpa teks lain di luar JSON):
 
 {
-  "intent": "transaction" atau "chat",
+  "intent": "transaction" | "note" | "event" | ${mode === "umkm" ? `"stock_adjust" | ` : ""}"chat",
   "transaction": {
     "type": "pemasukan" atau "pengeluaran",
     "amount": <angka murni tanpa titik/koma/Rp>,
     "category": "<kategori singkat, contoh: Makanan, Transportasi, Gaji, dll>",
     "description": "<deskripsi singkat dari pesan user>"
   } (isi null kalau intent bukan "transaction"),
-  "reply": "<balasan singkat kamu ke user, ramah, pakai Bahasa Indonesia casual>"
+  "note": { "title": "<isi catatan, ringkas tapi jelas>" } (isi null kalau intent bukan "note"),
+  "event": { "title": "<judul acara>", "date_text": "<teks tanggal APA ADANYA dari user, contoh: '25 juli', 'besok', '2026-07-25'>" } (isi null kalau intent bukan "event"),
+  ${mode === "umkm" ? `"stock_adjust": { "item": "<nama bahan baku>", "quantity": <angka>, "direction": "tambah" atau "kurang" } (isi null kalau intent bukan "stock_adjust"),\n  ` : ""}"reply": "<balasan singkat kamu ke user, ramah, pakai Bahasa Indonesia casual>"
 }
 
 Aturan klasifikasi:
 - "transaction" kalau user cerita udah BELANJA/BAYAR/TERIMA UANG sesuatu dengan nominal jelas (boleh singkatan "20rb"=20000, "1jt"=1000000, "1,5jt"=1500000)
-- "chat" kalau user nanya sesuatu, curhat, minta saran, atau nggak nyebut nominal jelas
-- Kalau ragu-ragu / nominal nggak jelas, pilih "chat" dan di reply-nya tanya balik nominalnya berapa
+- "note" kalau user minta DICATETIN sesuatu yang BUKAN soal uang/tanggal spesifik (pengingat umum, ide, to-do). Kata kunci: "catat", "inget", "jangan lupa" TANPA ada tanggal jelas
+- "event" kalau user nyebut acara/jadwal DENGAN tanggal/waktu spesifik (hari ini, besok, lusa, atau tanggal jelas)
+${mode === "umkm" ? `- "stock_adjust" kalau user bilang nambah/kurang STOK BAHAN BAKU (bukan uang). Kata kunci: "stok", "restock", "abis", "kurangin", "tambahin" + nama bahan + jumlah\n` : ""}- "chat" kalau user nanya sesuatu, curhat, minta saran, atau nggak jelas termasuk kategori mana
+- Kalau ragu-ragu, pilih "chat" dan di reply-nya tanya balik buat klarifikasi
 - Mode akun ini: ${mode === "umkm" ? "UMKM (bisnis)" : "Keuangan Pribadi"}
 
 Konteks keuangan user saat ini:
 ${contextText}
 
-Kalau intent "transaction", isi reply dengan konfirmasi singkat kayak "Oke, tercatat!" — detail nominalnya nggak perlu diulang di reply karena udah ditampilin terpisah.`;
+Kalau intent selain "chat", isi reply dengan konfirmasi singkat kayak "Oke, dicatet!" — detailnya nggak perlu diulang di reply karena udah ditampilin terpisah.`;
 
 export async function handleFreeText(userId, mode, text) {
   // ── Coba parser cepat dulu (regex, gratis, nggak butuh API key) ──
@@ -238,11 +240,9 @@ export async function handleFreeText(userId, mode, text) {
     });
     data = await res.json();
     if (!res.ok) {
-      console.error("[telegram-ai] Groq error:", data);
-      if (data?.error?.code === "invalid_api_key") {
-        return { type: "error", message: "API key Groq kamu kayaknya udah nggak valid. Coba cek/atur ulang di halaman Profil." };
-      }
-      return { type: "error", message: "AI lagi bermasalah, coba lagi sebentar ya." };
+      const { userMessage, isModelIssue } = interpretGroqError(data, MODEL);
+      logGroqError("telegram-ai:chat", data, MODEL, isModelIssue);
+      return { type: "error", message: userMessage };
     }
   } catch (err) {
     console.error("[telegram-ai] fetch error:", err);
@@ -292,6 +292,42 @@ export async function handleFreeText(userId, mode, text) {
       return { type: "error", message: "Aku ngerti maksudnya, tapi gagal nyimpen transaksinya. Coba lagi ya." };
     }
     return { type: "transaction_saved", data: inserted, reply: parsed.reply };
+  }
+
+  if (parsed.intent === "note" && parsed.note?.title) {
+    try {
+      const saved = await addCatatan(userId, mode, parsed.note.title);
+      return { type: "note_saved", data: saved, reply: parsed.reply };
+    } catch (err) {
+      console.error("[telegram-ai] gagal simpan catatan:", err);
+      return { type: "error", message: "Aku ngerti maksudnya, tapi gagal nyimpen catatannya. Coba lagi ya." };
+    }
+  }
+
+  if (parsed.intent === "event" && parsed.event?.title) {
+    const dateStr = parseFlexibleDate(parsed.event.date_text || "");
+    if (!dateStr) {
+      return { type: "chat", reply: `Aku ngerti kamu mau nyatet acara "${parsed.event.title}", tapi tanggalnya kurang jelas. Bisa disebutin lagi tanggalnya?` };
+    }
+    try {
+      const saved = await addAcara(userId, mode, parsed.event.title, dateStr);
+      return { type: "event_saved", data: saved, dateStr, reply: parsed.reply };
+    } catch (err) {
+      console.error("[telegram-ai] gagal simpan acara:", err);
+      return { type: "error", message: "Aku ngerti maksudnya, tapi gagal nyimpen acaranya. Coba lagi ya." };
+    }
+  }
+
+  if (parsed.intent === "stock_adjust" && parsed.stock_adjust?.item && parsed.stock_adjust?.quantity) {
+    try {
+      const s = parsed.stock_adjust;
+      const result = await adjustStok(userId, s.item, Number(s.quantity), s.direction === "kurang" ? "kurang" : "tambah");
+      if (!result.success) return { type: "chat", reply: result.message };
+      return { type: "stock_adjusted", data: result, reply: parsed.reply };
+    } catch (err) {
+      console.error("[telegram-ai] gagal adjust stok:", err);
+      return { type: "error", message: "Aku ngerti maksudnya, tapi gagal update stoknya. Coba lagi ya." };
+    }
   }
 
   return { type: "chat", reply: parsed.reply || "Hmm, coba diperjelas lagi ya." };
@@ -379,11 +415,9 @@ export async function handleReceiptPhoto(userId, mode, fileId) {
     });
     data = await res.json();
     if (!res.ok) {
-      console.error("[telegram-ai] Groq vision error:", data);
-      if (data?.error?.code === "invalid_api_key") {
-        return { type: "error", message: "API key Groq kamu kayaknya udah nggak valid. Coba cek/atur ulang di halaman Profil." };
-      }
-      return { type: "error", message: "Gagal membaca struk-nya lewat AI, coba lagi sebentar." };
+      const { userMessage, isModelIssue } = interpretGroqError(data, VISION_MODEL);
+      logGroqError("telegram-ai:vision", data, VISION_MODEL, isModelIssue);
+      return { type: "error", message: userMessage };
     }
   } catch (err) {
     console.error("[telegram-ai] fetch error (vision):", err);

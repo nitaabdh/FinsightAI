@@ -10,6 +10,7 @@
 import { createClient } from "@supabase/supabase-js";
 import jwt from "jsonwebtoken";
 import { decryptSecret } from "./_lib/crypto.js";
+import { interpretGroqError, logGroqError } from "./_lib/groq-error.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -18,10 +19,10 @@ const supabase = createClient(
 
 const JWT_SECRET   = process.env.JWT_SECRET;
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-// llama-3.3-70b-versatile di-deprecate Groq per 17 Juni 2026 — pindah ke model
-// pengganti resmi yang direkomendasikan Groq (docs.groq.com/deprecations).
-// Kalau nanti Groq ganti lagi modelnya, cukup ubah baris ini aja.
-const MODEL        = "openai/gpt-oss-120b";
+// llama-3.3-70b-versatile di-deprecate Groq per 17 Juni 2026 — sekarang defaultnya
+// openai/gpt-oss-120b, TAPI bisa di-override tanpa perlu redeploy kode: tinggal
+// set env var GROQ_TEXT_MODEL di Vercel Settings kalau Groq deprecate lagi ke depannya.
+const MODEL        = process.env.GROQ_TEXT_MODEL || "openai/gpt-oss-120b";
 
 function getUserId(req) {
   const auth = req.headers.authorization || "";
@@ -236,7 +237,9 @@ export default async function handler(req, res) {
 
     if (!res1.ok) {
       const err = await res1.json().catch(() => ({}));
-      return res.status(502).json({ success: false, message: err?.error?.message || `Groq API Error: ${res1.status}` });
+      const { userMessage, isModelIssue } = interpretGroqError(err, MODEL);
+      logGroqError("ai-chat:req1", err, MODEL, isModelIssue);
+      return res.status(502).json({ success: false, message: userMessage });
     }
 
     const data1 = await res1.json();
@@ -277,7 +280,9 @@ export default async function handler(req, res) {
 
     if (!res2.ok) {
       const err = await res2.json().catch(() => ({}));
-      return res.status(502).json({ success: false, message: err?.error?.message || `Groq API Error: ${res2.status}` });
+      const { userMessage, isModelIssue } = interpretGroqError(err, MODEL);
+      logGroqError("ai-chat:req2", err, MODEL, isModelIssue);
+      return res.status(502).json({ success: false, message: userMessage });
     }
 
     const data2 = await res2.json();

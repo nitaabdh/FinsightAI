@@ -42,6 +42,7 @@ export default async function handler(req, res) {
   let sent = 0, skipped = 0, errors = 0;
 
   try {
+    // ── Bagian 1: Utang/Cicilan Personal (debts) — jatuh tempo berulang tiap bulan ──
     const { data: debts, error } = await supabase
       .from("debts")
       .select("id, user_id, jenis, nama, cicilan_per_bulan, dompet, tanggal_jatuh_tempo")
@@ -56,7 +57,6 @@ export default async function handler(req, res) {
 
         if (![1, 3].includes(hMin)) { skipped++; continue; }
 
-        // Udah pernah dikirim reminder buat tanggal jatuh tempo ini? skip biar nggak dobel
         const dueDateStr = due.toISOString().slice(0, 10);
         const { data: already } = await supabase
           .from("telegram_reminders_sent")
@@ -67,7 +67,6 @@ export default async function handler(req, res) {
           .maybeSingle();
         if (already) { skipped++; continue; }
 
-        // User ini udah link Telegram belum?
         const { data: link } = await supabase
           .from("telegram_links")
           .select("telegram_chat_id")
@@ -98,7 +97,66 @@ export default async function handler(req, res) {
       }
     }
 
-    return res.status(200).json({ ok: true, checked: (debts || []).length, sent, skipped, errors, date: todayStr });
+    // ── Bagian 2: Utang/Piutang Usaha UMKM (utang_piutang) — jatuh tempo TANGGAL PASTI, bukan berulang ──
+    const { data: utangPiutang, error: upError } = await supabase
+      .from("utang_piutang")
+      .select("id, user_id, jenis, nama, nominal, jatuh_tempo")
+      .eq("lunas", false)
+      .not("jatuh_tempo", "is", null);
+    if (upError) throw upError;
+
+    const UP_JENIS_LABEL = { utang: "Utang Usaha", piutang: "Piutang Usaha" };
+    const UP_JENIS_EMOJI = { utang: "📤", piutang: "📥" };
+
+    for (const u of utangPiutang || []) {
+      try {
+        const due = new Date(u.jatuh_tempo); due.setHours(0, 0, 0, 0);
+        const hMin = daysBetween(due, today);
+
+        if (![1, 3].includes(hMin)) { skipped++; continue; }
+
+        const dueDateStr = due.toISOString().slice(0, 10);
+        const { data: already } = await supabase
+          .from("telegram_reminders_sent")
+          .select("id")
+          .eq("ref_type", "utang_piutang")
+          .eq("ref_id", u.id)
+          .eq("sent_for_date", dueDateStr)
+          .maybeSingle();
+        if (already) { skipped++; continue; }
+
+        const { data: link } = await supabase
+          .from("telegram_links")
+          .select("telegram_chat_id")
+          .eq("user_id", u.user_id)
+          .maybeSingle();
+        if (!link) { skipped++; continue; }
+
+        const label = hMin === 1 ? "BESOK" : `${hMin} hari lagi`;
+        const verb = u.jenis === "piutang" ? "Ditagih" : "Dibayar";
+        const text =
+          `⏰ *Reminder ${UP_JENIS_LABEL[u.jenis] || "Utang/Piutang"}*\n\n` +
+          `${UP_JENIS_EMOJI[u.jenis] || "📤"} *${u.nama}*\n` +
+          `Jatuh tempo: *${label}*\n` +
+          `Nominal: ${formatRupiahTG(u.nominal)} (${verb.toLowerCase()})\n\n` +
+          `Buka halaman Utang/Piutang di web abis diurus ya.`;
+
+        const result = await sendTelegramMessage(link.telegram_chat_id, text);
+        if (result.ok) {
+          await supabase.from("telegram_reminders_sent").insert({
+            user_id: u.user_id, ref_type: "utang_piutang", ref_id: u.id, sent_for_date: dueDateStr,
+          });
+          sent++;
+        } else {
+          errors++;
+        }
+      } catch (innerErr) {
+        console.error("[cron/reminder-check] gagal proses utang_piutang", u.id, innerErr);
+        errors++;
+      }
+    }
+
+    return res.status(200).json({ ok: true, checkedDebts: (debts || []).length, checkedUtangPiutang: (utangPiutang || []).length, sent, skipped, errors, date: todayStr });
   } catch (err) {
     console.error("[cron/reminder-check] error:", err);
     return res.status(500).json({ ok: false, message: err.message });

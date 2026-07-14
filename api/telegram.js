@@ -28,6 +28,9 @@ import { sendTelegramMessage, escapeMd } from "./_lib/telegram.js";
 import {
   getSaldoText, getLaporanText, getUtangText, getTargetText,
   getStokText, getHargaText, getAsetText, formatRupiahTG,
+  getUtangPiutangText, getBiayaText, adjustStok,
+  parseFlexibleDate, getUpcomingAcaraText, addAcara,
+  getCatatanListText, addCatatan, editCatatanByIndex,
 } from "./_lib/telegram-data.js";
 import { handleFreeText, undoLastTransaction, resetChatHistory, handleReceiptPhoto } from "./_lib/telegram-ai.js";
 
@@ -139,11 +142,18 @@ const HELP_TEXT_PERSONAL =
   `/laporan juni — bulan tertentu (atau \`2026-06\`)\n` +
   `/utang — daftar utang & cicilan aktif\n` +
   `/target — progress target tabungan\n` +
+  `/acara — acara terdekat\n` +
+  `/acara+ tanggal judul — tambah acara (contoh: \`/acara+ 25 juli Rapat\`)\n` +
+  `/catatan — lihat catatan (bernomor)\n` +
+  `/catatan+ isi — tambah catatan baru\n` +
+  `/catatanedit nomor isi_baru — edit catatan\n` +
   `/batal — hapus transaksi terakhir yang salah kecatet\n` +
   `/lupa — reset ingatan obrolan AI\n` +
   `/unlink — putuskan koneksi akun\n\n` +
   `Kamu juga bisa langsung ngetik bebas, misal:\n` +
   `_"beli kopi 20rb"_ → langsung kecatet (nggak butuh API key)\n` +
+  `_"inget rapat sama klien besok"_ → otomatis jadi acara (butuh API key)\n` +
+  `_"catat jangan lupa isi ulang token listrik"_ → otomatis jadi catatan (butuh API key)\n` +
   `_"gimana cara nabung yang efektif?"_ → tanya AI Agent (butuh API key Groq di Profil)\n\n` +
   `📸 Kirim *foto struk belanja* juga bisa — otomatis kebaca & kecatet (butuh API key Groq juga)`;
 
@@ -154,13 +164,24 @@ const HELP_TEXT_UMKM =
   `/laporan semua — semua periode\n` +
   `/laporan juni — bulan tertentu (atau \`2026-06\`)\n` +
   `/stok — stok bahan baku\n` +
-  `/harga — daftar harga produk\n` +
+  `/stok+ nama jumlah — tambah stok (contoh: \`/stok+ kopi arabika 5\`)\n` +
+  `/stok- nama jumlah — kurangi stok\n` +
+  `/harga — daftar harga jual produk (reguler & online)\n` +
   `/aset — daftar aset usaha\n` +
+  `/utangpiutang — daftar utang & piutang usaha aktif\n` +
+  `/biaya — daftar biaya operasional\n` +
+  `/acara — acara terdekat\n` +
+  `/acara+ tanggal judul — tambah acara (contoh: \`/acara+ 25 juli Rapat\`)\n` +
+  `/catatan — lihat catatan (bernomor)\n` +
+  `/catatan+ isi — tambah catatan baru\n` +
+  `/catatanedit nomor isi_baru — edit catatan\n` +
   `/batal — hapus transaksi terakhir yang salah kecatet\n` +
   `/lupa — reset ingatan obrolan AI\n` +
   `/unlink — putuskan koneksi akun\n\n` +
   `Kamu juga bisa langsung ngetik bebas, misal:\n` +
   `_"jual 2 kopi susu 40rb"_ → langsung kecatet (nggak butuh API key)\n` +
+  `_"tambahin stok kopi arabika 5kg"_ → otomatis update stok (butuh API key)\n` +
+  `_"inget rapat sama supplier besok"_ → otomatis jadi acara (butuh API key)\n` +
   `_"gimana strategi naikin omzet?"_ → tanya AI Agent (butuh API key Groq di Profil)\n\n` +
   `📸 Kirim *foto struk belanja* juga bisa — otomatis kebaca & kecatet (butuh API key Groq juga)`;
 
@@ -305,6 +326,63 @@ async function handleTelegramWebhook(req, res) {
       return res.status(200).json({ ok: true });
     }
 
+    // ── Kalender & Catatan — sama-sama ada di dua mode ──
+    if (text === "/acara") {
+      await sendTelegramMessage(chatId, await getUpcomingAcaraText(userId, mode));
+      return res.status(200).json({ ok: true });
+    }
+
+    if (text.startsWith("/acara+")) {
+      const rest = text.replace("/acara+", "").trim();
+      // Format: /acara+ <tanggal> <judul>  — tanggal bisa "25 juli", "besok", "2026-07-25", dst
+      const match = rest.match(/^(\d{4}-\d{1,2}-\d{1,2}|\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{4})?|besok|lusa|hari ini|\d{1,2}\s+\S+(?:\s+\d{4})?)\s+(.+)$/i);
+      if (!match) {
+        await sendTelegramMessage(chatId, `Format: \`/acara+ tanggal judul\`\nContoh: \`/acara+ 25 juli Rapat sama supplier\` atau \`/acara+ besok Bayar sewa\``);
+        return res.status(200).json({ ok: true });
+      }
+      const dateStr = parseFlexibleDate(match[1]);
+      if (!dateStr) {
+        await sendTelegramMessage(chatId, `Tanggal "${match[1]}" nggak kebaca formatnya. Coba pakai "25 juli", "besok", atau "2026-07-25".`);
+        return res.status(200).json({ ok: true });
+      }
+      const acara = await addAcara(userId, mode, match[2].trim(), dateStr);
+      const tglLabel = new Date(dateStr).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+      await sendTelegramMessage(chatId, `📅 *Acara ditambahkan!*\n${acara.title} — ${tglLabel}`);
+      return res.status(200).json({ ok: true });
+    }
+
+    if (text === "/catatan") {
+      await sendTelegramMessage(chatId, await getCatatanListText(userId, mode));
+      return res.status(200).json({ ok: true });
+    }
+
+    if (text.startsWith("/catatan+")) {
+      const isi = text.replace("/catatan+", "").trim();
+      if (!isi) {
+        await sendTelegramMessage(chatId, `Format: \`/catatan+ isi catatannya\``);
+        return res.status(200).json({ ok: true });
+      }
+      await addCatatan(userId, mode, isi);
+      await sendTelegramMessage(chatId, `📝 *Catatan ditambahkan!*\n${isi}`);
+      return res.status(200).json({ ok: true });
+    }
+
+    if (text.startsWith("/catatanedit")) {
+      const rest = text.replace("/catatanedit", "").trim();
+      const match = rest.match(/^(\d+)\s+(.+)$/);
+      if (!match) {
+        await sendTelegramMessage(chatId, `Format: \`/catatanedit nomor isi_baru\`\nContoh: \`/catatanedit 2 Beli oleh-oleh weekend depan\`\n\nCek nomornya dulu pakai /catatan.`);
+        return res.status(200).json({ ok: true });
+      }
+      const result = await editCatatanByIndex(userId, mode, Number(match[1]), match[2].trim());
+      if (!result.success) {
+        await sendTelegramMessage(chatId, `⚠️ ${result.message}`);
+      } else {
+        await sendTelegramMessage(chatId, `✏️ *Catatan #${match[1]} diperbarui!*\n${result.data.title}`);
+      }
+      return res.status(200).json({ ok: true });
+    }
+
     if (mode === "personal") {
       if (text === "/utang")  { await sendTelegramMessage(chatId, await getUtangText(userId));  return res.status(200).json({ ok: true }); }
       if (text === "/target") { await sendTelegramMessage(chatId, await getTargetText(userId)); return res.status(200).json({ ok: true }); }
@@ -314,6 +392,37 @@ async function handleTelegramWebhook(req, res) {
       if (text === "/stok")  { await sendTelegramMessage(chatId, await getStokText(userId));  return res.status(200).json({ ok: true }); }
       if (text === "/harga") { await sendTelegramMessage(chatId, await getHargaText(userId)); return res.status(200).json({ ok: true }); }
       if (text === "/aset")  { await sendTelegramMessage(chatId, await getAsetText(userId));  return res.status(200).json({ ok: true }); }
+      if (text === "/utangpiutang") { await sendTelegramMessage(chatId, await getUtangPiutangText(userId)); return res.status(200).json({ ok: true }); }
+      if (text === "/biaya") { await sendTelegramMessage(chatId, await getBiayaText(userId)); return res.status(200).json({ ok: true }); }
+
+      // /stok+ <nama bahan> <jumlah>  atau  /stok- <nama bahan> <jumlah>
+      if (text.startsWith("/stok+") || text.startsWith("/stok-")) {
+        const tipe = text.startsWith("/stok+") ? "tambah" : "kurang";
+        const rest = text.replace(/^\/stok[+-]/, "").trim();
+        const match = rest.match(/^(.+?)\s+(\d+(?:[.,]\d+)?)$/); // "nama bahan" + angka di akhir
+        if (!match) {
+          await sendTelegramMessage(chatId, `Format: \`/stok+ nama bahan jumlah\` atau \`/stok- nama bahan jumlah\`\nContoh: \`/stok+ kopi arabika 5\``);
+          return res.status(200).json({ ok: true });
+        }
+        const namaBahan = match[1].trim();
+        const jumlah = parseFloat(match[2].replace(",", "."));
+
+        try {
+          const result = await adjustStok(userId, namaBahan, jumlah, tipe);
+          if (!result.success) {
+            await sendTelegramMessage(chatId, `⚠️ ${result.message}`);
+          } else {
+            const arrow = tipe === "tambah" ? "📈" : "📉";
+            await sendTelegramMessage(chatId,
+              `${arrow} *Stok ${result.nama} diperbarui*\n${result.stokLama} → *${result.stokBaru}* ${result.satuan}`
+            );
+          }
+        } catch (err) {
+          console.error("[telegram] gagal adjust stok:", err);
+          await sendTelegramMessage(chatId, "Gagal update stok, coba lagi ya.");
+        }
+        return res.status(200).json({ ok: true });
+      }
     }
 
     // ── Command: /lupa — reset ingatan obrolan AI (bukan hapus data transaksi/dll) ──
@@ -359,6 +468,15 @@ async function handleTelegramWebhook(req, res) {
         `${emoji} *Tercatat!* ${tag}\n${t.description || t.category}\n${formatRupiahTG(t.amount)} — ${t.category}\n\n` +
         `${result.reply || ""}\n\n_Salah catat? Ketik /batal buat ngehapus._`
       );
+    } else if (result.type === "note_saved") {
+      await sendTelegramMessage(chatId, `📝 *Catatan tersimpan!* 🤖\n${result.data.title}\n\n${result.reply || ""}`);
+    } else if (result.type === "event_saved") {
+      const tglLabel = new Date(result.dateStr).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+      await sendTelegramMessage(chatId, `📅 *Acara tersimpan!* 🤖\n${result.data.title} — ${tglLabel}\n\n${result.reply || ""}`);
+    } else if (result.type === "stock_adjusted") {
+      const s = result.data;
+      const arrow = s.stokBaru >= s.stokLama ? "📈" : "📉";
+      await sendTelegramMessage(chatId, `${arrow} *Stok ${s.nama} diperbarui!* 🤖\n${s.stokLama} → *${s.stokBaru}* ${s.satuan}\n\n${result.reply || ""}`);
     } else {
       await sendTelegramMessage(chatId, result.reply || "Maaf, aku kurang paham maksudnya.");
     }
