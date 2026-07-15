@@ -240,8 +240,15 @@ async function handleTelegramWebhook(req, res) {
     if (update?.update_id) {
       const { error: dupErr } = await supabase.from("telegram_processed_updates").insert({ update_id: update.update_id });
       if (dupErr) {
-        // gagal insert karena PK udah ada = update ini udah pernah diproses sebelumnya
-        return res.status(200).json({ ok: true, duplicate: true });
+        // Kode "23505" = unique/PK violation di Postgres -> ini beneran duplikat, aman di-skip.
+        // Kode lain (tabel belum ada, RLS salah, koneksi gagal, dst) BUKAN duplikat -> harus
+        // kelihatan di log, jangan diem-diem di-skip kayak dulu (bikin bot keliatan "gak jalan"
+        // tanpa jejak error sama sekali).
+        if (dupErr.code === "23505") {
+          return res.status(200).json({ ok: true, duplicate: true });
+        }
+        console.error("[telegram-webhook] gagal cek/insert processed_updates (BUKAN duplikat):", dupErr);
+        // Tetep lanjut proses pesannya daripada bot diem total gara-gara tabel dedup ini bermasalah.
       }
     }
 
