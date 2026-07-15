@@ -67,7 +67,7 @@ export function formatRupiahTG(n) {
   return "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
 }
 
-// Download foto yang dikirim user di Telegram, convert jadi base64 data URI
+// Download foto/audio yang dikirim user di Telegram, convert jadi base64 data URI
 // (biar bisa langsung dikirim ke model vision Groq).
 export async function getTelegramFileBase64(fileId) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -85,4 +85,22 @@ export async function getTelegramFileBase64(fileId) {
   const base64 = Buffer.from(arrayBuffer).toString("base64");
   const mimeType = filePath.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
   return `data:${mimeType};base64,${base64}`;
+}
+
+// Download voice note Telegram sebagai Buffer mentah (buat dikirim ke API
+// transkripsi Groq lewat multipart/form-data, bukan base64).
+export async function getTelegramFileBuffer(fileId) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) throw new Error("TELEGRAM_BOT_TOKEN belum diset.");
+
+  const fileRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
+  const fileData = await fileRes.json();
+  if (!fileData.ok) throw new Error("Gagal ambil info file dari Telegram: " + fileData.description);
+
+  const filePath = fileData.result.file_path;
+  const audioRes = await fetch(`https://api.telegram.org/file/bot${token}/${filePath}`);
+  if (!audioRes.ok) throw new Error("Gagal download file audio dari Telegram.");
+
+  const arrayBuffer = await audioRes.arrayBuffer();
+  return { buffer: Buffer.from(arrayBuffer), filePath };
 }

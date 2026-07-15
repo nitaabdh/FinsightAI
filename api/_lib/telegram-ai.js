@@ -8,7 +8,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { decryptSecret } from "./crypto.js";
 import { computeKasStats, calcSummary, getTransactions, formatRupiahTG, parseFlexibleDate, addAcara, addCatatan, adjustStok } from "./telegram-data.js";
-import { getTelegramFileBase64 } from "./telegram.js";
+import { getTelegramFileBase64, getTelegramFileBuffer } from "./telegram.js";
 import { interpretGroqError, logGroqError } from "./groq-error.js";
 
 const supabase = createClient(
@@ -22,6 +22,8 @@ const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 // GROQ_VISION_MODEL di Vercel Settings kalau Groq deprecate/ganti model lagi.
 const MODEL        = process.env.GROQ_TEXT_MODEL   || "openai/gpt-oss-120b";
 const VISION_MODEL = process.env.GROQ_VISION_MODEL || "qwen/qwen3.6-27b";
+// Whisper Groq buat transkrip voice note — stabil & aktif (bukan preview), support Indonesia.
+const VOICE_MODEL   = process.env.GROQ_VOICE_MODEL  || "whisper-large-v3-turbo";
 const MAX_HISTORY_MESSAGES = 12; // ~6 giliran obrolan (user+assistant), biar prompt nggak kegedean
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -170,6 +172,68 @@ Konteks keuangan user saat ini:
 ${contextText}
 
 Kalau intent selain "chat", isi reply dengan konfirmasi singkat kayak "Oke, dicatet!" — detailnya nggak perlu diulang di reply karena udah ditampilin terpisah.`;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VOICE NOTE — download dari Telegram, transkrip pakai Whisper (Groq), lalu
+// hasil teksnya diproses PERSIS lewat pipeline yang sama kayak kalau user ngetik
+// (quick-parse dulu, baru AI classification kalau perlu). Nggak ada logic baru
+// buat "ngerti" isi suaranya — cukup ubah suara jadi teks, sisanya reuse semua.
+// ═══════════════════════════════════════════════════════════════════════════
+export async function handleVoiceMessage(userId, mode, fileId) {
+  const { data: profile } = await supabase.from("profiles").select("groq_api_key").eq("user_id", userId).maybeSingle();
+  if (!profile?.groq_api_key) return { type: "need_api_key" };
+
+  let apiKey;
+  try {
+    apiKey = decryptSecret(profile.groq_api_key);
+  } catch (err) {
+    console.error("[telegram-ai] gagal dekripsi key:", err);
+    return { type: "error", message: "Gagal membaca API key kamu. Coba atur ulang di halaman Profil ya." };
+  }
+  if (!apiKey) return { type: "need_api_key" };
+
+  let buffer;
+  try {
+    const downloaded = await getTelegramFileBuffer(fileId);
+    buffer = downloaded.buffer;
+  } catch (err) {
+    console.error("[telegram-ai] gagal download voice note:", err);
+    return { type: "error", message: "Gagal ambil pesan suaranya dari Telegram, coba kirim ulang ya." };
+  }
+
+  let transcript;
+  try {
+    const form = new FormData();
+    form.append("file", new Blob([buffer], { type: "audio/ogg" }), "voice.ogg");
+    form.append("model", VOICE_MODEL);
+    form.append("language", "id"); // dikasih tau langsung Bahasa Indonesia, biar lebih akurat & cepet
+    form.append("response_format", "json");
+
+    const res = await fetch(GROQ_API_URL.replace("/chat/completions", "/audio/transcriptions"), {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}` }, // JANGAN set Content-Type manual, fetch yang atur boundary form-data-nya
+      body: form,
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const { userMessage, isModelIssue } = interpretGroqError(data, VOICE_MODEL);
+      logGroqError("telegram-ai:voice", data, VOICE_MODEL, isModelIssue);
+      return { type: "error", message: userMessage };
+    }
+    transcript = (data.text || "").trim();
+  } catch (err) {
+    console.error("[telegram-ai] fetch error (voice):", err);
+    return { type: "error", message: "Gagal transkrip suaranya, coba lagi ya." };
+  }
+
+  if (!transcript) {
+    return { type: "error", message: "Nggak kedengeran ada suara/kata-kata di situ. Coba rekam ulang lebih jelas." };
+  }
+
+  // Dari sini, reuse 100% pipeline teks yang udah ada
+  const result = await handleFreeText(userId, mode, transcript);
+  return { ...result, transcript }; // transcript diselipin biar bisa ditampilin ke user ("aku denger: ...")
+}
 
 export async function handleFreeText(userId, mode, text) {
   // ── Coba parser cepat dulu (regex, gratis, nggak butuh API key) ──

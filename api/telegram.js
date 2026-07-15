@@ -33,7 +33,7 @@ import {
   getCatatanListText, addCatatan, editCatatanByIndex,
   payCicilan, nabungTarget, getRiwayatText,
 } from "./_lib/telegram-data.js";
-import { handleFreeText, undoLastTransaction, resetChatHistory, handleReceiptPhoto, executePendingAction, cancelPendingAction } from "./_lib/telegram-ai.js";
+import { handleFreeText, undoLastTransaction, resetChatHistory, handleReceiptPhoto, handleVoiceMessage, executePendingAction, cancelPendingAction } from "./_lib/telegram-ai.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -160,7 +160,8 @@ const HELP_TEXT_PERSONAL =
   `_"inget rapat sama klien besok"_ → otomatis jadi acara (butuh API key)\n` +
   `_"catat jangan lupa isi ulang token listrik"_ → otomatis jadi catatan (butuh API key)\n` +
   `_"gimana cara nabung yang efektif?"_ → tanya AI Agent (butuh API key Groq di Profil)\n\n` +
-  `📸 Kirim *foto struk belanja* juga bisa — otomatis kebaca & kecatet (butuh API key Groq juga)`;
+  `📸 Kirim *foto struk belanja* juga bisa — otomatis kebaca & kecatet (butuh API key Groq juga)\n\n` +
+  `🎙️ Kirim *pesan suara* juga bisa — tinggal ngomong aja, nanti ditranskrip & diproses otomatis (butuh API key Groq juga)`;
 
 const HELP_TEXT_UMKM =
   `🤖 *Perintah yang tersedia:*\n\n` +
@@ -190,7 +191,45 @@ const HELP_TEXT_UMKM =
   `_"tambahin stok kopi arabika 5kg"_ → otomatis update stok (butuh API key)\n` +
   `_"inget rapat sama supplier besok"_ → otomatis jadi acara (butuh API key)\n` +
   `_"gimana strategi naikin omzet?"_ → tanya AI Agent (butuh API key Groq di Profil)\n\n` +
-  `📸 Kirim *foto struk belanja* juga bisa — otomatis kebaca & kecatet (butuh API key Groq juga)`;
+  `📸 Kirim *foto struk belanja* juga bisa — otomatis kebaca & kecatet (butuh API key Groq juga)\n\n` +
+  `🎙️ Kirim *pesan suara* juga bisa — tinggal ngomong aja, nanti ditranskrip & diproses otomatis (butuh API key Groq juga)`;
+
+// Dipakai bareng oleh jalur teks bebas DAN voice note — biar tampilan hasilnya konsisten.
+async function displayFreeTextResult(chatId, result) {
+  if (result.type === "need_api_key") {
+    await sendTelegramMessage(chatId, "Fitur ini butuh API key Groq kamu dulu — atur di halaman *Profil* di web ya (gratis, tinggal daftar di console.groq.com).");
+  } else if (result.type === "error") {
+    await sendTelegramMessage(chatId, `⚠️ ${result.message}`);
+  } else if (result.type === "transaction_saved") {
+    const t = result.data;
+    const emoji = t.type === "pemasukan" ? "💰" : "🛒";
+    const tag = result.quick ? "⚡" : "🤖";
+    await sendTelegramMessage(chatId,
+      `${emoji} *Tercatat!* ${tag}\n${t.description || t.category}\n${formatRupiahTG(t.amount)} — ${t.category}\n\n` +
+      `${result.reply || ""}\n\n_Salah catat? Ketik /batal buat ngehapus._`
+    );
+  } else if (result.type === "note_saved") {
+    await sendTelegramMessage(chatId, `📝 *Catatan tersimpan!* 🤖\n${result.data.title}\n\n${result.reply || ""}`);
+  } else if (result.type === "event_saved") {
+    const tglLabel = new Date(result.dateStr).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+    await sendTelegramMessage(chatId, `📅 *Acara tersimpan!* 🤖\n${result.data.title} — ${tglLabel}\n\n${result.reply || ""}`);
+  } else if (result.type === "stock_adjusted") {
+    const s = result.data;
+    const arrow = s.stokBaru >= s.stokLama ? "📈" : "📉";
+    await sendTelegramMessage(chatId, `${arrow} *Stok ${s.nama} diperbarui!* 🤖\n${s.stokLama} → *${s.stokBaru}* ${s.satuan}\n\n${result.reply || ""}`);
+  } else if (result.type === "needs_confirmation") {
+    await sendTelegramMessageWithButtons(
+      chatId,
+      `🤔 *Aku kurang yakin, ini maksudnya gini kan?*\n\n${result.previewText}\n\n${result.reply || ""}`,
+      [
+        { text: "✅ Benar", data: `confirm:${result.pendingId}` },
+        { text: "❌ Bukan", data: `cancel:${result.pendingId}` },
+      ]
+    );
+  } else {
+    await sendTelegramMessage(chatId, result.reply || "Maaf, aku kurang paham maksudnya.");
+  }
+}
 
 async function handleTelegramWebhook(req, res) {
   try {
@@ -291,6 +330,32 @@ async function handleTelegramWebhook(req, res) {
           `_Salah baca? Ketik /batal buat ngehapus._`
         );
       }
+      return res.status(200).json({ ok: true });
+    }
+
+    // ── Voice note dikirim -> transkrip dulu, baru diproses kayak teks biasa ──
+    if (message.voice) {
+      const { data: voiceLink } = await supabase
+        .from("telegram_links")
+        .select("user_id")
+        .eq("telegram_chat_id", chatId)
+        .maybeSingle();
+
+      if (!voiceLink) {
+        await sendTelegramMessage(chatId, HELP_TEXT_UNLINKED);
+        return res.status(200).json({ ok: true });
+      }
+
+      const { data: userRow3 } = await supabase.from("users").select("mode").eq("id", voiceLink.user_id).maybeSingle();
+      const voiceMode = userRow3?.mode || "personal";
+
+      await sendTelegramMessage(chatId, "🎙️ Pesan suara diterima, aku dengerin dulu...");
+      const result = await handleVoiceMessage(voiceLink.user_id, voiceMode, message.voice.file_id);
+
+      if (result.transcript) {
+        await sendTelegramMessage(chatId, `_"${result.transcript}"_`);
+      }
+      await displayFreeTextResult(chatId, result);
       return res.status(200).json({ ok: true });
     }
 
@@ -586,40 +651,7 @@ async function handleTelegramWebhook(req, res) {
       await sendTelegramMessage(chatId, "⌛ Sebentar, aku proses dulu...");
     }
     const result = await handleFreeText(userId, mode, text);
-
-    if (result.type === "need_api_key") {
-      await sendTelegramMessage(chatId, "Fitur ini butuh API key Groq kamu dulu — atur di halaman *Profil* di web ya (gratis, tinggal daftar di console.groq.com).");
-    } else if (result.type === "error") {
-      await sendTelegramMessage(chatId, `⚠️ ${result.message}`);
-    } else if (result.type === "transaction_saved") {
-      const t = result.data;
-      const emoji = t.type === "pemasukan" ? "💰" : "🛒";
-      const tag = result.quick ? "⚡" : "🤖";
-      await sendTelegramMessage(chatId,
-        `${emoji} *Tercatat!* ${tag}\n${t.description || t.category}\n${formatRupiahTG(t.amount)} — ${t.category}\n\n` +
-        `${result.reply || ""}\n\n_Salah catat? Ketik /batal buat ngehapus._`
-      );
-    } else if (result.type === "note_saved") {
-      await sendTelegramMessage(chatId, `📝 *Catatan tersimpan!* 🤖\n${result.data.title}\n\n${result.reply || ""}`);
-    } else if (result.type === "event_saved") {
-      const tglLabel = new Date(result.dateStr).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
-      await sendTelegramMessage(chatId, `📅 *Acara tersimpan!* 🤖\n${result.data.title} — ${tglLabel}\n\n${result.reply || ""}`);
-    } else if (result.type === "stock_adjusted") {
-      const s = result.data;
-      const arrow = s.stokBaru >= s.stokLama ? "📈" : "📉";
-      await sendTelegramMessage(chatId, `${arrow} *Stok ${s.nama} diperbarui!* 🤖\n${s.stokLama} → *${s.stokBaru}* ${s.satuan}\n\n${result.reply || ""}`);
-    } else if (result.type === "needs_confirmation") {
-      await sendTelegramMessageWithButtons(
-        chatId,
-        `🤔 *Aku kurang yakin, ini maksudnya gini kan?*\n\n${result.previewText}\n\n${result.reply || ""}`,
-        [
-          { text: "✅ Benar", data: `confirm:${result.pendingId}` },
-          { text: "❌ Bukan", data: `cancel:${result.pendingId}` },
-        ]
-      );
-    } else {
-      await sendTelegramMessage(chatId, result.reply || "Maaf, aku kurang paham maksudnya.");
-    }
+    await displayFreeTextResult(chatId, result);
     return res.status(200).json({ ok: true });
 
   } catch (err) {
