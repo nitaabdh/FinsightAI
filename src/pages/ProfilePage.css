@@ -265,6 +265,26 @@
 }
 .profilepage__telegram-connected { font-size: 13px; font-weight: 600; color: var(--success); margin: 0; }
 .profilepage__telegram-since { font-size: 11px; color: var(--text-muted); margin: 0.2rem 0 0; }
+.profilepage__telegram-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.profilepage__telegram-open-btn {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: #fff;
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  text-decoration: none;
+  display: inline-block;
+}
+.profilepage__telegram-open-btn--personal { background: linear-gradient(135deg, var(--success), var(--success)); }
+.profilepage__telegram-open-btn--umkm     { background: linear-gradient(135deg, var(--accent-umkm), var(--accent-umkm)); }
+.profilepage__telegram-open-btn:hover { transform: translateY(-1px); }
 .profilepage__telegram-unlink-btn {
   font-size: 12px;
   color: var(--danger);

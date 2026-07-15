@@ -20,6 +20,9 @@ const TANGGUNGAN_OPTIONS = [
   "Tidak ada (hanya untuk diri sendiri)","1 orang","2-3 orang","4-5 orang","Lebih dari 5 orang",
 ];
 
+// Ganti dengan username bot Telegram kamu (tanpa "@"), contoh dari @BotFather.
+const TELEGRAM_BOT_USERNAME = "namabot_bot";
+
 async function apiFetch(url, options = {}) {
   const token = localStorage.getItem("finsight_token");
   const res = await fetch(url, {
@@ -360,7 +363,17 @@ export default function ProfilePage() {
                 <p className="profilepage__telegram-connected">✅ Terhubung ke @{tgLinked.telegram_username || tgLinked.telegram_first_name || "Telegram"}</p>
                 <p className="profilepage__telegram-since">Sejak {new Date(tgLinked.linked_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</p>
               </div>
-              <button className="profilepage__telegram-unlink-btn" onClick={() => setShowUnlinkModal(true)}>Putuskan</button>
+              <div className="profilepage__telegram-actions">
+                <a
+                  className={"profilepage__telegram-open-btn profilepage__telegram-open-btn--" + accent}
+                  href={`https://t.me/${TELEGRAM_BOT_USERNAME}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Buka Bot
+                </a>
+                <button className="profilepage__telegram-unlink-btn" onClick={() => setShowUnlinkModal(true)}>Putuskan</button>
+              </div>
             </div>
           ) : (
             <div className="profilepage__telegram-status">
