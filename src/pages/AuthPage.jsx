@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { Eye, EyeOff } from "lucide-react";
 import "./AuthPage.css";
 
 export default function AuthPage() {
@@ -148,7 +149,7 @@ export default function AuthPage() {
                       onChange={(e) => { setNewPass(e.target.value); setError(""); }}
                     />
                     <button className="auth__eye" onClick={() => setShowPass((p) => !p)} type="button">
-                      {showPass ? "" : ""}
+                      {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                 </div>
@@ -163,7 +164,7 @@ export default function AuthPage() {
                       onChange={(e) => { setNewPassConfirm(e.target.value); setError(""); }}
                     />
                     <button className="auth__eye" onClick={() => setShowConfirm((p) => !p)} type="button">
-                      {showConfirm ? "" : ""}
+                      {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                 </div>
@@ -233,7 +234,7 @@ export default function AuthPage() {
                 onChange={handleChange}
               />
               <button className="auth__eye" onClick={() => setShowPass((p) => !p)} type="button">
-                {showPass ? "" : ""}
+                {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
@@ -251,7 +252,7 @@ export default function AuthPage() {
                   onChange={handleChange}
                 />
                 <button className="auth__eye" onClick={() => setShowConfirm((p) => !p)} type="button">
-                  {showConfirm ? "" : ""}
+                  {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
