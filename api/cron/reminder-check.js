@@ -9,7 +9,10 @@
 //    manggil cron job, jadi endpoint ini nggak bisa dipicu sembarang orang dari luar.
 
 import { createClient } from "@supabase/supabase-js";
-import { sendTelegramMessage, formatRupiahTG } from "../_lib/telegram.js";
+import { sendTelegramMessageWithButtons, formatRupiahTG } from "../_lib/telegram.js";
+
+const APP_URL = process.env.APP_URL || "https://your-app-domain.com";
+const APP_BUTTON = [{ text: "🌐 Buka Aplikasi", url: APP_URL }];
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -98,7 +101,7 @@ export default async function handler(req, res) {
           `Cicilan: ${formatRupiahTG(d.cicilan_per_bulan)}${d.dompet ? ` dari ${d.dompet}` : ""}\n\n` +
           `Buka bot ini abis bayar, nanti aku bantu catetin otomatis. 👍`;
 
-        const result = await sendTelegramMessage(link.telegram_chat_id, text);
+        const result = await sendTelegramMessageWithButtons(link.telegram_chat_id, text, APP_BUTTON);
         if (result.ok) {
           await supabase.from("telegram_reminders_sent").insert({
             user_id: d.user_id, ref_type: "debt", ref_id: d.id, sent_for_date: dueDateStr,
@@ -157,7 +160,7 @@ export default async function handler(req, res) {
           `Nominal: ${formatRupiahTG(u.nominal)} (${verb.toLowerCase()})\n\n` +
           `Buka halaman Utang/Piutang di web abis diurus ya.`;
 
-        const result = await sendTelegramMessage(link.telegram_chat_id, text);
+        const result = await sendTelegramMessageWithButtons(link.telegram_chat_id, text, APP_BUTTON);
         if (result.ok) {
           await supabase.from("telegram_reminders_sent").insert({
             user_id: u.user_id, ref_type: "utang_piutang", ref_id: u.id, sent_for_date: dueDateStr,
@@ -205,7 +208,7 @@ async function handleDailyNudge(req, res) {
           ? "🌙 Udah malem nih! Ada penjualan atau pengeluaran usaha hari ini? Jangan lupa dicatet ya biar laporan bulan ini tetep akurat 📊"
           : "🌙 Udah malem nih! Ada pemasukan atau pengeluaran apa aja hari ini? Jangan lupa dicatet keuangannya ya 💰\n\nTinggal ketik aja langsung, misal \"beli kopi 20rb\".";
 
-        const result = await sendTelegramMessage(link.telegram_chat_id, text);
+        const result = await sendTelegramMessageWithButtons(link.telegram_chat_id, text, APP_BUTTON);
         if (result.ok) sent++; else errors++;
       } catch (innerErr) {
         console.error("[cron/daily-nudge] gagal proses user", link.user_id, innerErr);

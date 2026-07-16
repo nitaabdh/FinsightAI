@@ -282,6 +282,7 @@
   text-decoration: none;
   display: inline-block;
 }
+.profilepage__telegram-code-box .profilepage__telegram-open-btn { margin-top: 0.9rem; }
 .profilepage__telegram-open-btn--personal { background: linear-gradient(135deg, var(--success), var(--success)); }
 .profilepage__telegram-open-btn--umkm     { background: linear-gradient(135deg, var(--accent-umkm), var(--accent-umkm)); }
 .profilepage__telegram-open-btn:hover { transform: translateY(-1px); }

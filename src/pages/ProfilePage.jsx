@@ -85,6 +85,22 @@ export default function ProfilePage() {
     return () => clearInterval(id);
   }, [tgExpiresAt]);
 
+  // Selagi kode 6 digit lagi ditampilin, cek berkala apakah user udah kirim
+  // /link di Telegram — biar kartu langsung ganti jadi "Terhubung" begitu
+  // linking sukses, tanpa user harus refresh halaman manual.
+  useEffect(() => {
+    if (!tgCode) return;
+    const id = setInterval(async () => {
+      const r = await apiFetch("/api/telegram");
+      if (r.success && r.linked) {
+        setTgLinked(r.data);
+        setTgCode(null);
+        setTgExpiresAt(null);
+      }
+    }, 3000);
+    return () => clearInterval(id);
+  }, [tgCode]);
+
   const handleGenerateTgCode = async () => {
     if (tgGenerating) return;
     setTgGenerating(true);
@@ -384,6 +400,14 @@ export default function ProfilePage() {
                     Buka bot Telegram, kirim: <code>/link {tgCode}</code><br />
                     Berlaku {Math.floor(tgCountdown / 60)}:{String(tgCountdown % 60).padStart(2, "0")} lagi
                   </p>
+                  <a
+                    className={"profilepage__telegram-open-btn profilepage__telegram-open-btn--" + accent}
+                    href={`https://t.me/${TELEGRAM_BOT_USERNAME}?start=link_${tgCode}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Buka Bot & Hubungkan
+                  </a>
                 </div>
               ) : (
                 <button

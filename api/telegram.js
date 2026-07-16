@@ -42,6 +42,10 @@ const supabase = createClient(
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
+// URL web app, dipakai buat tombol shortcut "Buka Aplikasi" di chat Telegram.
+// Isi env var APP_URL di Vercel; fallback di bawah cuma placeholder.
+const APP_URL = process.env.APP_URL || "https://your-app-domain.com";
+
 function getUserId(req) {
   const auth = req.headers.authorization || "";
   const token = auth.replace("Bearer ", "");
@@ -375,33 +379,55 @@ async function handleTelegramWebhook(req, res) {
       .eq("telegram_chat_id", chatId)
       .maybeSingle();
 
-    if (text === "/start") {
-      await sendTelegramMessage(chatId, link
-        ? `Halo lagi, ${escapeMd(from.first_name || "")}! Akun kamu udah terhubung. Ketik /help buat lihat perintah yang ada.`
-        : HELP_TEXT_UNLINKED);
-      return res.status(200).json({ ok: true });
-    }
-
-    if (text.startsWith("/link")) {
+    // Logic linking dipisah jadi function biar bisa dipanggil dari 2 jalur:
+    // 1) user ketik manual "/link 123456"
+    // 2) user pencet tombol shortcut di web -> buka t.me/bot?start=link_123456
+    async function performLink(code) {
       if (link) {
         await sendTelegramMessage(chatId, "Chat ini udah terhubung ke sebuah akun. Ketik /unlink dulu kalau mau ganti akun.");
-        return res.status(200).json({ ok: true });
+        return;
       }
-      const code = text.replace("/link", "").trim();
       if (!code) {
         await sendTelegramMessage(chatId, "Format: `/link 123456` — ambil kode 6 digitnya dari halaman Profil di web.");
-        return res.status(200).json({ ok: true });
+        return;
+      }
+
+      // Anti brute-force: batasi percobaan kode salah per chat, biar kode 6
+      // digit nggak bisa ditebak-tebak berkali-kali dalam waktu singkat.
+      const { data: attemptRow } = await supabase
+        .from("telegram_link_attempts")
+        .select("*")
+        .eq("telegram_chat_id", chatId)
+        .maybeSingle();
+
+      if (attemptRow?.locked_until && new Date(attemptRow.locked_until) > new Date()) {
+        const minutesLeft = Math.ceil((new Date(attemptRow.locked_until) - new Date()) / 60000);
+        await sendTelegramMessage(chatId, `🔒 Kebanyakan percobaan kode salah. Coba lagi dalam ${minutesLeft} menit.`);
+        return;
       }
 
       const { data: codeRow } = await supabase.from("telegram_link_codes").select("*").eq("code", code).maybeSingle();
       if (!codeRow) {
-        await sendTelegramMessage(chatId, "❌ Kode nggak ditemukan atau salah ketik. Cek lagi kodenya di halaman Profil.");
-        return res.status(200).json({ ok: true });
+        const windowActive = attemptRow && new Date(attemptRow.window_started_at) > new Date(Date.now() - 5 * 60 * 1000);
+        const nextAttempts = windowActive ? (attemptRow.attempts || 0) + 1 : 1;
+        const shouldLock = nextAttempts >= 5;
+
+        await supabase.from("telegram_link_attempts").upsert({
+          telegram_chat_id: chatId,
+          attempts: shouldLock ? 0 : nextAttempts,
+          window_started_at: windowActive ? attemptRow.window_started_at : new Date().toISOString(),
+          locked_until: shouldLock ? new Date(Date.now() + 15 * 60 * 1000).toISOString() : null,
+        });
+
+        await sendTelegramMessage(chatId, shouldLock
+          ? "🔒 Kebanyakan percobaan kode salah. Coba lagi dalam 15 menit."
+          : "❌ Kode nggak ditemukan atau salah ketik. Cek lagi kodenya di halaman Profil.");
+        return;
       }
       if (new Date(codeRow.expires_at) < new Date()) {
         await supabase.from("telegram_link_codes").delete().eq("code", code);
         await sendTelegramMessage(chatId, "⌛ Kode udah kedaluwarsa (berlaku 5 menit). Generate kode baru dari halaman Profil ya.");
-        return res.status(200).json({ ok: true });
+        return;
       }
 
       await supabase.from("telegram_links").delete().eq("telegram_chat_id", chatId);
@@ -413,14 +439,40 @@ async function handleTelegramWebhook(req, res) {
         telegram_first_name: from.first_name || null,
       });
       await supabase.from("telegram_link_codes").delete().eq("code", code);
+      await supabase.from("telegram_link_attempts").delete().eq("telegram_chat_id", chatId);
 
       if (insertErr) {
         console.error("[telegram-webhook] gagal insert link:", insertErr);
         await sendTelegramMessage(chatId, "Gagal menghubungkan akun, coba lagi sebentar.");
-        return res.status(200).json({ ok: true });
+        return;
       }
 
-      await sendTelegramMessage(chatId, `✅ Berhasil terhubung! Ketik /help buat lihat semua perintah yang bisa dipakai.`);
+      await sendTelegramMessageWithButtons(chatId, `✅ Berhasil terhubung! Ketik /help buat lihat semua perintah yang bisa dipakai.`, [
+        { text: "🌐 Buka Aplikasi", url: APP_URL },
+      ]);
+    }
+
+    if (text === "/start" || text.startsWith("/start ")) {
+      const payload = text.replace("/start", "").trim();
+      // Payload "link_123456" datang dari tombol shortcut di web (deep link
+      // t.me/<bot>?start=link_123456) -> langsung proses kayak /link, user
+      // nggak perlu ngetik apa-apa lagi begitu chat kebuka.
+      if (payload.startsWith("link_")) {
+        await performLink(payload.replace("link_", "").trim());
+        return res.status(200).json({ ok: true });
+      }
+      if (link) {
+        await sendTelegramMessageWithButtons(chatId, `Halo lagi, ${escapeMd(from.first_name || "")}! Akun kamu udah terhubung. Ketik /help buat lihat perintah yang ada.`, [
+          { text: "🌐 Buka Aplikasi", url: APP_URL },
+        ]);
+      } else {
+        await sendTelegramMessage(chatId, HELP_TEXT_UNLINKED);
+      }
+      return res.status(200).json({ ok: true });
+    }
+
+    if (text.startsWith("/link")) {
+      await performLink(text.replace("/link", "").trim());
       return res.status(200).json({ ok: true });
     }
 
@@ -451,7 +503,9 @@ async function handleTelegramWebhook(req, res) {
     }
 
     if (text === "/help") {
-      await sendTelegramMessage(chatId, mode === "umkm" ? HELP_TEXT_UMKM : HELP_TEXT_PERSONAL);
+      await sendTelegramMessageWithButtons(chatId, mode === "umkm" ? HELP_TEXT_UMKM : HELP_TEXT_PERSONAL, [
+        { text: "🌐 Buka Aplikasi", url: APP_URL },
+      ]);
       return res.status(200).json({ ok: true });
     }
 
