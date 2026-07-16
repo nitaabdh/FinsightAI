@@ -1,17 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "./PageHeader.css";
 
 import { LogOut, Pencil } from "lucide-react";
 export default function PageHeader({ title, subtitle }) {
-  const { user, logout } = useAuth();
+  const { user, profile, logout } = useAuth();
   const navigate  = useNavigate();
-  const location  = useLocation();
-
-  const [displayName, setDisplayName] = useState("");
-  const [photo, setPhoto]             = useState(null);
-  const [hasProfile, setHasProfile]   = useState(false);
   const [open, setOpen]               = useState(false);
   const dropdownRef                   = useRef(null);
 
@@ -19,30 +14,9 @@ export default function PageHeader({ title, subtitle }) {
   const accent   = isUMKM ? "umkm" : "personal";
   const profPath = `/dashboard/${user?.mode}/profile`;
 
-  useEffect(() => {
-    if (!user) return;
-    const token = localStorage.getItem("finsight_token");
-    fetch("/api/profile", {
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    })
-      .then(r => r.json())
-      .then(r => {
-        if (r.success && r.data) {
-          setHasProfile(true);
-          setDisplayName(r.data.display_name || user.name || "");
-          setPhoto(r.data.avatar_url || null);
-        } else {
-          setHasProfile(false);
-          setDisplayName(user.name || "");
-          setPhoto(null);
-        }
-      })
-      .catch(() => {
-        setHasProfile(false);
-        setDisplayName(user.name || "");
-        setPhoto(null);
-      });
-  }, [user, location.pathname]);
+  const displayName = profile?.displayName || user?.name || "";
+  const photo       = profile?.photo || null;
+  const hasProfile  = profile?.hasProfile || false;
 
   // Tutup dropdown kalau klik di luar
   useEffect(() => {

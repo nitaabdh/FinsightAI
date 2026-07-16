@@ -1,6 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Receipt, Factory, TrendingUp, FileEdit, Bot,
   CreditCard, Target, Wallet, ClipboardList, Store, User, Pencil,
@@ -28,43 +27,18 @@ const menuPersonal = [
 ];
 
 export default function Sidebar({ collapsed, onToggle }) {
-  const { user, logout } = useAuth();
+  const { user, profile, logout } = useAuth();
   const navigate  = useNavigate();
   const location  = useLocation();
-
-  const [displayName, setDisplayName] = useState("");
-  const [photo, setPhoto]             = useState(null);
-  const [hasProfile, setHasProfile]   = useState(false);
 
   const isUMKM  = user?.mode === "umkm";
   const menu    = isUMKM ? menuUMKM : menuPersonal;
   const accent  = isUMKM ? "umkm" : "personal";
   const profPath = `/dashboard/${user?.mode}/profile`;
 
-  useEffect(() => {
-    if (!user) return;
-    const token = localStorage.getItem("finsight_token");
-    fetch("/api/profile", {
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    })
-      .then(r => r.json())
-      .then(r => {
-        if (r.success && r.data) {
-          setHasProfile(true);
-          setDisplayName(r.data.display_name || user.name || "");
-          setPhoto(r.data.avatar_url || null);
-        } else {
-          setHasProfile(false);
-          setDisplayName(user.name || "");
-          setPhoto(null);
-        }
-      })
-      .catch(() => {
-        setHasProfile(false);
-        setDisplayName(user.name || "");
-        setPhoto(null);
-      });
-  }, [user, location.pathname]); // re-load saat navigasi (misal balik dari profil)
+  const displayName = profile?.displayName || user?.name || "";
+  const photo       = profile?.photo || null;
+  const hasProfile  = profile?.hasProfile || false;
 
   const handleLogout = () => { logout(); navigate("/", { replace: true }); };
   const initial = (displayName || user?.name || "U").charAt(0).toUpperCase();

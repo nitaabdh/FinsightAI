@@ -58,13 +58,42 @@ async function callAPI(endpoint, body, token = null) {
 export function AuthProvider({ children }) {
   const [user, setUser]       = useState(null);
   const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState({ displayName: "", photo: null, hasProfile: false });
+
+  // Ambil data profil (nama tampilan, foto) SEKALI aja waktu user login/app
+  // load — bukan tiap pindah halaman. Ini yang dipakai bareng-bareng sama
+  // Sidebar & PageHeader, biar gak fetch redundant tiap ganti page dan
+  // gak "kosong dulu baru keisi" tiap navigasi.
+  const loadProfile = async (currentUser) => {
+    if (!currentUser) return;
+    try {
+      const token = getToken();
+      const res = await fetch("/api/profile", {
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      });
+      const r = await res.json();
+      if (r.success && r.data) {
+        setProfile({
+          hasProfile: true,
+          displayName: r.data.display_name || currentUser.name || "",
+          photo: r.data.avatar_url || null,
+        });
+      } else {
+        setProfile({ hasProfile: false, displayName: currentUser.name || "", photo: null });
+      }
+    } catch {
+      setProfile({ hasProfile: false, displayName: currentUser.name || "", photo: null });
+    }
+  };
 
   useEffect(() => {
     const token   = getToken();
     const decoded = token ? decodeToken(token) : null;
 
     if (decoded && !isTokenExpired(decoded)) {
-      setUser({ id: decoded.id, name: decoded.name, email: decoded.email, mode: decoded.mode });
+      const u = { id: decoded.id, name: decoded.name, email: decoded.email, mode: decoded.mode };
+      setUser(u);
+      loadProfile(u);
     } else {
       // Token tidak ada atau expired — hapus saja
       removeToken();
@@ -86,7 +115,9 @@ export function AuthProvider({ children }) {
 
     saveToken(result.token);
     const decoded = decodeToken(result.token);
-    setUser({ id: decoded.id, name: decoded.name, email: decoded.email, mode: decoded.mode });
+    const u = { id: decoded.id, name: decoded.name, email: decoded.email, mode: decoded.mode };
+    setUser(u);
+    loadProfile(u);
     return { success: true };
   };
 
@@ -99,7 +130,9 @@ export function AuthProvider({ children }) {
 
     saveToken(result.token);
     const decoded = decodeToken(result.token);
-    setUser({ id: decoded.id, name: decoded.name, email: decoded.email, mode: decoded.mode });
+    const u = { id: decoded.id, name: decoded.name, email: decoded.email, mode: decoded.mode };
+    setUser(u);
+    loadProfile(u);
     return { success: true };
   };
 
@@ -154,10 +187,15 @@ export function AuthProvider({ children }) {
   const logout = () => {
     removeToken();
     setUser(null);
+    setProfile({ displayName: "", photo: null, hasProfile: false });
   };
 
+  // Dipanggil dari ProfilePage setelah simpan/upload/hapus foto, biar
+  // Sidebar & PageHeader langsung update tanpa perlu pindah halaman dulu.
+  const refreshProfile = () => loadProfile(user);
+
   return (
-    <AuthContext.Provider value={{ user, loading, register, login, logout, updateName, checkEmailExists, resetPassword, deleteAccount, getToken }}>
+    <AuthContext.Provider value={{ user, loading, profile, refreshProfile, register, login, logout, updateName, checkEmailExists, resetPassword, deleteAccount, getToken }}>
       {children}
     </AuthContext.Provider>
   );

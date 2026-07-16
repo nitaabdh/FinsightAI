@@ -34,7 +34,7 @@ async function apiFetch(url, options = {}) {
 }
 
 export default function ProfilePage() {
-  const { user, deleteAccount } = useAuth();
+  const { user, deleteAccount, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const mode   = user?.mode;
   const accent = mode === "umkm" ? "umkm" : "personal";
@@ -178,6 +178,7 @@ export default function ProfilePage() {
       const r = await res.json();
       if (r.success) {
         setPhotoUrl(r.data.avatar_url);
+        refreshProfile();
       } else {
         setPhotoError(r.message || "Gagal upload foto.");
       }
@@ -213,6 +214,7 @@ export default function ProfilePage() {
     if (r.success) {
       setPhotoUrl(null);
       if (fileRef.current) fileRef.current.value = "";
+      refreshProfile();
     }
   };
 
@@ -234,6 +236,7 @@ export default function ProfilePage() {
     if (r.success) {
       setSaved(true);
       setEditingName(false);
+      refreshProfile();
       setTimeout(() => setSaved(false), 3000);
     }
   };
