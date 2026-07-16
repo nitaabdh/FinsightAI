@@ -10,12 +10,12 @@ import Supplier from "../components/Supplier";
 import "./ProduksiPage.css";
 
 const TABS = [
-  { id: "bahan",       icon: "🧺", label: "Bahan Baku" },
-  { id: "operasional", icon: "💡", label: "Biaya Operasional" },
-  { id: "kalkulator",  icon: "🧮", label: "Kalkulator Harga Jual" },
-  { id: "online",      icon: "🛒", label: "Kalkulator Online" },
-  { id: "aset",        icon: "🧰", label: "Aset Usaha" },
-  { id: "supplier",    icon: "📇", label: "Supplier" },
+  { id: "bahan",       icon: "", label: "Bahan Baku" },
+  { id: "operasional", icon: "", label: "Biaya Operasional" },
+  { id: "kalkulator",  icon: "", label: "Kalkulator Harga Jual" },
+  { id: "online",      icon: "", label: "Kalkulator Online" },
+  { id: "aset",        icon: "", label: "Aset Usaha" },
+  { id: "supplier",    icon: "", label: "Supplier" },
 ];
 
 export default function ProduksiPage() {

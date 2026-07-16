@@ -126,7 +126,7 @@ export default function Dompet({ mode = "umkm" }) {
     <div className="dompet">
       {semuaDompet.length > 0 && (
         <div className="dompet__total">
-          <span className="dompet__total-label">💰 Total Saldo Semua Dompet</span>
+          <span className="dompet__total-label">Total Saldo Semua Dompet</span>
           <span className="dompet__total-value"><CountUp value={totalSaldo} format={formatRupiah} /></span>
         </div>
       )}
@@ -137,7 +137,7 @@ export default function Dompet({ mode = "umkm" }) {
         </button>
       ) : (
         <div className="dompet__form" ref={formRef}>
-          <h3 className="dompet__form-title">{editId ? "✏️ Edit Dompet" : "+ Tambah Dompet Baru"}</h3>
+          <h3 className="dompet__form-title">{editId ? "Edit Dompet" : "+ Tambah Dompet Baru"}</h3>
           <div className="dompet__grid stagger-list">
             <div className="dompet__field dompet__field--wide">
               <label className="dompet__label">Nama Dompet</label>
@@ -156,7 +156,7 @@ export default function Dompet({ mode = "umkm" }) {
             <input className="dompet__input" type="text" name="catatan"
               placeholder="Misal: no. rekening, akun a.n. siapa, dll" value={form.catatan} onChange={handleChange} />
           </div>
-          {error && <p className="dompet__error">⚠️ {error}</p>}
+          {error && <p className="dompet__error">{error}</p>}
           <div className="dompet__form-actions">
             <button className="dompet__btn-sec" onClick={resetForm} disabled={submitting}>Batal</button>
             <button className="dompet__btn-primary" onClick={handleSubmit} disabled={submitting}>
@@ -186,7 +186,7 @@ export default function Dompet({ mode = "umkm" }) {
                     <button className="dompet__item-del" onClick={() => setDelId(it.id)} title="Hapus"><Trash2 size={14} /></button>
                   </div>
                 )}
-                <span className="dompet__card-icon">{getKasEmoji(it.nama)}</span>
+                <span className="dompet__card-icon"></span>
                 <p className="dompet__card-nama">{it.nama}</p>
                 <p className={"dompet__card-saldo" + (saldo < 0 ? " dompet__item-saldo--neg" : "")}>
                   {formatRupiah(saldo)}
@@ -195,7 +195,7 @@ export default function Dompet({ mode = "umkm" }) {
                   <span className="dompet__item-kategori">{it.jenis}</span>
                   {it.belumTerdaftar && <span className="dompet__card-auto">otomatis dari transaksi</span>}
                 </div>
-                {it.catatan && <p className="dompet__card-catatan">📝 {it.catatan}</p>}
+                {it.catatan && <p className="dompet__card-catatan">{it.catatan}</p>}
               </div>
             );
           })

@@ -79,7 +79,7 @@ export default function KalkulatorOnline() {
   return (
     <div className="komarket">
       <div className="komarket__form">
-        <h3 className="komarket__form-title">🛒 Kalkulator Jual Online / Marketplace</h3>
+        <h3 className="komarket__form-title">Kalkulator Jual Online / Marketplace</h3>
         <p className="komarket__hint">
           Hitung dana bersih yang beneran kamu terima setelah potongan komisi, biaya layanan, dan biaya
           pembayaran platform — atau sebaliknya, cari harga jual yang harus dipasang biar untungnya tetap sesuai target.
@@ -111,8 +111,7 @@ export default function KalkulatorOnline() {
 
         <div className="komarket__field">
           <label className="komarket__label">Rincian Potongan</label>
-          <p className="komarket__hint komarket__hint--tight">
-            ⚠️ Persennya sengaja dikosongin — isi sesuai rate yang beneran berlaku di toko kamu sekarang
+          <p className="komarket__hint komarket__hint--tight">Persennya sengaja dikosongin — isi sesuai rate yang beneran berlaku di toko kamu sekarang
             (cek dashboard marketplace-nya), soalnya sering berubah & beda per kategori produk.
           </p>
           <div className="komarket__fee-rows stagger-list">
@@ -136,11 +135,9 @@ export default function KalkulatorOnline() {
         </div>
 
         <div className="komarket__mode-toggle">
-          <button className={"komarket__mode-btn" + (mode === "maju" ? " komarket__mode-btn--active" : "")} onClick={() => setMode("maju")}>
-            ➡️ Maju: Harga → Dana Bersih
+          <button className={"komarket__mode-btn" + (mode === "maju" ? " komarket__mode-btn--active" : "")} onClick={() => setMode("maju")}>Maju: Harga → Dana Bersih
           </button>
-          <button className={"komarket__mode-btn" + (mode === "mundur" ? " komarket__mode-btn--active" : "")} onClick={() => setMode("mundur")}>
-            ⬅️ Mundur: Target → Harga Jual
+          <button className={"komarket__mode-btn" + (mode === "mundur" ? " komarket__mode-btn--active" : "")} onClick={() => setMode("mundur")}>Mundur: Target → Harga Jual
           </button>
         </div>
 
@@ -195,8 +192,7 @@ export default function KalkulatorOnline() {
 
             <div className="komarket__summary">
               {hargaJualHasil == null ? (
-                <p className="komarket__error">
-                  ⚠️ Total potongan persen udah ≥100% — nggak mungkin ada harga jual yang bisa nutup ini. Cek lagi rincian potongannya.
+                <p className="komarket__error">Total potongan persen udah ≥100% — nggak mungkin ada harga jual yang bisa nutup ini. Cek lagi rincian potongannya.
                 </p>
               ) : (
                 <>
@@ -220,7 +216,7 @@ export default function KalkulatorOnline() {
 
       {produkList.length > 0 && (
         <div className="komarket__form komarket__list-card stagger-list">
-          <h3 className="komarket__form-title">💾 Daftar Harga Jual Online</h3>
+          <h3 className="komarket__form-title">Daftar Harga Jual Online</h3>
           <p className="komarket__hint">
             Simpen harga jual listing per produk di sini sekali aja. Nanti pas centang "Ini penjualan online?"
             di form Transaksi dan pilih produknya, harga ini otomatis keisi sendiri — nggak perlu ngetik ulang tiap kali.
@@ -266,7 +262,7 @@ function HargaOnlineRow({ produk, onSave }) {
         disabled={!dirty || saving}
         onClick={handleSave}
       >
-        {saving ? "..." : saved ? "✓ Kesimpen" : "Simpan"}
+        {saving ? "..." : saved ? "Kesimpen" : "Simpan"}
       </button>
     </div>
   );

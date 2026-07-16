@@ -44,11 +44,11 @@ export default function ApiKeySetup({ onSave, accent }) {
           onChange={(e) => { setKey(e.target.value); setError(""); }}
         />
         <button className="apikey__toggle" onClick={() => setShow((p) => !p)}>
-          {show ? "🙈" : "👁️"}
+          {show ? "" : ""}
         </button>
       </div>
 
-      {error && <p className="apikey__error">⚠️ {error}</p>}
+      {error && <p className="apikey__error">{error}</p>}
 
       <button className={"apikey__btn apikey__btn--" + accent} onClick={handleSave}>
         Simpan & Mulai Chat

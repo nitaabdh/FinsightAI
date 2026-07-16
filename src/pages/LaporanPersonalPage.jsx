@@ -15,13 +15,13 @@ import "./LaporanPersonalPage.css";
 import "./DashboardSkeleton.css";
 
 const CATEGORY_EMOJI = {
-  "makan": "🍔", "makanan": "🍔", "transportasi": "🚗", "transport": "🚗",
-  "belanja": "🛍️", "hiburan": "🎮", "kesehatan": "💊", "pendidikan": "📚",
-  "tagihan": "🧾", "listrik": "💡", "air": "🚰", "internet": "🌐",
-  "pulsa": "📱", "gaji": "💰", "freelance": "💼", "investasi": "📈",
-  "tabungan": "🏦", "hadiah": "🎁", "lainnya": "🗂️",
+  "makan": "", "makanan": "", "transportasi": "", "transport": "",
+  "belanja": "", "hiburan": "", "kesehatan": "", "pendidikan": "",
+  "tagihan": "", "listrik": "", "air": "", "internet": "",
+  "pulsa": "", "gaji": "", "freelance": "", "investasi": "",
+  "tabungan": "", "hadiah": "", "lainnya": "",
 };
-const getCategoryEmoji = (cat) => CATEGORY_EMOJI[(cat || "").toLowerCase().trim()] || "🗂️";
+const getCategoryEmoji = (cat) => CATEGORY_EMOJI[(cat || "").toLowerCase().trim()] || "";
 
 const getToken = () => localStorage.getItem("finsight_token");
 const apiFetch = async (url) => {
@@ -227,7 +227,7 @@ export default function LaporanPersonalPage() {
   return (
     <DashboardLayout>
       <div className="lapper">
-        <PageHeader title="📈 Laporan Personal" subtitle="Ringkasan arus kas, cicilan, tabungan, dan saldo dompetmu" />
+        <PageHeader title="Laporan Personal" subtitle="Ringkasan arus kas, cicilan, tabungan, dan saldo dompetmu" />
 
         {/* Filter bulan */}
         <div className="lapper__toolbar">
@@ -236,7 +236,7 @@ export default function LaporanPersonalPage() {
             {months.map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}
           </select>
           <button className="lapper__export-btn" onClick={handleExportPDF}>
-            📄 Export PDF
+            Export PDF
           </button>
         </div>
 
@@ -251,19 +251,19 @@ export default function LaporanPersonalPage() {
             {/* ── RINGKASAN ARUS KAS ── */}
             <div className="lapper__summary-grid stagger-list">
               <div className="lapper__summary-card lapper__summary-card--income">
-                <span className="lapper__summary-label">💰 Pemasukan</span>
+                <span className="lapper__summary-label">Pemasukan</span>
                 <span className="lapper__summary-value"><CountUp value={summary.pemasukan} format={formatRupiah} /></span>
               </div>
               <div className="lapper__summary-card lapper__summary-card--expense">
-                <span className="lapper__summary-label">🛒 Pengeluaran</span>
+                <span className="lapper__summary-label">Pengeluaran</span>
                 <span className="lapper__summary-value"><CountUp value={summary.pengeluaran} format={formatRupiah} /></span>
               </div>
               <div className={"lapper__summary-card " + (summary.saldo >= 0 ? "lapper__summary-card--positive" : "lapper__summary-card--negative")}>
-                <span className="lapper__summary-label">{summary.saldo >= 0 ? "📈" : "📉"} Selisih</span>
+                <span className="lapper__summary-label">{summary.saldo >= 0 ? "" : ""} Selisih</span>
                 <span className="lapper__summary-value"><CountUp value={summary.saldo} format={formatRupiah} /></span>
               </div>
               <div className="lapper__summary-card lapper__summary-card--wallet">
-                <span className="lapper__summary-label">👛 Total Saldo Dompet</span>
+                <span className="lapper__summary-label">Total Saldo Dompet</span>
                 <span className="lapper__summary-value"><CountUp value={totalSaldo} format={formatRupiah} /></span>
               </div>
             </div>
@@ -303,7 +303,7 @@ export default function LaporanPersonalPage() {
             <div className="lapper__row2">
               <div className="lapper__card">
                 <div className="lapper__card-header">
-                  <span className="lapper__card-title">💳 Cicilan Utang Periode Ini</span>
+                  <span className="lapper__card-title">Cicilan Utang Periode Ini</span>
                   <button className="lapper__see-all" onClick={() => navigate("/dashboard/personal/target")}>Kelola →</button>
                 </div>
                 <div className="lapper__stat-row">
@@ -332,7 +332,7 @@ export default function LaporanPersonalPage() {
 
               <div className="lapper__card">
                 <div className="lapper__card-header">
-                  <span className="lapper__card-title">🎯 Nabung ke Target Periode Ini</span>
+                  <span className="lapper__card-title">Nabung ke Target Periode Ini</span>
                   <button className="lapper__see-all" onClick={() => navigate("/dashboard/personal/target")}>Kelola →</button>
                 </div>
                 <div className="lapper__stat-row">
@@ -363,7 +363,7 @@ export default function LaporanPersonalPage() {
             {/* ── BREAKDOWN KATEGORI ── */}
             <div className="lapper__row2">
               <div className="lapper__card">
-                <div className="lapper__card-header"><span className="lapper__card-title">💰 Pemasukan per Kategori</span></div>
+                <div className="lapper__card-header"><span className="lapper__card-title">Pemasukan per Kategori</span></div>
                 {incomeByCat.length === 0 ? <p className="lapper__empty">Belum ada data.</p> : (
                   <div className="lapper__cat-list stagger-list">
                     {incomeByCat.map(([cat, amt]) => {
@@ -371,7 +371,7 @@ export default function LaporanPersonalPage() {
                       return (
                         <div key={cat} className="lapper__cat-item">
                           <div className="lapper__cat-top">
-                            <span>{getCategoryEmoji(cat)} {cat}</span>
+                            <span>{cat}</span>
                             <span>{formatRupiah(amt)}</span>
                           </div>
                           <div className="lapper__cat-bar"><div className="lapper__cat-bar-fill lapper__cat-bar-fill--income" style={{ width: pct + "%" }} /></div>
@@ -383,7 +383,7 @@ export default function LaporanPersonalPage() {
               </div>
 
               <div className="lapper__card">
-                <div className="lapper__card-header"><span className="lapper__card-title">🛒 Pengeluaran per Kategori</span></div>
+                <div className="lapper__card-header"><span className="lapper__card-title">Pengeluaran per Kategori</span></div>
                 {expenseByCat.length === 0 ? <p className="lapper__empty">Belum ada data.</p> : (
                   <div className="lapper__cat-list stagger-list">
                     {expenseByCat.map(([cat, amt]) => {
@@ -391,7 +391,7 @@ export default function LaporanPersonalPage() {
                       return (
                         <div key={cat} className="lapper__cat-item">
                           <div className="lapper__cat-top">
-                            <span>{getCategoryEmoji(cat)} {cat}</span>
+                            <span>{cat}</span>
                             <span>{formatRupiah(amt)}</span>
                           </div>
                           <div className="lapper__cat-bar"><div className="lapper__cat-bar-fill lapper__cat-bar-fill--expense" style={{ width: pct + "%" }} /></div>
@@ -406,7 +406,7 @@ export default function LaporanPersonalPage() {
             {/* ── SALDO PER DOMPET (snapshot sekarang) ── */}
             <div className="lapper__card">
               <div className="lapper__card-header">
-                <span className="lapper__card-title">👛 Saldo per Dompet (Saat Ini)</span>
+                <span className="lapper__card-title">Saldo per Dompet (Saat Ini)</span>
                 <button className="lapper__see-all" onClick={() => navigate("/dashboard/personal/dompet")}>Kelola →</button>
               </div>
               {kasStats.length === 0 ? (
@@ -415,7 +415,7 @@ export default function LaporanPersonalPage() {
                 <div className="lapper__wallet-grid stagger-list">
                   {kasStats.map(k => (
                     <div key={k.nama} className={"lapper__wallet-item" + (k.saldo < 0 ? " lapper__wallet-item--neg" : "")}>
-                      <span className="lapper__wallet-icon">{getKasEmoji(k.nama)}</span>
+                      <span className="lapper__wallet-icon"></span>
                       <div>
                         <p className="lapper__wallet-nama">{k.nama}</p>
                         <p className="lapper__wallet-saldo">{formatRupiah(k.saldo)}</p>

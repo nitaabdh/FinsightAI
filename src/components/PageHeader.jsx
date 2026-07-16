@@ -79,7 +79,7 @@ export default function PageHeader({ title, subtitle }) {
       {/* Kanan: mode badge (desktop) + avatar dropdown */}
       <div className="page-header__right">
         <div className={`page-header__badge page-header__badge--${accent}`}>
-          {isUMKM ? "🏪 Mode UMKM" : "👤 Mode Pribadi"}
+          {isUMKM ? "Mode UMKM" : "Mode Pribadi"}
         </div>
 
         <div className="page-header__avatar-wrap" ref={dropdownRef}>

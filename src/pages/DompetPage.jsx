@@ -12,7 +12,7 @@ export default function DompetPage() {
     <DashboardLayout>
       <div className="dompetpage">
         <PageHeader
-          title="👛 Dompet"
+          title="Dompet"
           subtitle="Semua wadah saldo kamu — tunai, rekening bank, e-wallet, dll"
         />
         <Dompet mode="personal" />

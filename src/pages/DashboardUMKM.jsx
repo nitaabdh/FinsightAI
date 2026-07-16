@@ -11,14 +11,14 @@ import "./DashboardUMKM.css";
 
 import { BarChart3, Gem, Landmark, LogOut, Pencil, Receipt, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 const CATEGORY_EMOJI = {
-  "makan": "🍔", "makanan": "🍔", "transportasi": "🚗", "bahan baku": "📦",
-  "operasional": "⚙️", "gaji": "💰", "listrik": "💡", "air": "🚰",
-  "internet": "🌐", "sewa": "🏠", "pemasaran": "📣", "lainnya": "🗂️",
-  "penjualan produk": "🛒", "penjualan": "🛒",
+  "makan": "", "makanan": "", "transportasi": "", "bahan baku": "",
+  "operasional": "", "gaji": "", "listrik": "", "air": "",
+  "internet": "", "sewa": "", "pemasaran": "", "lainnya": "",
+  "penjualan produk": "", "penjualan": "",
 };
 function getCategoryEmoji(cat) {
-  if (!cat) return "🗂️";
-  return CATEGORY_EMOJI[cat.toLowerCase().trim()] || "🗂️";
+  if (!cat) return "";
+  return CATEGORY_EMOJI[cat.toLowerCase().trim()] || "";
 }
 
 async function apiFetch(url, options = {}) {
@@ -167,7 +167,7 @@ export default function DashboardUMKM() {
         {/* ── HEADER ── */}
         <div className="du__header">
           <div>
-            <h1 className="du__greeting">Halo, {namaUser}! 👋</h1>
+            <h1 className="du__greeting">Halo, {namaUser}!</h1>
             <p className="du__greeting-sub">Ringkasan keuangan usahamu hari ini</p>
           </div>
           <div className="du__avatar-wrap du__avatar-wrap--mobile-only" ref={menuRef}>
@@ -241,7 +241,7 @@ export default function DashboardUMKM() {
         {kasStats.length > 0 && (
           <div className="du__kas">
             <div className="du__section-header">
-              <span className="du__section-title">💰 Saldo per Kas</span>
+              <span className="du__section-title">Saldo per Kas</span>
               {kasStats.length > 4 && (
                 <button className="du__see-all" onClick={() => setShowAllKas(v => !v)}>
                   {showAllKas ? "Sembunyikan ↑" : `Lihat semua (${kasStats.length}) →`}
@@ -251,7 +251,7 @@ export default function DashboardUMKM() {
             <div className="du__kas-grid stagger-list">
               {kasVisible.map(k => (
                 <div key={k.nama} className={"du__kas-card" + (k.saldo < 0 ? " du__kas-card--minus" : "")}>
-                  <span className="du__kas-icon">{getKasEmoji(k.nama)}</span>
+                  <span className="du__kas-icon"></span>
                   <div className="du__kas-info">
                     <p className="du__kas-nama">{k.nama}</p>
                     <p className={"du__kas-saldo" + (k.saldo < 0 ? " du__kas-saldo--minus" : "")}>{formatRupiah(k.saldo)}</p>
@@ -275,7 +275,7 @@ export default function DashboardUMKM() {
                 return (
                   <div key={it.id} className="du__jatuhtempo-item">
                     <span className={"du__jatuhtempo-jenis du__jatuhtempo-jenis--" + it.jenis}>
-                      {it.jenis === "piutang" ? "📥" : "📤"}
+                      {it.jenis === "piutang" ? "" : ""}
                     </span>
                     <div className="du__jatuhtempo-info">
                       <p className="du__jatuhtempo-nama">{it.nama}</p>
@@ -340,7 +340,7 @@ export default function DashboardUMKM() {
                       <div className="du__cat-top">
                         <span className="du__cat-name">
                           <span className="du__cat-dot" style={{ background: PIE_COLORS[i%PIE_COLORS.length] }} />
-                          {getCategoryEmoji(cat)} {cat}
+                          {cat}
                         </span>
                         <div style={{ display:"flex", gap:"0.4rem", alignItems:"center" }}>
                           <span className="du__cat-pct">{pct.toFixed(0)}%</span>
@@ -374,8 +374,7 @@ export default function DashboardUMKM() {
               {recentTx.map(tx => (
                 <div key={tx.id} className="du__tx-item">
                   <div className={"du__tx-icon " + (tx.type==="pemasukan"?"du__tx-icon--income":"du__tx-icon--expense")}>
-                    {getCategoryEmoji(tx.category)}
-                  </div>
+                    </div>
                   <div className="du__tx-info">
                     <p className="du__tx-desc">{tx.description || tx.category || "-"}</p>
                     <p className="du__tx-date">{new Date(tx.date||tx.createdAt).toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric"})}</p>

@@ -116,8 +116,8 @@ export default function AIAgentPage() {
         {/* Aksi chat — clear & ganti key */}
         {apiKey && (
           <div className="aipage__header-actions">
-            <button className="aipage__btn-clear" onClick={clearChat}>🗑 Bersihkan Chat</button>
-            <button className="aipage__btn-key" onClick={clearApiKey}>🔑 Ganti Key</button>
+            <button className="aipage__btn-clear" onClick={clearChat}>Bersihkan Chat</button>
+            <button className="aipage__btn-key" onClick={clearApiKey}>Ganti Key</button>
           </div>
         )}
 
@@ -129,27 +129,27 @@ export default function AIAgentPage() {
           </div>
         ) : (
           <div className="aipage__context">
-            <span className="aipage__context-label">📊 Data yang diketahui AI:</span>
+            <span className="aipage__context-label">Data yang diketahui AI:</span>
             <span className="aipage__context-item aipage__context-item--income">Pemasukan Rp {summary.pemasukan.toLocaleString("id-ID")}</span>
             <span className="aipage__context-item aipage__context-item--expense">Pengeluaran Rp {summary.pengeluaran.toLocaleString("id-ID")}</span>
             <span className={"aipage__context-item " + (summary.saldo >= 0 ? "aipage__context-item--income" : "aipage__context-item--expense")}>
               Saldo Rp {summary.saldo.toLocaleString("id-ID")}
             </span>
             {mode === "personal" && debtCount > 0 && (
-              <span className="aipage__context-item aipage__context-item--expense">💳 {debtCount} utang aktif</span>
+              <span className="aipage__context-item aipage__context-item--expense">{debtCount} utang aktif</span>
             )}
             {mode === "personal" && targetCount > 0 && (
-              <span className="aipage__context-item aipage__context-item--income">🎯 {targetCount} target aktif</span>
+              <span className="aipage__context-item aipage__context-item--income">{targetCount} target aktif</span>
             )}
             {messages.length > 0 && (
               <span className="aipage__context-item aipage__context-item--history">
-                💬 {messages.filter(m => m.role === "user").length} pesan tersimpan
+                {messages.filter(m => m.role === "user").length} pesan tersimpan
               </span>
             )}
           </div>
         )}
 
-        {error && <div className="aipage__error">⚠️ {error}</div>}
+        {error && <div className="aipage__error">{error}</div>}
 
         <div className="aipage__chat-wrap">
           {!apiKey ? (

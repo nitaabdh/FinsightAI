@@ -172,17 +172,17 @@ export default function TransaksiPage() {
 
         <div className="txpage__summary stagger-list">
           <div className="txpage__summary-item txpage__summary-item--income">
-            <span>⬆ Pemasukan</span>
+            <span>Pemasukan</span>
             <strong><CountUp value={summary.pemasukan} format={formatRupiah} /></strong>
           </div>
           <div className="txpage__summary-divider" />
           <div className="txpage__summary-item txpage__summary-item--expense">
-            <span>⬇ Pengeluaran</span>
+            <span>Pengeluaran</span>
             <strong><CountUp value={summary.pengeluaran} format={formatRupiah} /></strong>
           </div>
           <div className="txpage__summary-divider" />
           <div className={"txpage__summary-item " + (summary.saldo >= 0 ? "txpage__summary-item--income" : "txpage__summary-item--expense")}>
-            <span>💰 Saldo</span>
+            <span>Saldo</span>
             <strong><CountUp value={summary.saldo} format={formatRupiah} /></strong>
           </div>
         </div>
@@ -245,12 +245,12 @@ export default function TransaksiPage() {
                     <span>·</span>
                     <span>{formatDate(tx.date || tx.createdAt)}</span>
                     {tx.items?.length > 0 && (
-                      <><span>·</span><span className="txpage__item-produk-tag">📦 {tx.jumlahUnit || 1}x produk</span></>
+                      <><span>·</span><span className="txpage__item-produk-tag">{tx.jumlahUnit || 1}x produk</span></>
                     )}
                   </div>
                 </div>
                 <span className={"txpage__item-amount " + (tx.type === "pemasukan" ? "txpage__item-amount--income" : tx.type === "transfer" ? "txpage__item-amount--transfer" : "txpage__item-amount--expense")}>
-                  {tx.type === "pemasukan" ? "+" : tx.type === "transfer" ? "🔄 " : "-"}{formatRupiah(tx.amount)}
+                  {tx.type === "pemasukan" ? "+" : tx.type === "transfer" ? "" : "-"}{formatRupiah(tx.amount)}
                 </span>
                 <div className="txpage__item-actions">
                   <button className="txpage__item-edit" onClick={() => openEdit(tx)} title="Edit"><Pencil size={14} /></button>

@@ -312,12 +312,12 @@ export default function LaporanPage() {
             {/* Tab switcher */}
             <div className="laporanpage__tabs">
               {[
-                { id: "labarugi",     icon: "📊", label: "Laba-Rugi" },
-                { id: "neraca",       icon: "⚖️", label: "Neraca" },
-                { id: "aruskas",      icon: "💵", label: "Arus Kas" },
-                { id: "dompet",       icon: "👛", label: "Dompet" },
-                { id: "bep",          icon: "📐", label: "Break-Even Point" },
-                { id: "utangpiutang", icon: "🤝", label: "Utang-Piutang" },
+                { id: "labarugi",     icon: "", label: "Laba-Rugi" },
+                { id: "neraca",       icon: "", label: "Neraca" },
+                { id: "aruskas",      icon: "", label: "Arus Kas" },
+                { id: "dompet",       icon: "", label: "Dompet" },
+                { id: "bep",          icon: "", label: "Break-Even Point" },
+                { id: "utangpiutang", icon: "", label: "Utang-Piutang" },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -370,8 +370,7 @@ export default function LaporanPage() {
                 </table>
 
                 {Math.abs(selisihNeraca) > 1 && (
-                  <p className="laporanpage__formal-note">
-                    ⚠️ Ada selisih pencatatan {formatRupiah(Math.abs(selisihNeraca))} antara Total Harta dan Total Kewajiban+Modal.
+                  <p className="laporanpage__formal-note">Ada selisih pencatatan {formatRupiah(Math.abs(selisihNeraca))} antara Total Harta dan Total Kewajiban+Modal.
                     Ini wajar terjadi karena bahan baku dicatat sebagai biaya saat DIBELI (bukan saat dipakai), jadi bukan berarti ada data yang salah/hilang —
                     cuma keterbatasan pencatatan kas sederhana, bukan pembukuan akuntansi penuh.
                   </p>
@@ -422,12 +421,12 @@ export default function LaporanPage() {
 
                 {transferPeriodeIni.length > 0 && (
                   <>
-                    <h3 className="laporanpage__section-title" style={{ marginTop: "1.5rem" }}>🔄 Transfer Antar Dompet (tidak dihitung kas masuk/keluar)</h3>
+                    <h3 className="laporanpage__section-title" style={{ marginTop: "1.5rem" }}>Transfer Antar Dompet (tidak dihitung kas masuk/keluar)</h3>
                     <table className="laporanpage__formal-table">
                       <tbody>
                         {transferPeriodeIni.map(t => (
                           <tr key={t.id}>
-                            <td>{getKasEmoji(t.kas)} {t.kas} → {getKasEmoji(t.kasTujuan)} {t.kasTujuan}</td>
+                            <td>{t.kas} → {t.kasTujuan}</td>
                             <td>{formatRupiah(t.amount)}</td>
                           </tr>
                         ))}
@@ -442,7 +441,7 @@ export default function LaporanPage() {
                     <table className="laporanpage__formal-table">
                       <tbody>
                         {kasStats.filter(k => k.nama !== "Non-Kas (Kerugian Stok)").map(k => (
-                          <tr key={k.nama}><td>{getKasEmoji(k.nama)} {k.nama}</td><td>{formatRupiah(k.saldo)}</td></tr>
+                          <tr key={k.nama}><td>{k.nama}</td><td>{formatRupiah(k.saldo)}</td></tr>
                         ))}
                         <tr className="laporanpage__formal-total"><td>Total Kas</td><td>{formatRupiah(totalKasReal)}</td></tr>
                       </tbody>
@@ -495,27 +494,27 @@ export default function LaporanPage() {
                     {months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}
                   </select>
                   <button className="laporanpage__export-btn" onClick={handleExportPDF}>
-                    📄 Export PDF
+                    Export PDF
                   </button>
                 </div>
 
                 {/* Summary Cards */}
                 <div className="laporanpage__summary stagger-list">
                   <div className="laporanpage__sum-card laporanpage__sum-card--income">
-                    <span className="laporanpage__sum-label">📈 Total Omzet</span>
+                    <span className="laporanpage__sum-label">Total Omzet</span>
                     <span className="laporanpage__sum-value"><CountUp value={summary.pemasukan} format={formatRupiah} /></span>
                   </div>
                   <div className="laporanpage__sum-card laporanpage__sum-card--expense">
-                    <span className="laporanpage__sum-label">📉 Total Pengeluaran</span>
+                    <span className="laporanpage__sum-label">Total Pengeluaran</span>
                     <span className="laporanpage__sum-value"><CountUp value={summary.pengeluaran} format={formatRupiah} /></span>
                   </div>
                   <div className={"laporanpage__sum-card " + (summary.saldo >= 0 ? "laporanpage__sum-card--profit" : "laporanpage__sum-card--loss")}>
-                    <span className="laporanpage__sum-label">💰 Laba Bersih</span>
+                    <span className="laporanpage__sum-label">Laba Bersih</span>
                     <span className="laporanpage__sum-value"><CountUp value={summary.saldo} format={formatRupiah} /></span>
                     <span className="laporanpage__sum-sub">Margin {margin}%</span>
                   </div>
                   <div className="laporanpage__sum-card laporanpage__sum-card--neutral">
-                    <span className="laporanpage__sum-label">🧾 Transaksi</span>
+                    <span className="laporanpage__sum-label">Transaksi</span>
                     <span className="laporanpage__sum-value"><CountUp value={filtered.length} /></span>
                     <span className="laporanpage__sum-sub">entri tercatat</span>
                   </div>
@@ -526,12 +525,12 @@ export default function LaporanPage() {
                   <h3 className="laporanpage__section-title">Modal &amp; Aset Usaha</h3>
                   <div className="laporanpage__submetrics stagger-list">
                     <div className="laporanpage__sum-card laporanpage__sum-card--modal">
-                      <span className="laporanpage__sum-label">🏦 Modal Usaha</span>
+                      <span className="laporanpage__sum-label">Modal Usaha</span>
                       <span className="laporanpage__sum-value"><CountUp value={totalModal} format={formatRupiah} /></span>
                       <span className="laporanpage__sum-sub">{filterMonth === "semua" ? "Total keseluruhan" : `Periode ${monthLabel(filterMonth)}`} · tidak dihitung sebagai omzet</span>
                     </div>
                     <div className="laporanpage__sum-card laporanpage__sum-card--aset">
-                      <span className="laporanpage__sum-label">💎 Total Aset Usaha</span>
+                      <span className="laporanpage__sum-label">Total Aset Usaha</span>
                       <span className="laporanpage__sum-value"><CountUp value={totalNilaiAset} format={formatRupiah} /></span>
                       <span className="laporanpage__sum-sub">{asetUsaha.length} item peralatan · nilai per hari ini</span>
                     </div>
@@ -548,7 +547,7 @@ export default function LaporanPage() {
                     <div className="laporanpage__submetrics laporanpage__submetrics--wrap">
                       {kasStats.map(k => (
                         <div key={k.nama} className={"laporanpage__sum-card " + (k.saldo < 0 ? "laporanpage__sum-card--loss" : "laporanpage__sum-card--neutral")}>
-                          <span className="laporanpage__sum-label">{getKasEmoji(k.nama)} {k.nama}</span>
+                          <span className="laporanpage__sum-label">{k.nama}</span>
                           <span className="laporanpage__sum-value">{formatRupiah(k.saldo)}</span>
                         </div>
                       ))}

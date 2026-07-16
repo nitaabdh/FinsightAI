@@ -279,7 +279,7 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
         </button>
       ) : (
       <div className="kalkharga__form" ref={formRef}>
-        <h3 className="kalkharga__form-title">{editId ? "✏️ Edit Produk" : "+ Hitung Harga Jual Produk"}</h3>
+        <h3 className="kalkharga__form-title">{editId ? "Edit Produk" : "+ Hitung Harga Jual Produk"}</h3>
 
         <div className="kalkharga__field">
           <label className="kalkharga__label">Nama Produk</label>
@@ -334,7 +334,7 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
         <div className="kalkharga__addbahan">
           <label className="kalkharga__label">Tambah Biaya Operasional dari Master Data</label>
           {opsList.length === 0 ? (
-            <p className="kalkharga__hint">Belum ada biaya operasional. Tambahkan dulu di tab <strong>💡 Biaya Operasional</strong>.</p>
+            <p className="kalkharga__hint">Belum ada biaya operasional. Tambahkan dulu di tab <strong>Biaya Operasional</strong>.</p>
           ) : (
             <div className="kalkharga__addbahan-row" style={{ gridTemplateColumns: "2fr 1fr auto" }}>
               <select className="kalkharga__input" value={selOps} onChange={e => setSelOps(e.target.value)}>
@@ -398,12 +398,12 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
           <div className="kalkharga__sum-row kalkharga__sum-row--final"><span>Harga Jual</span><span><CountUp value={hargaJual} format={formatRupiah} /></span></div>
         </div>
 
-        {error && <p className="kalkharga__error">⚠️ {error}</p>}
+        {error && <p className="kalkharga__error">{error}</p>}
 
         <div className="kalkharga__form-actions">
           <button className="kalkharga__btn-sec" onClick={resetForm}>Batal</button>
           <button className="kalkharga__btn-primary" onClick={handleSubmit}>
-            {editId ? "Simpan Perubahan" : "💾 Simpan Produk"}
+            {editId ? "Simpan Perubahan" : "Simpan Produk"}
           </button>
         </div>
       </div>
@@ -414,14 +414,14 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
           <h3 className="kalkharga__list-title stagger-list" style={{ margin: 0 }}>Daftar Produk</h3>
           {produkList.length > 0 && (
-            <input className="kalkharga__input" type="text" placeholder="🔍 Cari produk..."
+            <input className="kalkharga__input" type="text" placeholder="Cari produk..."
               style={{ maxWidth: "240px" }}
               value={search} onChange={e => setSearch(e.target.value)} />
           )}
         </div>
         {produkList.length === 0 ? (
           <div className="kalkharga__empty">
-            <p>🛍️</p>
+            <p></p>
             <p>Belum ada produk dihitung.</p>
             <p>Gunakan form di atas untuk menghitung harga jual pertama kamu.</p>
           </div>
@@ -452,7 +452,7 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
                 <div className="kalkharga__produk-resep">{p.items.length} bahan dalam resep</div>
                 {/* Tombol AI Analisis */}
                 <button className="kalkharga__ai-btn" onClick={() => handleAiAnalisis(p)}>
-                  🤖 Analisis Harga AI
+                  Analisis Harga AI
                 </button>
               </div>
             ))}
@@ -466,7 +466,7 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
           <div className="kalkharga__modal kalkharga__modal--ai" onClick={e => e.stopPropagation()}>
             <div className="kalkharga__ai-header">
               <div>
-                <h4 className="kalkharga__modal-title">🤖 Analisis Harga AI</h4>
+                <h4 className="kalkharga__modal-title">Analisis Harga AI</h4>
                 {aiProduk && <p className="kalkharga__ai-produk-name">{aiProduk.nama} · {formatRupiah(aiProduk.hargaJual)}</p>}
               </div>
               <button className="kalkharga__ai-close" onClick={() => { setAiOpen(false); setAiResult(""); }}><X size={14} /></button>
@@ -481,7 +481,7 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
 
             {aiError && !aiLoading && (
               <div className="kalkharga__ai-error">
-                <p>⚠️ {aiError}</p>
+                <p>{aiError}</p>
                 {aiError.includes("API Key") && (
                   <p className="kalkharga__ai-hint">Isi API Key Groq di halaman <strong>AI Agent</strong> terlebih dahulu.</p>
                 )}
@@ -500,7 +500,7 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
               <button className="kalkharga__btn-sec" onClick={() => { setAiOpen(false); setAiResult(""); }}>Tutup</button>
               {!aiLoading && aiProduk && (
                 <button className="kalkharga__btn-primary" onClick={() => handleAiAnalisis(aiProduk)}>
-                  🔄 Analisis Ulang
+                  Analisis Ulang
                 </button>
               )}
             </div>

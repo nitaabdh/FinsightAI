@@ -84,7 +84,7 @@ export default function BiayaOperasional() {
         </button>
       ) : (
         <div className="biayaops__form" ref={formRef}>
-          <h3 className="biayaops__form-title">{editId ? "✏️ Edit Biaya Operasional" : "+ Tambah Biaya Operasional"}</h3>
+          <h3 className="biayaops__form-title">{editId ? "Edit Biaya Operasional" : "+ Tambah Biaya Operasional"}</h3>
 
           <div className="biayaops__form-row">
             <div className="biayaops__field">
@@ -102,7 +102,7 @@ export default function BiayaOperasional() {
             </div>
           </div>
 
-          {error && <p className="biayaops__error">⚠️ {error}</p>}
+          {error && <p className="biayaops__error">{error}</p>}
 
           <div className="biayaops__form-actions">
             <button className="biayaops__btn-sec" onClick={resetForm}>Batal</button>
@@ -117,7 +117,7 @@ export default function BiayaOperasional() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
           <h3 className="biayaops__list-title" style={{ margin: 0 }}>Daftar Biaya Operasional</h3>
           {opsList.length > 0 && (
-            <input className="biayaops__input" type="text" placeholder="🔍 Cari biaya operasional..."
+            <input className="biayaops__input" type="text" placeholder="Cari biaya operasional..."
               style={{ maxWidth: "240px" }}
               value={search} onChange={e => setSearch(e.target.value)} />
           )}

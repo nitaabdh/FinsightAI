@@ -113,7 +113,7 @@ export default function Supplier() {
         </button>
       ) : (
         <div className="supplier__form" ref={formRef}>
-          <h3 className="supplier__form-title">{editId ? "✏️ Edit Supplier" : "+ Tambah Supplier"}</h3>
+          <h3 className="supplier__form-title">{editId ? "Edit Supplier" : "+ Tambah Supplier"}</h3>
 
           <div className="supplier__grid">
             <div className="supplier__field supplier__field--wide">
@@ -147,7 +147,7 @@ export default function Supplier() {
               placeholder="Misal: minimal order 10pcs, kirim H+2" value={form.catatan} onChange={handleChange} />
           </div>
 
-          {error && <p className="supplier__error">⚠️ {error}</p>}
+          {error && <p className="supplier__error">{error}</p>}
 
           <div className="supplier__form-actions">
             <button className="supplier__btn-sec" onClick={resetForm}>Batal</button>
@@ -160,7 +160,7 @@ export default function Supplier() {
 
       {list.length > 0 && (
         <div className="supplier__filters">
-          <input className="supplier__select" type="text" placeholder="🔍 Cari nama supplier..."
+          <input className="supplier__select" type="text" placeholder="Cari nama supplier..."
             style={{ flex: 1, minWidth: "160px" }}
             value={search} onChange={e => setSearch(e.target.value)} />
           <select className="supplier__select" value={filterKategori} onChange={e => setFilterKategori(e.target.value)}>
@@ -195,12 +195,12 @@ export default function Supplier() {
                 <div className="supplier__card-links">
                   {s.kontakWa && (
                     <a className="supplier__link supplier__link--wa" href={waLink(s.kontakWa)} target="_blank" rel="noreferrer">
-                      💬 WhatsApp
+                      WhatsApp
                     </a>
                   )}
                   {s.linkMarketplace && (
                     <a className="supplier__link supplier__link--market" href={s.linkMarketplace} target="_blank" rel="noreferrer">
-                      🛒 Marketplace
+                      Marketplace
                     </a>
                   )}
                 </div>

@@ -29,7 +29,7 @@ export default function AuthPage() {
   const isUMKM   = mode === "umkm";
   const accent   = isUMKM ? "umkm" : "personal";
   const modeLabel = isUMKM ? "UMKM" : "Pribadi";
-  const modeEmoji = isUMKM ? "🏪" : "👤";
+  const modeEmoji = isUMKM ? "" : "";
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -129,7 +129,7 @@ export default function AuthPage() {
                     onChange={(e) => { setForgotEmail(e.target.value); setError(""); }}
                   />
                 </div>
-                {error && <div className="auth__error animate-fadeIn">⚠️ {error}</div>}
+                {error && <div className="auth__error animate-fadeIn">{error}</div>}
                 <button className={"auth__submit auth__submit--" + accent} onClick={handleForgotStep1} disabled={loading}>
                   {loading ? "Mengecek..." : "Cek Email →"}
                 </button>
@@ -148,7 +148,7 @@ export default function AuthPage() {
                       onChange={(e) => { setNewPass(e.target.value); setError(""); }}
                     />
                     <button className="auth__eye" onClick={() => setShowPass((p) => !p)} type="button">
-                      {showPass ? "🙈" : "👁️"}
+                      {showPass ? "" : ""}
                     </button>
                   </div>
                 </div>
@@ -163,11 +163,11 @@ export default function AuthPage() {
                       onChange={(e) => { setNewPassConfirm(e.target.value); setError(""); }}
                     />
                     <button className="auth__eye" onClick={() => setShowConfirm((p) => !p)} type="button">
-                      {showConfirm ? "🙈" : "👁️"}
+                      {showConfirm ? "" : ""}
                     </button>
                   </div>
                 </div>
-                {error && <div className="auth__error animate-fadeIn">⚠️ {error}</div>}
+                {error && <div className="auth__error animate-fadeIn">{error}</div>}
                 <button className={"auth__submit auth__submit--" + accent} onClick={handleForgotStep2}>
                   Simpan Password Baru
                 </button>
@@ -233,7 +233,7 @@ export default function AuthPage() {
                 onChange={handleChange}
               />
               <button className="auth__eye" onClick={() => setShowPass((p) => !p)} type="button">
-                {showPass ? "🙈" : "👁️"}
+                {showPass ? "" : ""}
               </button>
             </div>
           </div>
@@ -251,14 +251,14 @@ export default function AuthPage() {
                   onChange={handleChange}
                 />
                 <button className="auth__eye" onClick={() => setShowConfirm((p) => !p)} type="button">
-                  {showConfirm ? "🙈" : "👁️"}
+                  {showConfirm ? "" : ""}
                 </button>
               </div>
             </div>
           )}
 
-          {error   && <div className="auth__error animate-fadeIn">⚠️ {error}</div>}
-          {success && <div className="auth__success animate-fadeIn">✅ {success}</div>}
+          {error   && <div className="auth__error animate-fadeIn">{error}</div>}
+          {success && <div className="auth__success animate-fadeIn">{success}</div>}
 
           <button className={"auth__submit auth__submit--" + accent} onClick={handleSubmit} disabled={loading}>
             {loading ? "Memproses..." : tab === "login" ? "Masuk ke Dashboard" : "Buat Akun"}

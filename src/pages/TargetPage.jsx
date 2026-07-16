@@ -30,12 +30,12 @@ const QUICK_AMOUNTS = [50000, 100000, 200000, 500000, 1000000];
 
 // ── Konstanta khusus tab Utang & Cicilan ────────────────────────────────────
 const JENIS_UTANG = [
-  { id: "utang",    label: "Utang",    emoji: "📤" },
-  { id: "kredit",   label: "Kredit",   emoji: "💳" },
-  { id: "paylater", label: "Paylater", emoji: "🛍️" },
+  { id: "utang",    label: "Utang",    emoji: "" },
+  { id: "kredit",   label: "Kredit",   emoji: "" },
+  { id: "paylater", label: "Paylater", emoji: "" },
 ];
 const jenisLabel = (j) => JENIS_UTANG.find(o => o.id === j)?.label || "Utang";
-const jenisEmoji = (j) => JENIS_UTANG.find(o => o.id === j)?.emoji || "📤";
+const jenisEmoji = (j) => JENIS_UTANG.find(o => o.id === j)?.emoji || "";
 
 const emptyDebtForm = {
   jenis: "utang", nama: "", tanggalMulai: "", tenor: "",
@@ -280,7 +280,7 @@ export default function TargetPage() {
       setReminderWarning("");
     } catch (err) {
       console.error("[syncReminder] gagal:", err);
-      setReminderWarning(`⚠️ Data utang "${debt.nama}" tersimpan, tapi reminder di Catatan gagal disinkronkan (cek koneksi lalu buka lagi halaman ini).`);
+      setReminderWarning(`Data utang "${debt.nama}" tersimpan, tapi reminder di Catatan gagal disinkronkan (cek koneksi lalu buka lagi halaman ini).`);
     }
   };
 
@@ -290,7 +290,7 @@ export default function TargetPage() {
       if (!res.success) throw new Error(res.message || "gagal hapus reminder");
     } catch (err) {
       console.error("[removeReminder] gagal:", err);
-      setReminderWarning(`⚠️ Reminder lama masih ketinggalan di Catatan — boleh dihapus manual kalau ganggu.`);
+      setReminderWarning(`Reminder lama masih ketinggalan di Catatan — boleh dihapus manual kalau ganggu.`);
     }
   };
 
@@ -445,7 +445,7 @@ export default function TargetPage() {
     <DashboardLayout>
       <div className="targetpage">
         <PageHeader
-          title={activeTab === "tabungan" ? "🎯 Target Tabungan" : "💳 Utang & Cicilan"}
+          title={activeTab === "tabungan" ? "Target Tabungan" : "Utang & Cicilan"}
           subtitle={activeTab === "tabungan" ? `${targets.length} target aktif` : `${activeDebts.length} cicilan berjalan`}
         />
 
@@ -455,13 +455,13 @@ export default function TargetPage() {
             className={"targetpage__tab" + (activeTab === "tabungan" ? " targetpage__tab--active" : "")}
             onClick={() => setActiveTab("tabungan")}
           >
-            🎯 Target Tabungan
+            Target Tabungan
           </button>
           <button
             className={"targetpage__tab" + (activeTab === "utang" ? " targetpage__tab--active" : "")}
             onClick={() => setActiveTab("utang")}
           >
-            💳 Utang & Cicilan{activeDebts.length > 0 && <span className="targetpage__tab-badge">{activeDebts.length}</span>}
+            Utang & Cicilan{activeDebts.length > 0 && <span className="targetpage__tab-badge">{activeDebts.length}</span>}
           </button>
         </div>
 
@@ -497,14 +497,14 @@ export default function TargetPage() {
 
               return (
                 <div key={t.id} className={"targetpage__card " + (selesai ? "targetpage__card--done" : "")}>
-                  {selesai && <div className="targetpage__done-badge">✅ Tercapai!</div>}
+                  {selesai && <div className="targetpage__done-badge">Tercapai!</div>}
 
                   <div className="targetpage__card-header">
                     <div>
                       <h3 className="targetpage__card-nama">{t.nama}</h3>
                       {/* Penempatan tabungan */}
                       {t.penempatan && (
-                        <span className="targetpage__card-penempatan">🏦 {t.penempatan}</span>
+                        <span className="targetpage__card-penempatan">{t.penempatan}</span>
                       )}
                     </div>
                     <div className="targetpage__card-actions-group">
@@ -596,7 +596,7 @@ export default function TargetPage() {
           <div className="targetpage__overlay" onClick={closeTargetForm}>
             <div className="targetpage__form animate-fadeUp" onClick={(e) => e.stopPropagation()}>
               <div className="targetpage__form-header">
-                <h3>{editingId ? "✏️ Edit Target" : "Tambah Target Baru"}</h3>
+                <h3>{editingId ? "Edit Target" : "Tambah Target Baru"}</h3>
                 <button onClick={closeTargetForm}><X size={14} /></button>
               </div>
 
@@ -618,13 +618,13 @@ export default function TargetPage() {
 
                 {/* Penempatan tabungan — bisa pilih dari daftar atau ketik sendiri */}
                 <div className="targetpage__field">
-                  <label>🏦 Penempatan Tabungan <span style={{fontWeight:400, color:"var(--text-muted)", fontSize:"11px"}}>(opsional)</span></label>
+                  <label>Penempatan Tabungan <span style={{fontWeight:400, color:"var(--text-muted)", fontSize:"11px"}}>(opsional)</span></label>
 
                   {!customPenempatan ? (
                     <select name="penempatan" value={form.penempatan} onChange={handlePenempatanSelect}>
                       <option value="">-- Pilih tempat menabung --</option>
                       {walletOptions.map((o) => <option key={o} value={o}>{o}</option>)}
-                      <option value={PENEMPATAN_CUSTOM}>✏️ Lainnya (ketik sendiri)</option>
+                      <option value={PENEMPATAN_CUSTOM}>Lainnya (ketik sendiri)</option>
                     </select>
                   ) : (
                     <div className="targetpage__custom-penempatan-wrap">
@@ -652,7 +652,7 @@ export default function TargetPage() {
                   <input name="deadline" type="date" value={form.deadline} onChange={handleChange} />
                 </div>
 
-                {error && <p className="targetpage__error">⚠️ {error}</p>}
+                {error && <p className="targetpage__error">{error}</p>}
                 <button className="targetpage__submit" onClick={handleSaveTarget} disabled={targetSubmitting}>
                   {targetSubmitting ? "Menyimpan..." : (editingId ? "Simpan Perubahan" : "Simpan Target")}
                 </button>
@@ -737,7 +737,7 @@ export default function TargetPage() {
         {/* Form inline (bukan floating) — biar enak diisi, sama kayak form Biaya Operasional di UMKM */}
         {activeTab === "utang" && showDebtForm && (
           <div className="targetpage__inline-form">
-            <h3 className="targetpage__inline-form-title">{editingDebtId ? "✏️ Edit Utang/Kredit/Paylater" : "+ Tambah Utang/Kredit/Paylater"}</h3>
+            <h3 className="targetpage__inline-form-title">{editingDebtId ? "Edit Utang/Kredit/Paylater" : "+ Tambah Utang/Kredit/Paylater"}</h3>
 
             <div className="targetpage__inline-form-grid stagger-list">
               <div className="targetpage__field">
@@ -787,7 +787,7 @@ export default function TargetPage() {
                   >
                     <option value="">-- Pilih dompet --</option>
                     {walletOptions.map((o) => <option key={o} value={o}>{o}</option>)}
-                    <option value={PENEMPATAN_CUSTOM}>✏️ Lainnya (ketik sendiri)</option>
+                    <option value={PENEMPATAN_CUSTOM}>Lainnya (ketik sendiri)</option>
                   </select>
                 ) : (
                   <div className="targetpage__custom-penempatan-wrap">
@@ -815,7 +815,7 @@ export default function TargetPage() {
               </div>
             </div>
 
-            {debtError && <p className="targetpage__error">⚠️ {debtError}</p>}
+            {debtError && <p className="targetpage__error">{debtError}</p>}
 
             <div className="targetpage__inline-form-actions">
               <button className="targetpage__btn-sec" onClick={closeDebtForm}>Batal</button>
@@ -852,7 +852,7 @@ export default function TargetPage() {
 
               return (
                 <div key={d.id} className={"targetpage__card " + (d.lunas ? "targetpage__card--done" : "")}>
-                  {d.lunas && <div className="targetpage__done-badge">✅ Lunas!</div>}
+                  {d.lunas && <div className="targetpage__done-badge">Lunas!</div>}
 
                   <div className="targetpage__card-header">
                     <div>
@@ -899,11 +899,11 @@ export default function TargetPage() {
                     )}
                   </div>
 
-                  {d.keterangan && <p className="targetpage__debt-keterangan">📝 {d.keterangan}</p>}
+                  {d.keterangan && <p className="targetpage__debt-keterangan">{d.keterangan}</p>}
 
                   {!d.lunas && (
                     <button className="targetpage__submit" onClick={() => handleBayarCicilan(d.id)} disabled={payingId === d.id}>
-                      {payingId === d.id ? "⏳ Memproses..." : `💸 Bayar Cicilan Bulan Ini (${formatRupiah(d.cicilanPerBulan)})`}
+                      {payingId === d.id ? "⏳ Memproses..." : `Bayar Cicilan Bulan Ini (${formatRupiah(d.cicilanPerBulan)})`}
                     </button>
                   )}
                 </div>

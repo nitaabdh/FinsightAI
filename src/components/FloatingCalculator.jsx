@@ -304,16 +304,14 @@ export default function FloatingCalculator({ userId, onClose }) {
     >
       {/* Header */}
       <div className="float-calc__header">
-        <span className="float-calc__title">🧮 Kalkulator</span>
+        <span className="float-calc__title">Kalkulator</span>
         <div className="float-calc__header-actions">
           <button
             className="float-calc__label-btn"
             onClick={handleAddLabel}
             disabled={current === ""}
             title="Kasih label ke angka ini"
-          >
-            🏷️
-          </button>
+          ></button>
           <span className="float-calc__drag-hint">⠿</span>
           <button className="float-calc__close" onClick={onClose} title="Tutup"><X size={14} /></button>
         </div>
@@ -379,7 +377,7 @@ export default function FloatingCalculator({ userId, onClose }) {
           onClick={handleSave}
           disabled={result === null}
         >
-          💾 Simpan Perhitungan
+          Simpan Perhitungan
         </button>
       </div>
 
@@ -389,7 +387,7 @@ export default function FloatingCalculator({ userId, onClose }) {
       {showSaveModal && (
         <div className="float-calc__save-modal-overlay" onClick={() => setShowSaveModal(false)}>
           <div className="float-calc__save-modal" onClick={e => e.stopPropagation()}>
-            <h4>💾 Simpan Perhitungan</h4>
+            <h4>Simpan Perhitungan</h4>
             <p className="float-calc__save-result">Hasil: <strong>{fmt(result)}</strong></p>
             <input
               autoFocus

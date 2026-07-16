@@ -450,7 +450,7 @@ export default function BahanBaku() {
                 <div className="bahanbaku__detail-stat">
                   <span className="bahanbaku__detail-stat-label">Stok Saat Ini</span>
                   <span className={"bahanbaku__detail-stat-value" + (stokMinus ? " bahanbaku__detail-stat-value--minus" : "")}>
-                    {stokMinus ? "⚠ " : ""}{stokDisplay(detailBahan)}
+                    {stokMinus ? "" : ""}{stokDisplay(detailBahan)}
                   </span>
                 </div>
                 <div className="bahanbaku__detail-stat">
@@ -466,8 +466,8 @@ export default function BahanBaku() {
               <div className="bahanbaku__detail-actions">
                 <button className="bahanbaku__item-restok" onClick={() => openRestok(detailBahan)}>+ Tambah Stok</button>
                 <button className="bahanbaku__item-kurangi" onClick={() => openKurangi(detailBahan)}>− Kurangi Stok</button>
-                <button className="bahanbaku__btn-sec" onClick={() => { openEdit(detailBahan); setDetailId(null); }}>✏️ Edit Data</button>
-                <button className="bahanbaku__btn-danger" onClick={() => openDel(detailBahan.id)}>🗑 Hapus Bahan</button>
+                <button className="bahanbaku__btn-sec" onClick={() => { openEdit(detailBahan); setDetailId(null); }}>Edit Data</button>
+                <button className="bahanbaku__btn-danger" onClick={() => openDel(detailBahan.id)}>Hapus Bahan</button>
               </div>
             </div>
 
@@ -513,7 +513,7 @@ export default function BahanBaku() {
       {/* ══════════ FORM + DAFTAR BAHAN (disembunyikan kalau lagi lihat detail) ══════════ */}
       {!detailId && (<>
       <div className="bahanbaku__form">
-        <h3 className="bahanbaku__form-title">{editId ? "✏️ Koreksi Data Bahan" : "+ Tambah Bahan Baku"}</h3>
+        <h3 className="bahanbaku__form-title">{editId ? "Koreksi Data Bahan" : "+ Tambah Bahan Baku"}</h3>
 
         {!editId && (
           <p className="bahanbaku__example">
@@ -524,7 +524,7 @@ export default function BahanBaku() {
 
         {editLocked && (
           <p className="bahanbaku__example" style={{ background: "var(--warning-bg, #fff3cd)" }}>
-            🔒 Data pembelian (jumlah, satuan, harga) sudah tercatat sebagai stok & transaksi di Keuangan,
+            Data pembelian (jumlah, satuan, harga) sudah tercatat sebagai stok & transaksi di Keuangan,
             jadi tidak bisa diubah dari sini. Kamu masih bisa ubah <strong>nama bahan</strong>.
             Untuk nambah/kurangi stok atau kalau harga belinya berubah, pakai tombol{" "}
             <strong>+ Stok</strong> / <strong>− Kurangi Stok</strong> di halaman detail bahan ini.
@@ -617,7 +617,7 @@ export default function BahanBaku() {
           </div>
         )}
 
-        {error && <p className="bahanbaku__error">⚠️ {error}</p>}
+        {error && <p className="bahanbaku__error">{error}</p>}
 
         <div className="bahanbaku__form-actions">
           {editId && <button className="bahanbaku__btn-sec" onClick={resetForm}>Batal</button>}
@@ -655,7 +655,7 @@ export default function BahanBaku() {
                 </div>
                 <div className="bahanbaku__item-stok">
                   <span className={"bahanbaku__item-stokval" + (stokMinus ? " bahanbaku__item-stokval--minus" : "")}>
-                    {stokMinus ? "⚠ " : ""}{stokDisplay(b)} tersisa
+                    {stokMinus ? "" : ""}{stokDisplay(b)} tersisa
                   </span>
                   <span className="bahanbaku__item-nilaistok">{formatRupiah(nilaiStok(b))}</span>
                 </div>
@@ -730,7 +730,7 @@ export default function BahanBaku() {
                 </div>
               )}
               <p className="bahanbaku__hpp-hint">
-                💡 Kalau harganya beda dari sebelumnya, sistem otomatis hitung rata-ratanya — kamu nggak perlu mikir apa-apa lagi. Pengeluaran ini juga otomatis kecatat di Keuangan.
+                Kalau harganya beda dari sebelumnya, sistem otomatis hitung rata-ratanya — kamu nggak perlu mikir apa-apa lagi. Pengeluaran ini juga otomatis kecatat di Keuangan.
               </p>
               {restokErr && <p className="bahanbaku__error">{restokErr}</p>}
               <div className="bahanbaku__modal-actions">
@@ -793,7 +793,7 @@ export default function BahanBaku() {
               </div>
               {kurangiKategori !== "lainnya" && (
                 <p className="bahanbaku__hpp-hint">
-                  💡 Nilai bahan yang dikurangi otomatis kecatat sebagai pengeluaran/kerugian di Keuangan (bukan penjualan).
+                  Nilai bahan yang dikurangi otomatis kecatat sebagai pengeluaran/kerugian di Keuangan (bukan penjualan).
                 </p>
               )}
               {kurangiErr && <p className="bahanbaku__error">{kurangiErr}</p>}

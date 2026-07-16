@@ -20,22 +20,22 @@ const KATEGORI_TRANSFER = "Transfer Antar Dompet";
 const KAS_PRESET = ["Kas Tunai", "Rekening Bank", "E-Wallet"];
 
 const CATEGORY_EMOJI = {
-  "makan": "🍔", "makanan": "🍔", "transportasi": "🚗", "transport": "🚗",
-  "belanja": "🛍️", "hiburan": "🎮", "kesehatan": "💊", "pendidikan": "📚",
-  "tagihan": "🧾", "listrik": "💡", "air": "🚰", "internet": "🌐",
-  "pulsa": "📱", "gaji": "💰", "freelance": "💼", "investasi": "📈",
-  "tabungan": "🏦", "hadiah": "🎁", "lainnya": "🗂️",
-  "penjualan produk": "🛒",
+  "makan": "", "makanan": "", "transportasi": "", "transport": "",
+  "belanja": "", "hiburan": "", "kesehatan": "", "pendidikan": "",
+  "tagihan": "", "listrik": "", "air": "", "internet": "",
+  "pulsa": "", "gaji": "", "freelance": "", "investasi": "",
+  "tabungan": "", "hadiah": "", "lainnya": "",
+  "penjualan produk": "",
 };
 function getCategoryEmoji(cat) {
-  if (!cat) return "🗂️";
-  return CATEGORY_EMOJI[cat.toLowerCase().trim()] || "🗂️";
+  if (!cat) return "";
+  return CATEGORY_EMOJI[cat.toLowerCase().trim()] || "";
 }
 
-const KAS_EMOJI = { "kas tunai": "💵", "rekening bank": "🏦", "e-wallet": "📱" };
+const KAS_EMOJI = { "kas tunai": "", "rekening bank": "", "e-wallet": "" };
 function getKasEmoji(k) {
-  if (!k) return "💳";
-  return KAS_EMOJI[k.toLowerCase().trim()] || "💳";
+  if (!k) return "";
+  return KAS_EMOJI[k.toLowerCase().trim()] || "";
 }
 
 async function apiFetch(url, options = {}) {
@@ -368,7 +368,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
     <div className="txform__overlay" onClick={onClose}>
       <div className="txform animate-fadeUp" onClick={e => e.stopPropagation()}>
         <div className="txform__header">
-          <h3 className="txform__title">{isEdit ? "✏️ Edit Transaksi" : "Catat Transaksi"}</h3>
+          <h3 className="txform__title">{isEdit ? "Edit Transaksi" : "Catat Transaksi"}</h3>
           <button className="txform__close" onClick={onClose}><X size={14} /></button>
         </div>
 
@@ -382,7 +382,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
                 if (t !== "pemasukan") { setSelProdukId(""); setSelItems(null); setJumlahUnit("1"); setIsOnlineSale(false); }
               }}
             >
-              {t === "pemasukan" ? "⬆ Pemasukan" : t === "pengeluaran" ? "⬇ Pengeluaran" : "🔄 Transfer"}
+              {t === "pemasukan" ? "Pemasukan" : t === "pengeluaran" ? "Pengeluaran" : "Transfer"}
             </button>
           ))}
         </div>
@@ -409,7 +409,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
                 <span className="txform__cat-badge txform__cat-badge--new">Baru</span>
               )}
               {isExistingCat && catQuery.trim() !== "" && (
-                <span className="txform__cat-badge txform__cat-badge--exists">✓ Ada</span>
+                <span className="txform__cat-badge txform__cat-badge--exists">Ada</span>
               )}
               {catOpen && catSuggestions.length > 0 && (
                 <div ref={catDropdownRef} className="txform__cat-dropdown">
@@ -418,7 +418,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
                       className="txform__cat-option txform__cat-option--create"
                       onMouseDown={() => handleCatSelect(catQuery.trim())}
                     >
-                      <span>➕</span> Buat "<strong>{catQuery.trim()}</strong>"
+                      <span></span> Buat "<strong>{catQuery.trim()}</strong>"
                     </div>
                   )}
                   {catSuggestions.map(c => (
@@ -427,7 +427,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
                       className={"txform__cat-option " + (c === form.category ? "txform__cat-option--active" : "")}
                       onMouseDown={() => handleCatSelect(c)}
                     >
-                      <span>{getCategoryEmoji ? getCategoryEmoji(c) : "🗂️"}</span> {c}
+                      {c}
                       {usedCategories.includes(c) && !CATEGORIES[mode]?.[form.type]?.includes(c) && (
                         <span className="txform__cat-used">Pernah dipakai</span>
                       )}
@@ -438,7 +438,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
             </div>
             {isSampleFlow && (
               <p className="txform__hint txform__hint--tight">
-                🧪 Mode Sample/Marketing: pilih produk di bawah, stok bahan bakunya otomatis kepakai sesuai resep, tapi nominalnya dihitung dari biaya produksi (HPP) — BUKAN harga jual, dan tidak dianggap sebagai penjualan.
+                Mode Sample/Marketing: pilih produk di bawah, stok bahan bakunya otomatis kepakai sesuai resep, tapi nominalnya dihitung dari biaya produksi (HPP) — BUKAN harga jual, dan tidak dianggap sebagai penjualan.
               </p>
             )}
           </div>
@@ -480,7 +480,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
 
           {isTransferFlow && (
             <p className="txform__hint txform__hint--tight">
-              🔄 Transfer nggak dihitung sebagai omzet/pengeluaran baru — cuma mindahin saldo antar dompet (misal saldo QRIS yang dicairkan ke rekening bank).
+              Transfer nggak dihitung sebagai omzet/pengeluaran baru — cuma mindahin saldo antar dompet (misal saldo QRIS yang dicairkan ke rekening bank).
             </p>
           )}
 
@@ -504,7 +504,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
                     }
                   }
                 }} />
-                🛒 Ini penjualan online/marketplace (ada potongan admin)?
+                Ini penjualan online/marketplace (ada potongan admin)?
               </label>
             </div>
           )}
@@ -518,7 +518,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
               </p>
               {showProdukPicker && selProdukId && produkList.find(p => p.id === selProdukId)?.hargaOnline > 0 && (
                 <p className="txform__hint txform__hint--tight">
-                  💾 Nominal otomatis dipakein harga jual online yang udah kesimpen buat produk ini
+                  Nominal otomatis dipakein harga jual online yang udah kesimpen buat produk ini
                   (dari tab Kalkulator Online). Boleh diedit lagi kalau beda.
                 </p>
               )}
@@ -579,7 +579,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
                         className={"txform__cat-option " + (k === form.kas ? "txform__cat-option--active" : "")}
                         onMouseDown={() => handleKasSelect(k)}
                       >
-                        <span>{getKasEmoji(k)}</span> {k}
+                        <span></span> {k}
                         {!KAS_PRESET.includes(k) && (
                           <span className="txform__cat-used">Pernah dipakai</span>
                         )}
@@ -617,7 +617,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
                         className={"txform__cat-option " + (k === form.kasTujuan ? "txform__cat-option--active" : "")}
                         onMouseDown={() => handleKasTujuanSelect(k)}
                       >
-                        <span>{getKasEmoji(k)}</span> {k}
+                        <span></span> {k}
                         {!KAS_PRESET.includes(k) && (
                           <span className="txform__cat-used">Pernah dipakai</span>
                         )}
@@ -645,7 +645,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
               value={form.description} onChange={handleChange} />
           </div>
 
-          {error && <div className="txform__error">⚠️ {error}</div>}
+          {error && <div className="txform__error">{error}</div>}
 
           <button className={"txform__submit txform__submit--" + accent} onClick={handleSubmit} disabled={submitted}>
             {submitted ? "Menyimpan..." : (isEdit ? "Simpan Perubahan" : "Simpan Transaksi")}

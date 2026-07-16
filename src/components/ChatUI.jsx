@@ -13,11 +13,11 @@ const formatText = (text) => {
 };
 
 const TOOL_LABELS = {
-  hitung_laba_rugi:    "🔢 Hitung Laba Rugi",
-  hitung_cicilan:      "💳 Hitung Cicilan",
-  simulasi_tabungan:   "🎯 Simulasi Tabungan",
-  analisa_keuangan:    "📊 Analisa Keuangan",
-  hitung_dana_darurat: "🛡️ Dana Darurat",
+  hitung_laba_rugi:    "Hitung Laba Rugi",
+  hitung_cicilan:      "Hitung Cicilan",
+  simulasi_tabungan:   "Simulasi Tabungan",
+  analisa_keuangan:    "Analisa Keuangan",
+  hitung_dana_darurat: "Dana Darurat",
 };
 
 const isRawToolCall = (msg) => {
@@ -204,7 +204,7 @@ export default function ChatUI({ messages, loading, onSend, accent, suggestions 
               disabled={loading}
               title={isListening ? "Berhenti merekam" : "Bicara untuk mengisi pesan"}
             >
-              {isListening ? "⏹" : "🎤"}
+              {isListening ? "⏹" : ""}
             </button>
           )}
         </div>

@@ -26,12 +26,12 @@ const NOTE_COLORS = [
 ];
 
 const NOTE_CATEGORIES = [
-  { id:"umum",    label:"Umum",    emoji:"📌" },
-  { id:"tagihan", label:"Tagihan", emoji:"💸" },
-  { id:"belanja", label:"Belanja", emoji:"🛒" },
-  { id:"meeting", label:"Meeting", emoji:"📅" },
-  { id:"penting", label:"Penting", emoji:"⚠️" },
-  { id:"pribadi", label:"Pribadi", emoji:"🔒" },
+  { id:"umum",    label:"Umum",    emoji:"" },
+  { id:"tagihan", label:"Tagihan", emoji:"" },
+  { id:"belanja", label:"Belanja", emoji:"" },
+  { id:"meeting", label:"Meeting", emoji:"" },
+  { id:"penting", label:"Penting", emoji:"" },
+  { id:"pribadi", label:"Pribadi", emoji:"" },
 ];
 
 const genId      = () => `${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
@@ -202,7 +202,7 @@ export default function CatatanPage() {
     if (ok !== false) { setShowForm(false); setEditCalId(null); setCalForm({ title:"", body:"", category:"umum" }); }
   };
 
-  // Klik overlay / ✕ pas lagi ngisi form acara = kemungkinan besar nggak sengaja.
+  // Klik overlay / pas lagi ngisi form acara = kemungkinan besar nggak sengaja.
   // Auto-save dulu sebagai draft (judul default kalau kosong) biar nggak hilang percuma.
   const attemptClosePopup = async () => {
     if (showForm) {
@@ -212,7 +212,7 @@ export default function CatatanPage() {
         const isFull = existing.length >= 3 && !editCalId;
         if (!isFull) {
           await persistCalNote({ ...calForm, title: calForm.title.trim() || "Draft tanpa judul" });
-          setDraftToastMsg("📝 Draf acara otomatis tersimpan");
+          setDraftToastMsg("Draf acara otomatis tersimpan");
         }
       }
     }
@@ -277,7 +277,7 @@ export default function CatatanPage() {
     setShowNoteModal(false);
   };
 
-  // Klik di luar modal / tombol ✕ = kemungkinan besar nggak sengaja, BUKAN "Batal" yang
+  // Klik di luar modal / tombol = kemungkinan besar nggak sengaja, BUKAN "Batal" yang
   // disengaja. Daripada catatan yang udah diketik ilang percuma, auto-save dulu sebagai
   // draft (judul default "Draft tanpa judul" kalau kosong), baru modal ditutup.
   const attemptCloseNoteModal = async () => {
@@ -286,7 +286,7 @@ export default function CatatanPage() {
     const dataToSave = { ...noteForm, title: noteForm.title.trim() || "Draft tanpa judul" };
     await persistNote(dataToSave);
     setShowNoteModal(false);
-    setDraftToastMsg("📝 Draf catatan otomatis tersimpan");
+    setDraftToastMsg("Draf catatan otomatis tersimpan");
   };
 
   const deleteNote = async (id) => {
@@ -386,7 +386,7 @@ const updateOpenNoteMeta = async (field, value) => {
             })}
           </div>
           <div className="cal-footer">
-            <span>📅 {calNotes.length} acara tersimpan</span>
+            <span>{calNotes.length} acara tersimpan</span>
             <span className="cal-hint">Klik tanggal untuk tambah acara</span>
           </div>
         </div>
@@ -396,12 +396,12 @@ const updateOpenNoteMeta = async (field, value) => {
           <div className="cal-cards-header stagger-list">
             <h3 className="cal-cards-title stagger-list">
               {filterDate
-                ? `📌 ${parseInt(filterDate.split("-")[2])} ${MONTHS[parseInt(filterDate.split("-")[1])-1]} ${filterDate.split("-")[0]}`
-                : "📋 Semua Acara"}
+                ? `${parseInt(filterDate.split("-")[2])} ${MONTHS[parseInt(filterDate.split("-")[1])-1]} ${filterDate.split("-")[0]}`
+                : "Semua Acara"}
             </h3>
             {filterDate && (
               <button className="cal-filter-clear" onClick={() => setFilterDate(null)}>
-                ✕ Lihat semua
+                Lihat semua
               </button>
             )}
           </div>
@@ -463,7 +463,7 @@ const updateOpenNoteMeta = async (field, value) => {
         {/* CTA float */}
         <div className="calc-tab-cta">
           <div>
-            <h3 className="calc-tab-cta__title">🧮 Kalkulator Keuangan</h3>
+            <h3 className="calc-tab-cta__title">Kalkulator Keuangan</h3>
             <p className="calc-tab-cta__desc">Buka kalkulator dan bisa dibawa ke halaman lain</p>
           </div>
           <button className="calc-tab-cta__btn" onClick={() => window.dispatchEvent(new CustomEvent("openFloatCalc"))}>
@@ -474,7 +474,7 @@ const updateOpenNoteMeta = async (field, value) => {
         {/* Riwayat Kalkulasi */}
         <div className="calc-history-section stagger-list">
           <div className="calc-history-header stagger-list">
-            <h3 className="calc-saved-title">🕓 Riwayat Kalkulasi</h3>
+            <h3 className="calc-saved-title">Riwayat Kalkulasi</h3>
             {calcHistory.length > 0 && (
               <button className="calc-history-clear stagger-list" onClick={() => {
                 setCalcHistory([]);
@@ -503,7 +503,7 @@ const updateOpenNoteMeta = async (field, value) => {
 
         {/* Catatan Perhitungan */}
         <div className="calc-saved-section">
-          <h3 className="calc-saved-title">💾 Catatan Perhitungan</h3>
+          <h3 className="calc-saved-title">Catatan Perhitungan</h3>
           {savedCalcs.length === 0 ? (
             <div className="calc-saved-empty">
               <span><Calculator size={14} /></span>
@@ -560,7 +560,7 @@ const updateOpenNoteMeta = async (field, value) => {
           </select>
           <div className="view-toggle">
             <button className={`view-btn${notesView==="grid"?" active":""}`} onClick={()=>setNotesView("grid")} title="Grid">▦</button>
-            <button className={`view-btn${notesView==="list"?" active":""}`} onClick={()=>setNotesView("list")} title="List">☰</button>
+            <button className={`view-btn${notesView==="list"?" active":""}`} onClick={()=>setNotesView("list")} title="List"></button>
           </div>
           <button className="notes-add-icon-btn" onClick={() => openNoteModal()} title="Tambah catatan">＋</button>
         </div>
@@ -633,7 +633,7 @@ const updateOpenNoteMeta = async (field, value) => {
         <div className="cn-modal" onClick={e=>e.stopPropagation()}>
           <div className="cn-modal-header">
             <div>
-              <h3>📅 {label}</h3>
+              <h3>{label}</h3>
               {isPastDate && <span className="popup-past-badge">Tanggal sudah lewat</span>}
             </div>
             <button className="cn-close" onClick={attemptClosePopup}><X size={14} /></button>
@@ -672,7 +672,7 @@ const updateOpenNoteMeta = async (field, value) => {
           {!showForm && (
             <div className="popup-footer">
               {isFull
-                ? <p className="popup-full-msg">⚠️ Maksimal 3 acara per tanggal</p>
+                ? <p className="popup-full-msg">Maksimal 3 acara per tanggal</p>
                 : <button className="cn-btn-primary popup-add-btn" onClick={()=>setShowForm(true)}>＋ Tambah Acara</button>
               }
             </div>
@@ -719,7 +719,7 @@ const updateOpenNoteMeta = async (field, value) => {
     <div className="cn-overlay" onClick={attemptCloseNoteModal}>
       <div className="cn-modal cn-modal--note" onClick={e=>e.stopPropagation()}>
         <div className="cn-modal-header">
-          <h3>{editNoteId ? "✏️ Edit Catatan" : "📝 Catatan Baru"}</h3>
+          <h3>{editNoteId ? "Edit Catatan" : "Catatan Baru"}</h3>
           <button className="cn-close" onClick={attemptCloseNoteModal}><X size={14} /></button>
         </div>
         <div className="cn-form">
@@ -887,16 +887,16 @@ const updateOpenNoteMeta = async (field, value) => {
     <DashboardLayout>
       <div className="catatanpage">
         <PageHeader
-          title={mode === "umkm" ? "📋 Catatan Usaha" : "📋 Catatan Pribadi"}
+          title={mode === "umkm" ? "Catatan Usaha" : "Catatan Pribadi"}
           subtitle={mode === "umkm" ? "Jadwal, reminder, dan catatan penting usahamu" : "Kalender personal dan catatan harianmu"}
         />
 
         <div className="tab-toggle">
-          <button className={`tab-btn${activeTab==="kalender"?" active":""}`} onClick={()=>setActiveTab("kalender")}>📅 Kalender</button>
+          <button className={`tab-btn${activeTab==="kalender"?" active":""}`} onClick={()=>setActiveTab("kalender")}>Kalender</button>
           <button className={`tab-btn${activeTab==="notes"?" active":""}`} onClick={()=>setActiveTab("notes")}>
-            📝 Catatan{notes.length>0 && <span className="tab-badge">{notes.length}</span>}
+            Catatan{notes.length>0 && <span className="tab-badge">{notes.length}</span>}
           </button>
-          <button className={`tab-btn${activeTab==="kalkulator"?" active":""}`} onClick={()=>setActiveTab("kalkulator")}>🧮 Kalkulator</button>
+          <button className={`tab-btn${activeTab==="kalkulator"?" active":""}`} onClick={()=>setActiveTab("kalkulator")}>Kalkulator</button>
         </div>
 
         <div className="tab-content">

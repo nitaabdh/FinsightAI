@@ -15,15 +15,15 @@ import "./Dashboard.css";
 import "./DashboardPersonal.css";
 
 const CATEGORY_EMOJI = {
-  "makan": "🍔", "makanan": "🍔", "transportasi": "🚗", "transport": "🚗",
-  "belanja": "🛍️", "hiburan": "🎮", "kesehatan": "💊", "pendidikan": "📚",
-  "tagihan": "🧾", "listrik": "💡", "air": "🚰", "internet": "🌐",
-  "pulsa": "📱", "gaji": "💰", "freelance": "💼", "investasi": "📈",
-  "tabungan": "🏦", "hadiah": "🎁", "lainnya": "🗂️",
+  "makan": "", "makanan": "", "transportasi": "", "transport": "",
+  "belanja": "", "hiburan": "", "kesehatan": "", "pendidikan": "",
+  "tagihan": "", "listrik": "", "air": "", "internet": "",
+  "pulsa": "", "gaji": "", "freelance": "", "investasi": "",
+  "tabungan": "", "hadiah": "", "lainnya": "",
 };
 function getCategoryEmoji(cat) {
-  if (!cat) return "🗂️";
-  return CATEGORY_EMOJI[String(cat).toLowerCase().trim()] || "🗂️";
+  if (!cat) return "";
+  return CATEGORY_EMOJI[String(cat).toLowerCase().trim()] || "";
 }
 
 // Versi ikon (lucide) buat konteks JSX — dipakai gantiin emoji di UI,
@@ -118,7 +118,7 @@ export default function DashboardPersonal() {
   // Saldo per dompet (kas tunai, rekening bank, e-wallet, dll) — dihitung dari
   // histori transaksi mode personal, pakai logic yang sama kayak Dompet UMKM biar konsisten.
   const kasStats           = computeKasStats(transactions);
-  const displaySaldoLabel  = walletFilter === "semua" ? "Semua Saldo" : `${getKasEmoji(walletFilter)} ${walletFilter}`;
+  const displaySaldoLabel  = walletFilter === "semua" ? "Semua Saldo" : `${walletFilter}`;
   const displaySaldo       = walletFilter === "semua"
     ? summary.saldo
     : (kasStats.find(k => k.nama.toLowerCase().trim() === walletFilter.toLowerCase().trim())?.saldo || 0);
@@ -166,7 +166,7 @@ export default function DashboardPersonal() {
   txBulanIni.forEach(tx => { const c = tx.category||"Lainnya"; catBulanIni[c] = (catBulanIni[c]||0) + Number(tx.amount||0); });
   const topCatBulanIni = Object.entries(catBulanIni).sort((a,b) => b[1]-a[1])[0];
   const insightText = topCatBulanIni && totalPengeluaranBulanIni > 0
-    ? `${getCategoryEmoji(topCatBulanIni[0])} Pengeluaran terbesar bulan ini: ${topCatBulanIni[0]} (${((topCatBulanIni[1]/totalPengeluaranBulanIni)*100).toFixed(0)}%)`
+    ? `Pengeluaran terbesar bulan ini: ${topCatBulanIni[0]} (${((topCatBulanIni[1]/totalPengeluaranBulanIni)*100).toFixed(0)}%)`
     : null;
 
   // Acara H-7
@@ -209,7 +209,7 @@ export default function DashboardPersonal() {
         {/* ── HEADER ── */}
         <div className="dp2__header">
           <div>
-            <h1 className="dp2__greeting">Halo, {namaUser}! 👋</h1>
+            <h1 className="dp2__greeting">Halo, {namaUser}!</h1>
             <p className="dp2__greeting-sub">Kelola keuanganmu dengan mudah</p>
           </div>
           <div className="dp2__header-right">
@@ -239,10 +239,10 @@ export default function DashboardPersonal() {
                   </div>
                   <div className="dp2__avatar-dropdown-divider" />
                   <button className="dp2__avatar-dropdown-item" onClick={() => { setMenuOpen(false); navigate(`/dashboard/${user?.mode}/profile`); }}>
-                    <span>✏️</span><span>Edit Profil</span>
+                    <span></span><span>Edit Profil</span>
                   </button>
                   <button className="dp2__avatar-dropdown-item dp2__avatar-dropdown-item--danger" onClick={() => { setMenuOpen(false); logout(); navigate("/", { replace: true }); }}>
-                    <span>🚪</span><span>Keluar</span>
+                    <span></span><span>Keluar</span>
                   </button>
                 </div>
               )}
@@ -263,7 +263,7 @@ export default function DashboardPersonal() {
               >
                 <option value="semua">Semua Saldo</option>
                 {kasStats.map(k => (
-                  <option key={k.nama} value={k.nama}>{getKasEmoji(k.nama)} {k.nama}</option>
+                  <option key={k.nama} value={k.nama}>{k.nama}</option>
                 ))}
               </select>
             </div>
@@ -290,7 +290,7 @@ export default function DashboardPersonal() {
             <div className="dp2__card">
               <div className="dp2__card-top">
                 <span className="dp2__card-brand">FINSIGHT</span>
-                <span className="dp2__card-logo">✦</span>
+                <span className="dp2__card-logo"></span>
               </div>
               <div className="dp2__card-chip">
                 <div className="dp2__chip" />
@@ -305,7 +305,7 @@ export default function DashboardPersonal() {
                 + Catat Transaksi
               </button>
               <button className="dp2__card-action-btn dp2__card-action-btn--sec" onClick={() => navigate("/dashboard/personal/dompet")}>
-                👛 Dompet
+                Dompet
               </button>
             </div>
           </div>

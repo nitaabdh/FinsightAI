@@ -108,13 +108,13 @@ const toggleLunas = async (id) => {
           className={"utangpiutang__sisi-btn" + (sisi === "piutang" ? " utangpiutang__sisi-btn--active utangpiutang__sisi-btn--piutang" : "")}
           onClick={() => { setSisi("piutang"); setShowRiwayat(false); resetForm(); }}
         >
-          📥 Piutang (Orang Berutang ke Saya)
+          Piutang (Orang Berutang ke Saya)
         </button>
         <button
           className={"utangpiutang__sisi-btn" + (sisi === "utang" ? " utangpiutang__sisi-btn--active utangpiutang__sisi-btn--utang" : "")}
           onClick={() => { setSisi("utang"); setShowRiwayat(false); resetForm(); }}
         >
-          📤 Utang (Saya Berutang ke Orang)
+          Utang (Saya Berutang ke Orang)
         </button>
       </div>
 
@@ -138,7 +138,7 @@ const toggleLunas = async (id) => {
       ) : (
       <div className="utangpiutang__form">
         <h3 className="utangpiutang__form-title">
-          {editId ? "✏️ Edit Catatan" : sisi === "piutang" ? "+ Catat Piutang Baru" : "+ Catat Utang Baru"}
+          {editId ? "Edit Catatan" : sisi === "piutang" ? "+ Catat Piutang Baru" : "+ Catat Utang Baru"}
         </h3>
         <div className="utangpiutang__grid">
           <div className="utangpiutang__field utangpiutang__field--wide">
@@ -174,7 +174,7 @@ const toggleLunas = async (id) => {
           />
         </div>
 
-        {error && <p className="utangpiutang__error">⚠️ {error}</p>}
+        {error && <p className="utangpiutang__error">{error}</p>}
 
         <div className="utangpiutang__form-actions">
           <button className="utangpiutang__btn-sec" onClick={resetForm}>Batal</button>
@@ -199,7 +199,7 @@ const toggleLunas = async (id) => {
       <div className="utangpiutang__list stagger-list">
         {filtered.length === 0 ? (
           <div className="utangpiutang__empty">
-            <p>{showRiwayat ? "📋" : sisi === "piutang" ? "📥" : "📤"}</p>
+            <p>{showRiwayat ? "" : sisi === "piutang" ? "" : ""}</p>
             <p>
               {showRiwayat
                 ? "Belum ada riwayat yang lunas."
@@ -229,7 +229,7 @@ const toggleLunas = async (id) => {
                 <div className="utangpiutang__item-actions">
                   {!showRiwayat && (
                     <button className="utangpiutang__item-lunas" onClick={() => toggleLunas(it.id)} title="Tandai Lunas">
-                      ✓ Lunas
+                      Lunas
                     </button>
                   )}
                   {showRiwayat && (

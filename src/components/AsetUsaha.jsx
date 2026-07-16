@@ -226,10 +226,10 @@ export default function AsetUsaha() {
         </button>
       ) : (
       <div className="asetusaha__form" ref={formRef}>
-        <h3 className="asetusaha__form-title">{editId ? "✏️ Edit Aset" : "+ Tambah Aset Usaha"}</h3>
+        <h3 className="asetusaha__form-title">{editId ? "Edit Aset" : "+ Tambah Aset Usaha"}</h3>
         {editHargaLocked && (
           <p className="asetusaha__error" style={{ background: "var(--warning-bg, #fff3cd)", color: "inherit" }}>
-            🔒 Harga beli aset ini sudah tercatat sebagai transaksi pengeluaran di Keuangan, jadi tidak bisa diubah dari sini.
+            Harga beli aset ini sudah tercatat sebagai transaksi pengeluaran di Keuangan, jadi tidak bisa diubah dari sini.
           </p>
         )}
         <div className="asetusaha__grid stagger-list">
@@ -285,7 +285,7 @@ export default function AsetUsaha() {
           <input className="asetusaha__input" type="text" name="catatan"
             placeholder="Misal: dibeli bekas dari toko sebelah" value={form.catatan} onChange={handleChange} />
         </div>
-        {error && <p className="asetusaha__error">⚠️ {error}</p>}
+        {error && <p className="asetusaha__error">{error}</p>}
         <div className="asetusaha__form-actions">
           <button className="asetusaha__btn-sec" onClick={resetForm}>Batal</button>
           <button className="asetusaha__btn-primary" onClick={handleSubmit}>
@@ -297,7 +297,7 @@ export default function AsetUsaha() {
 
       {list.length > 0 && (
         <div className="asetusaha__filters">
-          <input className="asetusaha__select" type="text" placeholder="🔍 Cari nama aset..."
+          <input className="asetusaha__select" type="text" placeholder="Cari nama aset..."
             style={{ flex: 1, minWidth: "160px" }}
             value={search} onChange={e => setSearch(e.target.value)} />
           <select className="asetusaha__select" value={filterKategori} onChange={e => setFilterKategori(e.target.value)}>
@@ -358,13 +358,13 @@ export default function AsetUsaha() {
                   className={"asetusaha__del-reason-btn" + (delAlasanJenis === "salahInput" ? " asetusaha__del-reason-btn--active" : "")}
                   onClick={() => { setDelAlasanJenis("salahInput"); setDelErr(""); }}
                 >
-                  ❌ Salah Input
+                  Salah Input
                 </button>
                 <button
                   className={"asetusaha__del-reason-btn" + (delAlasanJenis === "terjual" ? " asetusaha__del-reason-btn--active" : "")}
                   onClick={() => { setDelAlasanJenis("terjual"); setDelErr(""); }}
                 >
-                  💰 Terjual
+                  Terjual
                 </button>
               </div>
 
@@ -411,7 +411,7 @@ export default function AsetUsaha() {
                 </>
               )}
 
-              {delErr && <p className="asetusaha__error">⚠️ {delErr}</p>}
+              {delErr && <p className="asetusaha__error">{delErr}</p>}
               <div className="asetusaha__modal-actions">
                 <button className="asetusaha__btn-sec" onClick={() => setDelId(null)}>Batal</button>
                 <button className="asetusaha__btn-danger" onClick={confirmDel}>Hapus</button>

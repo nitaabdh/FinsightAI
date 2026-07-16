@@ -85,7 +85,7 @@ export default function BreakEvenPoint() {
 
   return (
     <div className="bep">
-      <h3 className="bep__title">📐 Break-Even Point</h3>
+      <h3 className="bep__title">Break-Even Point</h3>
 
       <div className="bep__mode-switch">
         <button className={"bep__mode-btn" + (mode === "tunggal"   ? " bep__mode-btn--active" : "")} onClick={() => setMode("tunggal")}>Per Produk</button>
@@ -165,8 +165,7 @@ function BEPResultTunggal({ produk, hasil, biayaTetap }) {
   const variabelPerUnit = biayaVariabelPerUnit(produk);
   if (!hasil.valid) {
     return (
-      <div className="bep__warning">
-        ⚠️ Harga jual ({formatRupiah(produk.hargaJual)}) tidak menutup biaya variabel per unit ({formatRupiah(variabelPerUnit)}).
+      <div className="bep__warning">Harga jual ({formatRupiah(produk.hargaJual)}) tidak menutup biaya variabel per unit ({formatRupiah(variabelPerUnit)}).
         Produk ini akan selalu rugi — pertimbangkan menaikkan harga jual atau menurunkan biaya produksi.
       </div>
     );
@@ -190,8 +189,7 @@ function BEPResultTunggal({ produk, hasil, biayaTetap }) {
 function BEPResultGabungan({ produkList, hasil, biayaTetap }) {
   if (!hasil.valid) {
     return (
-      <div className="bep__warning">
-        ⚠️ Rata-rata margin kontribusi dari produk yang dipilih bernilai negatif atau nol.
+      <div className="bep__warning">Rata-rata margin kontribusi dari produk yang dipilih bernilai negatif atau nol.
         Periksa kembali harga jual dan biaya produksi masing-masing produk.
       </div>
     );

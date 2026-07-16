@@ -300,11 +300,11 @@ export default function ProfilePage() {
                 onClick={() => fileRef.current?.click()}
                 disabled={uploadingPhoto}
               >
-                📷 {photoUrl ? "Ganti Foto" : "Upload Foto"}
+                {photoUrl ? "Ganti Foto" : "Upload Foto"}
               </button>
               {photoUrl && (
                 <button className="profilepage__photo-delete" onClick={handleDeletePhoto}>
-                  🗑 Hapus
+                  Hapus
                 </button>
               )}
               <input
@@ -314,7 +314,7 @@ export default function ProfilePage() {
                 style={{ display: "none" }}
                 onChange={handlePhotoChange}
               />
-              {photoError && <p className="profilepage__photo-error">⚠️ {photoError}</p>}
+              {photoError && <p className="profilepage__photo-error">{photoError}</p>}
               <p className="profilepage__photo-hint">JPG/PNG, maks 2MB</p>
             </div>
           </div>
@@ -335,7 +335,7 @@ export default function ProfilePage() {
                   onClick={handleSave}
                   disabled={saving}
                 >
-                  {saving ? "⏳" : "✓"}
+                  {saving ? "⏳" : ""}
                 </button>
               </div>
             ) : (
@@ -348,7 +348,7 @@ export default function ProfilePage() {
             )}
             <p className="profilepage__email">{user?.email}</p>
             <span className={"profilepage__mode profilepage__mode--" + accent}>
-              {mode === "umkm" ? "🏪 Mode UMKM" : "👤 Mode Pribadi"}
+              {mode === "umkm" ? "Mode UMKM" : "Mode Pribadi"}
             </span>
           </div>
         </div>
@@ -365,7 +365,7 @@ export default function ProfilePage() {
         {/* Hubungkan Telegram */}
         <div className="profilepage__telegram">
           <div className="profilepage__telegram-header">
-            <span className="profilepage__telegram-icon">📲</span>
+            <span className="profilepage__telegram-icon"></span>
             <div>
               <h3>Bot Telegram</h3>
               <p>Cek saldo, laporan, dan dapet reminder cicilan langsung dari Telegram.</p>
@@ -377,7 +377,7 @@ export default function ProfilePage() {
           ) : tgLinked ? (
             <div className="profilepage__telegram-status profilepage__telegram-status--linked">
               <div>
-                <p className="profilepage__telegram-connected">✅ Terhubung ke @{tgLinked.telegram_username || tgLinked.telegram_first_name || "Telegram"}</p>
+                <p className="profilepage__telegram-connected">Terhubung ke @{tgLinked.telegram_username || tgLinked.telegram_first_name || "Telegram"}</p>
                 <p className="profilepage__telegram-since">Sejak {new Date(tgLinked.linked_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</p>
               </div>
               <div className="profilepage__telegram-actions">
@@ -419,7 +419,7 @@ export default function ProfilePage() {
                   {tgGenerating ? "Membuat kode..." : "Hubungkan Telegram"}
                 </button>
               )}
-              {tgError && <p className="profilepage__telegram-error">⚠️ {tgError}</p>}
+              {tgError && <p className="profilepage__telegram-error">{tgError}</p>}
             </div>
           )}
         </div>
@@ -445,7 +445,7 @@ export default function ProfilePage() {
 
           <div className="profilepage__field">
             <label className="profilepage__label">
-              💼 Profesi / Status
+              Profesi / Status
               <span className="profilepage__hint">Pilih yang paling sesuai</span>
             </label>
             <div className="profilepage__chips">
@@ -463,7 +463,7 @@ export default function ProfilePage() {
 
           <div className="profilepage__field">
             <label className="profilepage__label">
-              📝 Ceritakan situasimu
+              Ceritakan situasimu
               <span className="profilepage__hint">Semakin detail, semakin relevan saran AI-nya</span>
             </label>
             <textarea
@@ -480,7 +480,7 @@ export default function ProfilePage() {
 
           <div className="profilepage__field">
             <label className="profilepage__label">
-              💰 {mode === "umkm" ? "Kisaran Omzet per Bulan" : "Kisaran Pendapatan per Bulan"}
+              {mode === "umkm" ? "Kisaran Omzet per Bulan" : "Kisaran Pendapatan per Bulan"}
             </label>
             <select className={"profilepage__select profilepage__select--" + accent} name="pendapatan" value={form.pendapatan} onChange={handleChange}>
               <option value="">-- Pilih kisaran --</option>
@@ -489,7 +489,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="profilepage__field">
-            <label className="profilepage__label">👨‍👩‍👧 Tanggungan</label>
+            <label className="profilepage__label">‍‍Tanggungan</label>
             <select className={"profilepage__select profilepage__select--" + accent} name="tanggungan" value={form.tanggungan} onChange={handleChange}>
               <option value="">-- Pilih --</option>
               {TANGGUNGAN_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
@@ -497,7 +497,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="profilepage__field">
-            <label className="profilepage__label">🎯 Tujuan Keuangan Utama</label>
+            <label className="profilepage__label">Tujuan Keuangan Utama</label>
             <input
               className={"profilepage__input profilepage__input--" + accent}
               type="text"
@@ -512,7 +512,7 @@ export default function ProfilePage() {
 
           <div className="profilepage__field">
             <label className="profilepage__label">
-              🎨 Tema Tampilan
+              Tema Tampilan
               <span className="profilepage__hint">Pilih sesuai selera</span>
             </label>
             <ThemeToggle accent={accent} />
@@ -520,24 +520,23 @@ export default function ProfilePage() {
 
           <div className="profilepage__actions">
             <button className={"profilepage__save profilepage__save--" + accent} onClick={handleSave} disabled={saving}>
-              {saving ? "Menyimpan..." : saved ? "✅ Tersimpan!" : "Simpan Profil"}
+              {saving ? "Menyimpan..." : saved ? "Tersimpan!" : "Simpan Profil"}
             </button>
             {saved && (
               <p className="profilepage__saved-note animate-fadeIn">
-                AI Agent sekarang akan memberikan saran yang lebih personal untukmu 🎉
-              </p>
+                AI Agent sekarang akan memberikan saran yang lebih personal untukmu </p>
             )}
           </div>
 
           {/* ── Danger Zone ── */}
           <div className="profilepage__danger">
-            <h3 className="profilepage__danger-title">⚠️ Zona Berbahaya</h3>
+            <h3 className="profilepage__danger-title">Zona Berbahaya</h3>
             <p className="profilepage__danger-desc">
               Menghapus akun akan menghilangkan SEMUA data kamu secara permanen — transaksi, produk, bahan baku,
               laporan, target, catatan, semuanya. Tindakan ini tidak bisa dibatalkan.
             </p>
             <button className="profilepage__danger-btn" onClick={() => setShowDeleteModal(true)}>
-              🗑 Hapus Akun Saya
+              Hapus Akun Saya
             </button>
           </div>
         </div>
@@ -578,7 +577,7 @@ export default function ProfilePage() {
                 />
               </div>
 
-              {deleteError && <p className="profilepage__modal-error">⚠️ {deleteError}</p>}
+              {deleteError && <p className="profilepage__modal-error">{deleteError}</p>}
 
               <div className="profilepage__modal-actions">
                 <button className="profilepage__modal-cancel" onClick={closeDeleteModal} disabled={deleting}>
