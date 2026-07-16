@@ -131,7 +131,7 @@
     bottom: calc(100% + 0.5rem);
     left: 50%;
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.4rem;
     background: var(--bg-card);
     border: 1px solid var(--border);

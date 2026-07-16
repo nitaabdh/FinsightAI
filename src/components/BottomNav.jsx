@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard, Receipt, Factory, TrendingUp, ClipboardList, Bot,
-  CreditCard, Target, Plus, X,
+  CreditCard, Target, Plus, X, Wallet,
 } from "lucide-react";
 import "./BottomNav.css";
 
@@ -26,7 +26,8 @@ const primaryPersonal = [
   { path: "/dashboard/personal/catatan",   icon: ClipboardList,   label: "Catatan" },
 ];
 const morePersonal = [
-  { path: "/dashboard/personal/laporan", icon: TrendingUp, label: "Laporan" },
+  { path: "/dashboard/personal/dompet",  icon: Wallet,      label: "Dompet" },
+  { path: "/dashboard/personal/laporan", icon: TrendingUp,  label: "Laporan" },
   { path: "/dashboard/personal/ai",      icon: Bot,         label: "AI" },
 ];
 
