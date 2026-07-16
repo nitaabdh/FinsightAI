@@ -2,6 +2,7 @@ import { useState } from "react";
 import { formatRupiah, formatDate } from "../utils/transactionStorage";
 import "./TransactionList.css";
 
+import { MailX, X } from "lucide-react";
 export default function TransactionList({ transactions, onDelete, accent = "personal" }) {
   const [filter, setFilter] = useState("all"); // "all" | "income" | "expense"
   const [search, setSearch] = useState("");
@@ -44,7 +45,7 @@ export default function TransactionList({ transactions, onDelete, accent = "pers
       {/* List */}
       {filtered.length === 0 ? (
         <div className="txlist__empty stagger-list">
-          <span>📭</span>
+          <span><MailX size={24} /></span>
           <p>Belum ada transaksi</p>
         </div>
       ) : (
@@ -66,7 +67,7 @@ export default function TransactionList({ transactions, onDelete, accent = "pers
                   onClick={() => onDelete(t.id)}
                   title="Hapus"
                 >
-                  ✕
+                  <X size={14} />
                 </button>
               </div>
             </div>

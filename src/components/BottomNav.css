@@ -58,7 +58,9 @@
   }
 
   .bottom-nav__icon {
-    font-size: 1.15rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     line-height: 1;
   }
 

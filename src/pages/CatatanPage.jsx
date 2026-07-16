@@ -7,6 +7,7 @@ import "./CatatanPage.css";
 import "./DashboardSkeleton.css";
 import NoteEditor from "../components/NoteEditor";
 
+import { Calculator, CalendarDays, Clock, FileEdit, Pencil, Search, Trash2, X } from "lucide-react";
 // ─── Storage helpers ─────────────────────────────────────────────────────────
 const CAL_KEY  = (userId, mode) => `finsight_calNotes_${mode}_${userId}`;
 const NOTE_KEY = (userId, mode) => `finsight_stickyNotes_${mode}_${userId}`;
@@ -407,7 +408,7 @@ const updateOpenNoteMeta = async (field, value) => {
 
           {displayedCalNotes.length === 0 && (
             <div className="cal-cards-empty stagger-list">
-              <span>🗓️</span>
+              <span><CalendarDays size={14} /></span>
               <p>{filterDate ? "Tidak ada acara di tanggal ini." : "Belum ada acara. Klik tanggal di kalender untuk menambah!"}</p>
             </div>
           )}
@@ -431,8 +432,8 @@ const updateOpenNoteMeta = async (field, value) => {
                       {cd.label}
                     </span>
                     <div className="cal-card__actions">
-                      <button className="cal-card__btn" onClick={() => { setPopupDate(note.date); openEditCal(note); }} title="Edit">✏️</button>
-                      <button className="cal-card__btn" onClick={() => setDeleteCalConfirm(note.id)} title="Hapus">🗑️</button>
+                      <button className="cal-card__btn" onClick={() => { setPopupDate(note.date); openEditCal(note); }} title="Edit"><Pencil size={14} /></button>
+                      <button className="cal-card__btn" onClick={() => setDeleteCalConfirm(note.id)} title="Hapus"><Trash2 size={14} /></button>
                     </div>
                   </div>
                 </div>
@@ -483,7 +484,7 @@ const updateOpenNoteMeta = async (field, value) => {
           </div>
           {calcHistory.length === 0 ? (
             <div className="calc-saved-empty">
-              <span>🕓</span>
+              <span><Clock size={13} /></span>
               <p>Belum ada riwayat. Gunakan kalkulator untuk mulai menghitung.</p>
             </div>
           ) : (
@@ -505,7 +506,7 @@ const updateOpenNoteMeta = async (field, value) => {
           <h3 className="calc-saved-title">💾 Catatan Perhitungan</h3>
           {savedCalcs.length === 0 ? (
             <div className="calc-saved-empty">
-              <span>🧮</span>
+              <span><Calculator size={14} /></span>
               <p>Belum ada perhitungan tersimpan. Gunakan kalkulator lalu tekan "Simpan Perhitungan".</p>
             </div>
           ) : (
@@ -518,7 +519,7 @@ const updateOpenNoteMeta = async (field, value) => {
                       <span className="calc-saved-card__date">
                         {new Date(c.createdAt).toLocaleDateString("id-ID", {day:"numeric",month:"short",year:"numeric"})}
                       </span>
-                      <button className="calc-saved-card__del" onClick={() => deleteSaved(c.id)} title="Hapus">🗑️</button>
+                      <button className="calc-saved-card__del" onClick={() => deleteSaved(c.id)} title="Hapus"><Trash2 size={14} /></button>
                     </div>
                   </div>
                   <div className="calc-saved-card__entries">
@@ -548,9 +549,9 @@ const updateOpenNoteMeta = async (field, value) => {
     <div className="notes-wrapper">
       <div className="notes-toolbar">
         <div className="notes-search-wrap">
-          <span className="search-icon">🔍</span>
+          <span className="search-icon"><Search size={15} /></span>
           <input className="notes-search" placeholder="Cari catatan..." value={searchQ} onChange={e=>setSearchQ(e.target.value)} />
-          {searchQ && <button className="search-clear" onClick={()=>setSearchQ("")}>✕</button>}
+          {searchQ && <button className="search-clear" onClick={()=>setSearchQ("")}><X size={14} /></button>}
         </div>
         <div className="notes-right-toolbar">
           <select className="notes-cat-select" value={filterCat} onChange={e=>setFilterCat(e.target.value)}>
@@ -567,7 +568,7 @@ const updateOpenNoteMeta = async (field, value) => {
 
       {filteredNotes.length === 0 && (
         <div className="notes-empty">
-          <span className="notes-empty-icon">📝</span>
+          <span className="notes-empty-icon"><FileEdit size={14} /></span>
           <p>{searchQ||filterCat!=="semua" ? "Tidak ada catatan yang cocok." : "Belum ada catatan. Yuk mulai catat!"}</p>
         </div>
       )}
@@ -635,7 +636,7 @@ const updateOpenNoteMeta = async (field, value) => {
               <h3>📅 {label}</h3>
               {isPastDate && <span className="popup-past-badge">Tanggal sudah lewat</span>}
             </div>
-            <button className="cn-close" onClick={attemptClosePopup}>✕</button>
+            <button className="cn-close" onClick={attemptClosePopup}><X size={14} /></button>
           </div>
 
           {/* List acara yang sudah ada */}
@@ -650,8 +651,8 @@ const updateOpenNoteMeta = async (field, value) => {
                     <span>{cat.emoji}</span>
                     <span className="cn-existing-title">{n.title}</span>
                     <span className={`cn-existing-cd${cd.past?" past":cd.today?" today":""}`}>{cd.label}</span>
-                    <button className="cn-item-btn" onClick={()=>openEditCal(n)} title="Edit">✏️</button>
-                    <button className="cn-item-btn" onClick={()=>setDeleteCalConfirm(n.id)} title="Hapus">🗑️</button>
+                    <button className="cn-item-btn" onClick={()=>openEditCal(n)} title="Edit"><Pencil size={14} /></button>
+                    <button className="cn-item-btn" onClick={()=>setDeleteCalConfirm(n.id)} title="Hapus"><Trash2 size={14} /></button>
                   </div>
                 );
               })}
@@ -662,7 +663,7 @@ const updateOpenNoteMeta = async (field, value) => {
           {/* Empty state */}
           {existing.length === 0 && !showForm && (
             <div className="popup-empty">
-              <span>🗓️</span>
+              <span><CalendarDays size={14} /></span>
               <p>Belum ada acara di tanggal ini</p>
             </div>
           )}
@@ -719,7 +720,7 @@ const updateOpenNoteMeta = async (field, value) => {
       <div className="cn-modal cn-modal--note" onClick={e=>e.stopPropagation()}>
         <div className="cn-modal-header">
           <h3>{editNoteId ? "✏️ Edit Catatan" : "📝 Catatan Baru"}</h3>
-          <button className="cn-close" onClick={attemptCloseNoteModal}>✕</button>
+          <button className="cn-close" onClick={attemptCloseNoteModal}><X size={14} /></button>
         </div>
         <div className="cn-form">
           <div className="cn-field">
@@ -770,7 +771,7 @@ const updateOpenNoteMeta = async (field, value) => {
   const renderDeleteCal = () => (
     <div className="cn-overlay" onClick={()=>setDeleteCalConfirm(null)}>
       <div className="cn-modal cn-confirm" onClick={e=>e.stopPropagation()}>
-        <div className="cn-confirm-icon">🗑️</div>
+        <div className="cn-confirm-icon"><Trash2 size={14} /></div>
         <h3>Hapus acara ini?</h3>
         <p>Tindakan ini tidak bisa dibatalkan.</p>
         <div className="cn-actions">
@@ -785,7 +786,7 @@ const updateOpenNoteMeta = async (field, value) => {
   const renderDeleteNote = () => (
     <div className="cn-overlay" onClick={()=>setDeleteConfirm(null)}>
       <div className="cn-modal cn-confirm" onClick={e=>e.stopPropagation()}>
-        <div className="cn-confirm-icon">🗑️</div>
+        <div className="cn-confirm-icon"><Trash2 size={14} /></div>
         <h3>Hapus catatan ini?</h3>
         <p>Tindakan ini tidak bisa dibatalkan.</p>
         <div className="cn-actions">
@@ -817,16 +818,16 @@ const updateOpenNoteMeta = async (field, value) => {
                 onClick={() => setOpenNoteEditing(v=>!v)}
                 title="Edit kategori & warna"
               >
-                ✏️
+                <Pencil size={14} />
               </button>
               <button
                 className="note-popup__del-btn"
                 onClick={() => { setDeleteConfirm(openNote.id); setOpenNote(null); }}
                 title="Hapus catatan"
               >
-                🗑️
+                <Trash2 size={14} />
               </button>
-              <button className="note-popup__close" onClick={closeNotePopup}>✕</button>
+              <button className="note-popup__close" onClick={closeNotePopup}><X size={14} /></button>
             </div>
           </div>
 

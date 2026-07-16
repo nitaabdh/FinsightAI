@@ -8,6 +8,7 @@ import RupiahInput from "./RupiahInput";
 import CountUp from "./CountUp";
 import "./KalkulatorHarga.css";
 
+import { Pencil, Search, Trash2, X } from "lucide-react";
 const emptyForm = {
   nama: "", items: [],
   biayaOperasionalItems: [],
@@ -322,7 +323,7 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
                   <span className="kalkharga__item-nama">{b ? b.nama : "(bahan dihapus)"}</span>
                   <span className="kalkharga__item-qty">{it.jumlahPakai} {it.satuanPakai}</span>
                   <span className="kalkharga__item-biaya">{formatRupiah(biaya)}</span>
-                  <button className="kalkharga__item-remove" onClick={() => handleHapusItem(idx)}>✕</button>
+                  <button className="kalkharga__item-remove" onClick={() => handleHapusItem(idx)}><X size={14} /></button>
                 </div>
               );
             })}
@@ -357,7 +358,7 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
                   <span className="kalkharga__item-nama">{o ? o.nama : "(dihapus)"}</span>
                   <span className="kalkharga__item-qty">x{it.jumlah}</span>
                   <span className="kalkharga__item-biaya">{formatRupiah(biaya)}</span>
-                  <button className="kalkharga__item-remove" onClick={() => handleHapusOpsItem(idx)}>✕</button>
+                  <button className="kalkharga__item-remove" onClick={() => handleHapusOpsItem(idx)}><X size={14} /></button>
                 </div>
               );
             })}
@@ -425,7 +426,7 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
             <p>Gunakan form di atas untuk menghitung harga jual pertama kamu.</p>
           </div>
         ) : filteredProdukList.length === 0 ? (
-          <div className="kalkharga__empty"><p>🔍</p><p>Tidak ada produk yang cocok dengan pencarian.</p></div>
+          <div className="kalkharga__empty"><p><Search size={15} /></p><p>Tidak ada produk yang cocok dengan pencarian.</p></div>
         ) : (
           <div className="kalkharga__produk-grid stagger-list">
             {filteredProdukList.map(p => (
@@ -433,8 +434,8 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
                 <div className="kalkharga__produk-header">
                   <span className="kalkharga__produk-nama">{p.nama}</span>
                   <div className="kalkharga__produk-actions">
-                    <button className="kalkharga__produk-edit" onClick={() => openEdit(p)} title="Edit">✏️</button>
-                    <button className="kalkharga__produk-del" onClick={() => setDelId(p.id)} title="Hapus">🗑</button>
+                    <button className="kalkharga__produk-edit" onClick={() => openEdit(p)} title="Edit"><Pencil size={14} /></button>
+                    <button className="kalkharga__produk-del" onClick={() => setDelId(p.id)} title="Hapus"><Trash2 size={14} /></button>
                   </div>
                 </div>
                 <div className="kalkharga__produk-body">
@@ -468,7 +469,7 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
                 <h4 className="kalkharga__modal-title">🤖 Analisis Harga AI</h4>
                 {aiProduk && <p className="kalkharga__ai-produk-name">{aiProduk.nama} · {formatRupiah(aiProduk.hargaJual)}</p>}
               </div>
-              <button className="kalkharga__ai-close" onClick={() => { setAiOpen(false); setAiResult(""); }}>✕</button>
+              <button className="kalkharga__ai-close" onClick={() => { setAiOpen(false); setAiResult(""); }}><X size={14} /></button>
             </div>
 
             {aiLoading && (

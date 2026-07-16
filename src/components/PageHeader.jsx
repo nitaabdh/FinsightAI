@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "./PageHeader.css";
 
+import { LogOut, Pencil } from "lucide-react";
 export default function PageHeader({ title, subtitle }) {
   const { user, logout } = useAuth();
   const navigate  = useNavigate();
@@ -111,12 +112,12 @@ export default function PageHeader({ title, subtitle }) {
               <div className="page-header__dropdown-divider" />
 
               <button className="page-header__dropdown-item" onClick={handleProfile}>
-                <span>✏️</span>
+                <span><Pencil size={14} /></span>
                 <span>{hasProfile ? "Edit Profil" : "Isi Profil"}</span>
               </button>
 
               <button className="page-header__dropdown-item page-header__dropdown-item--danger" onClick={handleLogout}>
-                <span>🚪</span>
+                <span><LogOut size={14} /></span>
                 <span>Keluar</span>
               </button>
             </div>

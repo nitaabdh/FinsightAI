@@ -13,6 +13,7 @@ import CountUp from "../components/CountUp";
 import "./LaporanPage.css";
 import "./DashboardSkeleton.css";
 
+import { Bot } from "lucide-react";
 export default function LaporanPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("labarugi");
@@ -707,7 +708,7 @@ export default function LaporanPage() {
                 {/* Narasi AI */}
                 <div className="laporanpage__narasi">
                   <div className="laporanpage__narasi-header">
-                    <span>🤖</span>
+                    <span><Bot size={14} /></span>
                     <span>Ringkasan Otomatis</span>
                   </div>
                   <p>

@@ -7,6 +7,7 @@ import CountUp from "../components/CountUp";
 import { applyStokDelta, genId, baseUnitLabel } from "../utils/umkmCalc";
 import "./TransaksiPage.css";
 
+import { MailX, Pencil, Trash2 } from "lucide-react";
 async function apiFetch(url, options = {}) {
   const token = localStorage.getItem("finsight_token");
   const res = await fetch(url, {
@@ -221,7 +222,7 @@ export default function TransaksiPage() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="txpage__empty">
-              <p>📭</p>
+              <p><MailX size={24} /></p>
               <p>Tidak ada transaksi ditemukan.</p>
               {transactions.length === 0 && (
                 <button className={"txpage__add-btn txpage__add-btn--" + accent} onClick={openAdd} style={{ marginTop: "1rem" }}>
@@ -252,8 +253,8 @@ export default function TransaksiPage() {
                   {tx.type === "pemasukan" ? "+" : tx.type === "transfer" ? "🔄 " : "-"}{formatRupiah(tx.amount)}
                 </span>
                 <div className="txpage__item-actions">
-                  <button className="txpage__item-edit" onClick={() => openEdit(tx)} title="Edit">✏️</button>
-                  <button className="txpage__item-delete" onClick={() => setDeleteConfirm(tx.id)} title="Hapus">🗑</button>
+                  <button className="txpage__item-edit" onClick={() => openEdit(tx)} title="Edit"><Pencil size={14} /></button>
+                  <button className="txpage__item-delete" onClick={() => setDeleteConfirm(tx.id)} title="Hapus"><Trash2 size={14} /></button>
                 </div>
               </div>
             ))

@@ -10,6 +10,7 @@ import { addTransaction, getTransactionsByRef, deleteTransaction } from "../util
 import RupiahInput from "./RupiahInput";
 import "./BahanBaku.css";
 
+import { ClipboardList, ShoppingBasket } from "lucide-react";
 const KAS_PRESET = ["Kas Tunai", "Rekening Bank", "E-Wallet"];
 const KURANGI_KATEGORI = [
   { value: "lainnya", label: "Lainnya (opname/selisih, dll)" },
@@ -476,7 +477,7 @@ export default function BahanBaku() {
                 <p className="bahanbaku__hint-small" style={{ padding: "1rem 0" }}>Memuat riwayat...</p>
               ) : historyList.length === 0 ? (
                 <div className="bahanbaku__empty" style={{ padding: "2rem 1rem" }}>
-                  <p>📋</p>
+                  <p><ClipboardList size={14} /></p>
                   <p>Belum ada riwayat perubahan stok.</p>
                 </div>
               ) : (
@@ -636,7 +637,7 @@ export default function BahanBaku() {
       <div className="bahanbaku__list stagger-list">
         {list.length === 0 ? (
           <div className="bahanbaku__empty">
-            <p>🧺</p>
+            <p><ShoppingBasket size={14} /></p>
             <p>Belum ada bahan baku tercatat.</p>
             <p>Tambahkan dari form di atas untuk mulai mengelola stok.</p>
           </div>

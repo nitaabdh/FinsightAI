@@ -1,25 +1,30 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
+import {
+  LayoutDashboard, Receipt, Factory, TrendingUp, FileEdit, Bot,
+  CreditCard, Target, Wallet, ClipboardList, Store, User, Pencil,
+  AlertTriangle, LogOut,
+} from "lucide-react";
 import "./Sidebar.css";
 
 const menuUMKM = [
-  { path: "/dashboard/umkm",           icon: "📊", label: "Dashboard" },
-  { path: "/dashboard/umkm/transaksi", icon: "🧾", label: "Transaksi" },
-  { path: "/dashboard/umkm/produksi",  icon: "🏭", label: "Produksi & Stok" },
-  { path: "/dashboard/umkm/laporan",   icon: "📈", label: "Laporan" },
-  { path: "/dashboard/umkm/catatan",   icon: "📝", label: "Catatan" },
-  { path: "/dashboard/umkm/ai",        icon: "🤖", label: "AI Agent" },
+  { path: "/dashboard/umkm",           icon: LayoutDashboard, label: "Dashboard" },
+  { path: "/dashboard/umkm/transaksi", icon: Receipt,         label: "Transaksi" },
+  { path: "/dashboard/umkm/produksi",  icon: Factory,         label: "Produksi & Stok" },
+  { path: "/dashboard/umkm/laporan",   icon: TrendingUp,      label: "Laporan" },
+  { path: "/dashboard/umkm/catatan",   icon: FileEdit,        label: "Catatan" },
+  { path: "/dashboard/umkm/ai",        icon: Bot,             label: "AI Agent" },
 ];
 
 const menuPersonal = [
-  { path: "/dashboard/personal",           icon: "📊", label: "Dashboard" },
-  { path: "/dashboard/personal/transaksi", icon: "💳", label: "Transaksi" },
-  { path: "/dashboard/personal/target",    icon: "🎯", label: "Target" },
-  { path: "/dashboard/personal/dompet",    icon: "👛", label: "Dompet" },
-  { path: "/dashboard/personal/laporan",   icon: "📈", label: "Laporan" },
-  { path: `/dashboard/personal/catatan`, icon: "📋", label: "Catatan" },
-  { path: "/dashboard/personal/ai",        icon: "🤖", label: "AI Agent" },
+  { path: "/dashboard/personal",           icon: LayoutDashboard, label: "Dashboard" },
+  { path: "/dashboard/personal/transaksi", icon: CreditCard,      label: "Transaksi" },
+  { path: "/dashboard/personal/target",    icon: Target,          label: "Target" },
+  { path: "/dashboard/personal/dompet",    icon: Wallet,          label: "Dompet" },
+  { path: "/dashboard/personal/laporan",   icon: TrendingUp,      label: "Laporan" },
+  { path: `/dashboard/personal/catatan`, icon: ClipboardList,     label: "Catatan" },
+  { path: "/dashboard/personal/ai",        icon: Bot,             label: "AI Agent" },
 ];
 
 export default function Sidebar({ collapsed, onToggle }) {
@@ -79,7 +84,7 @@ export default function Sidebar({ collapsed, onToggle }) {
       {/* Mode Badge */}
       {!collapsed && (
         <div className={`sidebar__mode sidebar__mode--${accent}`}>
-          {isUMKM ? "🏪 Mode UMKM" : "👤 Mode Pribadi"}
+          {isUMKM ? <><Store size={13} /> Mode UMKM</> : <><User size={13} /> Mode Pribadi</>}
         </div>
       )}
 
@@ -94,7 +99,7 @@ export default function Sidebar({ collapsed, onToggle }) {
               onClick={() => navigate(item.path)}
               title={collapsed ? item.label : ""}
             >
-              <span className="sidebar__item-icon">{item.icon}</span>
+              <span className="sidebar__item-icon"><item.icon size={18} /></span>
               {!collapsed && <span className="sidebar__item-label">{item.label}</span>}
             </button>
           );
@@ -119,14 +124,14 @@ export default function Sidebar({ collapsed, onToggle }) {
             <div className="sidebar__user-info">
               <p className="sidebar__user-name">{displayName || user?.name}</p>
               <p className="sidebar__user-email">
-                {hasProfile ? "✏️ Edit profil" : "⚠️ Isi profil dulu"}
+                {hasProfile ? <><Pencil size={11} /> Edit profil</> : <><AlertTriangle size={11} /> Isi profil dulu</>}
               </p>
             </div>
           )}
         </button>
 
         <button className="sidebar__logout" onClick={handleLogout} title="Keluar">
-          🚪 {!collapsed && "Keluar"}
+          <LogOut size={16} /> {!collapsed && "Keluar"}
         </button>
       </div>
     </aside>

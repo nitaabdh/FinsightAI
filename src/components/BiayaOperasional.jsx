@@ -4,6 +4,7 @@ import { genId, formatRupiah } from "../utils/umkmCalc";
 import RupiahInput from "./RupiahInput";
 import "./BiayaOperasional.css";
 
+import { Lightbulb, Pencil, Search, Trash2 } from "lucide-react";
 const emptyForm = { nama: "", biaya: "" };
 
 async function apiFetch(url, options = {}) {
@@ -123,12 +124,12 @@ export default function BiayaOperasional() {
         </div>
         {opsList.length === 0 ? (
           <div className="biayaops__empty">
-            <p>💡</p>
+            <p><Lightbulb size={14} /></p>
             <p>Belum ada biaya operasional.</p>
             <p>Tambahkan misalnya listrik, gas, atau tenaga kerja per batch — nanti bisa dipilih langsung saat menghitung harga jual produk di Kalkulator Harga.</p>
           </div>
         ) : filteredList.length === 0 ? (
-          <div className="biayaops__empty"><p>🔍</p><p>Tidak ada yang cocok dengan pencarian.</p></div>
+          <div className="biayaops__empty"><p><Search size={15} /></p><p>Tidak ada yang cocok dengan pencarian.</p></div>
         ) : (
           <div className="biayaops__rows stagger-list">
             {filteredList.map(o => (
@@ -136,8 +137,8 @@ export default function BiayaOperasional() {
                 <span className="biayaops__row-nama">{o.nama}</span>
                 <span className="biayaops__row-biaya">{formatRupiah(o.biaya)}</span>
                 <div className="biayaops__row-actions">
-                  <button className="biayaops__edit" onClick={() => openEdit(o)} title="Edit">✏️</button>
-                  <button className="biayaops__del" onClick={() => setDelId(o.id)} title="Hapus">🗑</button>
+                  <button className="biayaops__edit" onClick={() => openEdit(o)} title="Edit"><Pencil size={14} /></button>
+                  <button className="biayaops__del" onClick={() => setDelId(o.id)} title="Hapus"><Trash2 size={14} /></button>
                 </div>
               </div>
             ))}

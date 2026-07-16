@@ -1,29 +1,33 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import {
+  LayoutDashboard, Receipt, Factory, TrendingUp, ClipboardList, Bot,
+  CreditCard, Target, Plus, X,
+} from "lucide-react";
 import "./BottomNav.css";
 
 const menuUMKM = [
-  { path: "/dashboard/umkm",           icon: "📊", label: "Dashboard" },
-  { path: "/dashboard/umkm/transaksi", icon: "🧾", label: "Transaksi" },
-  { path: "/dashboard/umkm/produksi",  icon: "🏭", label: "Produksi" },
-  { path: "/dashboard/umkm/laporan",   icon: "📈", label: "Laporan" },
-  { path: "/dashboard/umkm/catatan",   icon: "📋", label: "Catatan" },
-  { path: "/dashboard/umkm/ai",        icon: "🤖", label: "AI" },
+  { path: "/dashboard/umkm",           icon: LayoutDashboard, label: "Dashboard" },
+  { path: "/dashboard/umkm/transaksi", icon: Receipt,         label: "Transaksi" },
+  { path: "/dashboard/umkm/produksi",  icon: Factory,         label: "Produksi" },
+  { path: "/dashboard/umkm/laporan",   icon: TrendingUp,      label: "Laporan" },
+  { path: "/dashboard/umkm/catatan",   icon: ClipboardList,   label: "Catatan" },
+  { path: "/dashboard/umkm/ai",        icon: Bot,             label: "AI" },
 ];
 
 // Personal: 4 menu utama tampil langsung (2 kiri, 2 kanan), tombol "+" persis
 // di tengah. Sisanya (Laporan, AI) muncul lewat popup pas "+" dipencet. Profil
 // SENGAJA nggak dimasukin ke sini — udah ada di avatar pojok kanan atas (PageHeader).
 const primaryPersonal = [
-  { path: "/dashboard/personal",           icon: "📊", label: "Dashboard" },
-  { path: "/dashboard/personal/transaksi", icon: "💳", label: "Transaksi" },
-  { path: "/dashboard/personal/target",    icon: "🎯", label: "Target" },
-  { path: "/dashboard/personal/catatan",   icon: "📋", label: "Catatan" },
+  { path: "/dashboard/personal",           icon: LayoutDashboard, label: "Dashboard" },
+  { path: "/dashboard/personal/transaksi", icon: CreditCard,      label: "Transaksi" },
+  { path: "/dashboard/personal/target",    icon: Target,          label: "Target" },
+  { path: "/dashboard/personal/catatan",   icon: ClipboardList,   label: "Catatan" },
 ];
 const morePersonal = [
-  { path: "/dashboard/personal/laporan", icon: "📈", label: "Laporan" },
-  { path: "/dashboard/personal/ai",      icon: "🤖", label: "AI" },
+  { path: "/dashboard/personal/laporan", icon: TrendingUp, label: "Laporan" },
+  { path: "/dashboard/personal/ai",      icon: Bot,         label: "AI" },
 ];
 
 export default function BottomNav() {
@@ -62,7 +66,7 @@ export default function BottomNav() {
               className={`bottom-nav__item ${active ? `bottom-nav__item--active bottom-nav__item--${accent}` : ""}`}
               onClick={() => navigate(item.path)}
             >
-              <span className="bottom-nav__icon">{item.icon}</span>
+              <span className="bottom-nav__icon"><item.icon size={20} /></span>
               <span className="bottom-nav__label">{item.label}</span>
             </button>
           );
@@ -84,7 +88,7 @@ export default function BottomNav() {
                 className={`bottom-nav__more-item ${active ? "bottom-nav__more-item--active" : ""}`}
                 onClick={() => { navigate(item.path); setMoreOpen(false); }}
               >
-                <span className="bottom-nav__icon">{item.icon}</span>
+                <span className="bottom-nav__icon"><item.icon size={20} /></span>
                 <span className="bottom-nav__label">{item.label}</span>
               </button>
             );
@@ -102,7 +106,7 @@ export default function BottomNav() {
                 className={`bottom-nav__item ${active ? `bottom-nav__item--active bottom-nav__item--${accent}` : ""}`}
                 onClick={() => navigate(item.path)}
               >
-                <span className="bottom-nav__icon">{item.icon}</span>
+                <span className="bottom-nav__icon"><item.icon size={20} /></span>
                 <span className="bottom-nav__label">{item.label}</span>
               </button>
             );
@@ -116,7 +120,7 @@ export default function BottomNav() {
           onClick={() => setMoreOpen((p) => !p)}
           aria-label="Menu lainnya"
         >
-          <span className="bottom-nav__plus-icon">{moreOpen ? "✕" : "+"}</span>
+          <span className="bottom-nav__plus-icon">{moreOpen ? <X size={22} /> : <Plus size={24} />}</span>
         </button>
 
         <div className="bottom-nav__side">
@@ -128,7 +132,7 @@ export default function BottomNav() {
                 className={`bottom-nav__item ${active ? `bottom-nav__item--active bottom-nav__item--${accent}` : ""}`}
                 onClick={() => navigate(item.path)}
               >
-                <span className="bottom-nav__icon">{item.icon}</span>
+                <span className="bottom-nav__icon"><item.icon size={20} /></span>
                 <span className="bottom-nav__label">{item.label}</span>
               </button>
             );

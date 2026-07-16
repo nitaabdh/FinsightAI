@@ -5,6 +5,7 @@ import CountUp from "./CountUp";
 import { getTransactions, computeKasStats, getKasEmoji } from "../utils/storage";
 import "./Dompet.css";
 
+import { Pencil, Trash2, Wallet } from "lucide-react";
 const JENIS_OPTIONS = ["Tunai", "Bank", "E-Wallet", "QRIS", "Lainnya"];
 const emptyForm = { nama: "", jenis: "Tunai", catatan: "" };
 
@@ -170,7 +171,7 @@ export default function Dompet({ mode = "umkm" }) {
           <div className="dompet__empty"><p>⏳</p><p>Memuat data dompet...</p></div>
         ) : semuaDompet.length === 0 ? (
           <div className="dompet__empty">
-            <p>👛</p>
+            <p><Wallet size={14} /></p>
             <p>Belum ada dompet tercatat.</p>
             <p>Tambahkan dari form di atas — misal "QRIS", "GoPay", atau rekening bank kamu.</p>
           </div>
@@ -181,8 +182,8 @@ export default function Dompet({ mode = "umkm" }) {
               <div key={it.id} className="dompet__card">
                 {!it.belumTerdaftar && (
                   <div className="dompet__card-actions">
-                    <button className="dompet__item-edit" onClick={() => openEdit(it)} title="Edit">✏️</button>
-                    <button className="dompet__item-del" onClick={() => setDelId(it.id)} title="Hapus">🗑</button>
+                    <button className="dompet__item-edit" onClick={() => openEdit(it)} title="Edit"><Pencil size={14} /></button>
+                    <button className="dompet__item-del" onClick={() => setDelId(it.id)} title="Hapus"><Trash2 size={14} /></button>
                   </div>
                 )}
                 <span className="dompet__card-icon">{getKasEmoji(it.nama)}</span>

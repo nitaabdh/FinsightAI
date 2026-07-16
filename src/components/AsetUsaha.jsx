@@ -5,6 +5,7 @@ import { addTransaction, getTransactionsByRef, deleteTransaction } from "../util
 import RupiahInput from "./RupiahInput";
 import "./AsetUsaha.css";
 
+import { Pencil, Search, Trash2, Wrench } from "lucide-react";
 const KATEGORI_PRESET = ["Masak", "Display", "Kasir", "Penyimpanan", "Kebersihan", "Furnitur"];
 const KONDISI_OPTIONS = [
   { value: "baik",        label: "Baik" },
@@ -313,12 +314,12 @@ export default function AsetUsaha() {
       <div className="asetusaha__list stagger-list">
         {list.length === 0 ? (
           <div className="asetusaha__empty">
-            <p>🧰</p>
+            <p><Wrench size={14} /></p>
             <p>Belum ada aset usaha tercatat.</p>
             <p>Tambahkan dari form di atas untuk mulai mencatat peralatan usahamu.</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="asetusaha__empty"><p>🔍</p><p>Tidak ada aset yang cocok dengan filter.</p></div>
+          <div className="asetusaha__empty"><p><Search size={15} /></p><p>Tidak ada aset yang cocok dengan filter.</p></div>
         ) : (
           filtered.map(it => (
             <div key={it.id} className="asetusaha__item">
@@ -335,8 +336,8 @@ export default function AsetUsaha() {
                 <span className={"asetusaha__badge asetusaha__badge--" + it.kondisi}>{kondisiLabel(it.kondisi)}</span>
               </div>
               <div className="asetusaha__item-actions">
-                <button className="asetusaha__item-edit" onClick={() => openEdit(it)} title="Edit">✏️</button>
-                <button className="asetusaha__item-del" onClick={() => openDel(it.id)} title="Hapus">🗑</button>
+                <button className="asetusaha__item-edit" onClick={() => openEdit(it)} title="Edit"><Pencil size={14} /></button>
+                <button className="asetusaha__item-del" onClick={() => openDel(it.id)} title="Hapus"><Trash2 size={14} /></button>
               </div>
             </div>
           ))

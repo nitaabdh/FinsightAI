@@ -7,6 +7,7 @@ import { formatRupiah } from "../utils/storage";
 import "./TargetPage.css";
 import "./DashboardSkeleton.css";
 
+import { CreditCard, Pencil, Target, Trash2, X } from "lucide-react";
 const getToken = () => localStorage.getItem("finsight_token");
 
 const apiFetch = async (url, options = {}) => {
@@ -480,7 +481,7 @@ export default function TargetPage() {
           </div>
         ) : targets.length === 0 ? (
           <div className="targetpage__empty">
-            <p>🎯</p>
+            <p><Target size={14} /></p>
             <p>Belum ada target tabungan.</p>
             <button className="targetpage__add-btn" onClick={() => { setEditingId(null); setShowForm(true); }}>
               + Buat Target Pertama
@@ -507,8 +508,8 @@ export default function TargetPage() {
                       )}
                     </div>
                     <div className="targetpage__card-actions-group">
-                      <button className="targetpage__card-edit" onClick={() => openEditTarget(t)} title="Edit">✏️</button>
-                      <button className="targetpage__card-delete" onClick={() => setDeleteId(t.id)} title="Hapus">🗑</button>
+                      <button className="targetpage__card-edit" onClick={() => openEditTarget(t)} title="Edit"><Pencil size={14} /></button>
+                      <button className="targetpage__card-delete" onClick={() => setDeleteId(t.id)} title="Hapus"><Trash2 size={14} /></button>
                     </div>
                   </div>
 
@@ -596,7 +597,7 @@ export default function TargetPage() {
             <div className="targetpage__form animate-fadeUp" onClick={(e) => e.stopPropagation()}>
               <div className="targetpage__form-header">
                 <h3>{editingId ? "✏️ Edit Target" : "Tambah Target Baru"}</h3>
-                <button onClick={closeTargetForm}>✕</button>
+                <button onClick={closeTargetForm}><X size={14} /></button>
               </div>
 
               <div className="targetpage__form-fields">
@@ -721,7 +722,7 @@ export default function TargetPage() {
         {activeTab === "utang" && reminderWarning && (
           <div className="targetpage__reminder-warning">
             <span>{reminderWarning}</span>
-            <button onClick={() => setReminderWarning("")}>✕</button>
+            <button onClick={() => setReminderWarning("")}><X size={14} /></button>
           </div>
         )}
 
@@ -833,7 +834,7 @@ export default function TargetPage() {
           </div>
         ) : debts.length === 0 ? (
           <div className="targetpage__empty">
-            <p>💳</p>
+            <p><CreditCard size={14} /></p>
             <p>Belum ada utang, kredit, atau paylater tercatat.</p>
             <button className="targetpage__add-btn" onClick={() => { setEditingDebtId(null); setShowDebtForm(true); }}>
               + Catat yang Pertama
@@ -859,8 +860,8 @@ export default function TargetPage() {
                       <span className="targetpage__card-penempatan">{jenisLabel(d.jenis)}{d.dompet ? " · dari " + d.dompet : ""}</span>
                     </div>
                     <div className="targetpage__card-actions-group">
-                      <button className="targetpage__card-edit" onClick={() => openEditDebt(d)} title="Edit">✏️</button>
-                      <button className="targetpage__card-delete" onClick={() => setDeleteDebtId(d.id)} title="Hapus">🗑</button>
+                      <button className="targetpage__card-edit" onClick={() => openEditDebt(d)} title="Edit"><Pencil size={14} /></button>
+                      <button className="targetpage__card-delete" onClick={() => setDeleteDebtId(d.id)} title="Hapus"><Trash2 size={14} /></button>
                     </div>
                   </div>
 

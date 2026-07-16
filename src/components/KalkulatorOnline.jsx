@@ -9,6 +9,7 @@ import {
 } from "../utils/marketplaceCalc";
 import "./KalkulatorOnline.css";
 
+import { X } from "lucide-react";
 export default function KalkulatorOnline() {
   const { user } = useAuth();
   const [produkList, setProdukList]   = useState([]);
@@ -126,7 +127,7 @@ export default function KalkulatorOnline() {
                 </select>
                 <input className="komarket__input komarket__input--nilai" type="number" placeholder="0"
                   value={row.nilai} onChange={e => updateFeeRow(row.id, "nilai", e.target.value)} />
-                <button className="komarket__fee-remove" onClick={() => removeFeeRow(row.id)} title="Hapus baris">✕</button>
+                <button className="komarket__fee-remove" onClick={() => removeFeeRow(row.id)} title="Hapus baris"><X size={14} /></button>
               </div>
             ))}
             {feeRows.length === 0 && <p className="komarket__empty-fee">Belum ada baris potongan. Tambah dulu di bawah.</p>}

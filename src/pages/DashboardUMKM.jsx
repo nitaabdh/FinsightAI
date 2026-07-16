@@ -9,6 +9,7 @@ import { labelJatuhTempo, selisihHari } from "../utils/umkmCalc";
 import "./Dashboard.css";
 import "./DashboardUMKM.css";
 
+import { BarChart3, Gem, Landmark, LogOut, Pencil, Receipt, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 const CATEGORY_EMOJI = {
   "makan": "🍔", "makanan": "🍔", "transportasi": "🚗", "bahan baku": "📦",
   "operasional": "⚙️", "gaji": "💰", "listrik": "💡", "air": "🚰",
@@ -192,10 +193,10 @@ export default function DashboardUMKM() {
                 </div>
                 <div className="du__avatar-dropdown-divider" />
                 <button className="du__avatar-dropdown-item" onClick={() => { setMenuOpen(false); navigate(`/dashboard/umkm/profile`); }}>
-                  <span>✏️</span><span>Edit Profil</span>
+                  <span><Pencil size={14} /></span><span>Edit Profil</span>
                 </button>
                 <button className="du__avatar-dropdown-item du__avatar-dropdown-item--danger" onClick={() => { setMenuOpen(false); }}>
-                  <span>🚪</span><span>Keluar</span>
+                  <span><LogOut size={14} /></span><span>Keluar</span>
                 </button>
               </div>
             )}
@@ -205,31 +206,31 @@ export default function DashboardUMKM() {
         {/* ── 3 METRIC CARDS ── */}
         <div className="du__metrics stagger-list">
           <div className="du__metric du__metric--omzet">
-            <div className="du__metric-icon du__metric-icon--omzet">📈</div>
+            <div className="du__metric-icon du__metric-icon--omzet"><TrendingUp size={14} /></div>
             <p className="du__metric-label">Total Omzet</p>
             <p className="du__metric-value"><CountUp value={summary.pemasukan} format={formatRupiah} /></p>
             <p className="du__metric-sub">Total pemasukan tercatat</p>
           </div>
           <div className="du__metric du__metric--expense">
-            <div className="du__metric-icon du__metric-icon--expense">📉</div>
+            <div className="du__metric-icon du__metric-icon--expense"><TrendingDown size={14} /></div>
             <p className="du__metric-label">Total Pengeluaran</p>
             <p className="du__metric-value"><CountUp value={summary.pengeluaran} format={formatRupiah} /></p>
             <p className="du__metric-sub">Modal + operasional</p>
           </div>
           <div className={"du__metric " + (labaBulanIni >= 0 ? "du__metric--laba" : "du__metric--rugi")}>
-            <div className={"du__metric-icon " + (labaBulanIni >= 0 ? "du__metric-icon--laba" : "du__metric-icon--rugi")}>💰</div>
+            <div className={"du__metric-icon " + (labaBulanIni >= 0 ? "du__metric-icon--laba" : "du__metric-icon--rugi")}><Wallet size={14} /></div>
             <p className="du__metric-label">Laba Bersih Bulan Ini</p>
             <p className="du__metric-value"><CountUp value={labaBulanIni} format={formatRupiah} /></p>
             <p className="du__metric-sub">{labaSub}</p>
           </div>
           <div className="du__metric du__metric--modal">
-            <div className="du__metric-icon du__metric-icon--modal">🏦</div>
+            <div className="du__metric-icon du__metric-icon--modal"><Landmark size={14} /></div>
             <p className="du__metric-label">Modal Usaha</p>
             <p className="du__metric-value"><CountUp value={modalUsaha} format={formatRupiah} /></p>
             <p className="du__metric-sub">{modalTx.length} setoran modal tercatat</p>
           </div>
           <div className="du__metric du__metric--aset">
-            <div className="du__metric-icon du__metric-icon--aset">💎</div>
+            <div className="du__metric-icon du__metric-icon--aset"><Gem size={14} /></div>
             <p className="du__metric-label">Total Aset Usaha</p>
             <p className="du__metric-value"><CountUp value={totalNilaiAset} format={formatRupiah} /></p>
             <p className="du__metric-sub">{asetUsaha.length} item peralatan tercatat</p>
@@ -301,7 +302,7 @@ export default function DashboardUMKM() {
             </div>
             {tren6Bulan.every(d => d.pemasukan === 0 && d.pengeluaran === 0) ? (
               <div className="du__tren-empty">
-                <span>📊</span>
+                <span><BarChart3 size={14} /></span>
                 <p>Belum ada data transaksi.</p>
               </div>
             ) : (
@@ -365,7 +366,7 @@ export default function DashboardUMKM() {
           </div>
           {recentTx.length === 0 ? (
             <div className="du__empty-state">
-              <p>🧾</p><p>Belum ada transaksi.</p>
+              <p><Receipt size={14} /></p><p>Belum ada transaksi.</p>
               <p style={{fontSize:"12px"}}>Mulai catat dari menu <strong>Transaksi</strong>.</p>
             </div>
           ) : (

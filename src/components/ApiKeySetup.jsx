@@ -1,6 +1,7 @@
 import { useState } from "react";
 import "./ApiKeySetup.css";
 
+import { KeyRound } from "lucide-react";
 export default function ApiKeySetup({ onSave, accent }) {
   const [key, setKey]     = useState("");
   const [show, setShow]   = useState(false);
@@ -14,7 +15,7 @@ export default function ApiKeySetup({ onSave, accent }) {
 
   return (
     <div className="apikey">
-      <div className="apikey__icon">🔑</div>
+      <div className="apikey__icon"><KeyRound size={14} /></div>
       <h3 className="apikey__title">Masukkan Groq API Key</h3>
       <p className="apikey__desc">
         AI Agent membutuhkan Groq API Key untuk berjalan.<br />

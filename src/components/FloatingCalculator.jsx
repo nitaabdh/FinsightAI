@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import "./FloatingCalculator.css";
 
+import { Check, X } from "lucide-react";
 // ─── Storage ──────────────────────────────────────────────────────────────────
 const CALC_HISTORY_KEY = (userId) => `finsight_calcHistory_${userId}`;
 const CALC_SAVED_KEY   = (userId) => `finsight_calcSaved_${userId}`;
@@ -314,7 +315,7 @@ export default function FloatingCalculator({ userId, onClose }) {
             🏷️
           </button>
           <span className="float-calc__drag-hint">⠿</span>
-          <button className="float-calc__close" onClick={onClose} title="Tutup">✕</button>
+          <button className="float-calc__close" onClick={onClose} title="Tutup"><X size={14} /></button>
         </div>
       </div>
 
@@ -349,8 +350,8 @@ export default function FloatingCalculator({ userId, onClose }) {
             onChange={e => setLabelInput(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") confirmLabel(); if (e.key === "Escape") setShowLabel(false); }}
           />
-          <button onClick={confirmLabel}>✓</button>
-          <button onClick={() => setShowLabel(false)}>✕</button>
+          <button onClick={confirmLabel}><Check size={14} /></button>
+          <button onClick={() => setShowLabel(false)}><X size={14} /></button>
         </div>
       )}
 

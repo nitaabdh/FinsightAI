@@ -1,6 +1,7 @@
 import { groupByMonth, monthLabel } from "../utils/storage";
 import "./MiniChart.css";
 
+import { BarChart3 } from "lucide-react";
 /**
  * MiniChart — grafik batang sederhana untuk dashboard
  * Props: transactions, accent
@@ -11,7 +12,7 @@ export default function MiniChart({ transactions = [], accent = "umkm" }) {
   if (grouped.length === 0) {
     return (
       <div className="mini-chart mini-chart--empty">
-        <span className="mini-chart__empty-icon">📊</span>
+        <span className="mini-chart__empty-icon"><BarChart3 size={14} /></span>
         <p>Belum ada transaksi buat ditampilin di sini</p>
         <p className="mini-chart__empty-sub">Grafiknya bakal muncul otomatis begitu ada transaksi tercatat</p>
       </div>

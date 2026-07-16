@@ -6,6 +6,7 @@ import PageHeader from "../components/PageHeader";
 import ThemeToggle from "../components/ThemeToggle";
 import "./ProfilePage.css";
 
+import { Bot, Pencil } from "lucide-react";
 const PROFESI_OPTIONS = {
   personal: ["Mahasiswa","Mahasiswa Rantau / Ngekos","Fresh Graduate","Karyawan Swasta","PNS / ASN","Freelancer","Ibu Rumah Tangga","Lainnya"],
   umkm:     ["Pemilik Warung / Toko","Pedagang Pasar","Penjual Online","Usaha Kuliner","Usaha Jasa","Distributor / Reseller","Lainnya"],
@@ -341,7 +342,7 @@ export default function ProfilePage() {
               <div className="profilepage__name-display">
                 <h1 className="profilepage__name">{displayName}</h1>
                 <button className="profilepage__name-edit-btn" onClick={() => setEditingName(true)} title="Edit nama">
-                  ✏️
+                  <Pencil size={14} />
                 </button>
               </div>
             )}
@@ -354,7 +355,7 @@ export default function ProfilePage() {
 
         {/* Banner info — gaya sama seperti aipage__context */}
         <div className="profilepage__banner">
-          <span className="profilepage__banner-icon">🤖</span>
+          <span className="profilepage__banner-icon"><Bot size={14} /></span>
           <p>
             Isi profil ini agar AI Agent bisa memberikan saran yang lebih <strong>personal dan relevan</strong>.
             Foto & nama akan muncul di chat AI Agent.

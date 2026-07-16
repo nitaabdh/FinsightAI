@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { genId } from "../utils/umkmCalc";
 import "./Supplier.css";
 
+import { Contact, Pencil, Search, Trash2 } from "lucide-react";
 const KATEGORI_PRESET = ["Bahan Baku", "Kemasan", "Peralatan", "Jasa"];
 
 const emptyForm = { nama: "", kontakWa: "", linkMarketplace: "", kategori: "", catatan: "" };
@@ -172,12 +173,12 @@ export default function Supplier() {
       <div className="supplier__list stagger-list">
         {list.length === 0 ? (
           <div className="supplier__empty">
-            <p>📇</p>
+            <p><Contact size={14} /></p>
             <p>Belum ada supplier tercatat.</p>
             <p>Tambahkan kontak WA atau link marketplace supplier langgananmu di sini.</p>
           </div>
         ) : filteredList.length === 0 ? (
-          <div className="supplier__empty"><p>🔍</p><p>Tidak ada supplier yang cocok.</p></div>
+          <div className="supplier__empty"><p><Search size={15} /></p><p>Tidak ada supplier yang cocok.</p></div>
         ) : (
           <div className="supplier__grid-list stagger-list">
             {filteredList.map(s => (
@@ -185,8 +186,8 @@ export default function Supplier() {
                 <div className="supplier__card-header">
                   <p className="supplier__card-nama">{s.nama}</p>
                   <div className="supplier__card-actions">
-                    <button className="supplier__edit" onClick={() => openEdit(s)} title="Edit">✏️</button>
-                    <button className="supplier__del" onClick={() => setDelId(s.id)} title="Hapus">🗑</button>
+                    <button className="supplier__edit" onClick={() => openEdit(s)} title="Edit"><Pencil size={14} /></button>
+                    <button className="supplier__del" onClick={() => setDelId(s.id)} title="Hapus"><Trash2 size={14} /></button>
                   </div>
                 </div>
                 {s.kategori && <span className="supplier__badge">{s.kategori}</span>}

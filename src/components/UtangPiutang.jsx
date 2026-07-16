@@ -7,6 +7,7 @@ import {
 import RupiahInput from "./RupiahInput";
 import "./UtangPiutang.css";
 
+import { Pencil, Trash2 } from "lucide-react";
 const emptyForm = { jenis: "piutang", nama: "", nominal: "", jatuhTempo: "", catatan: "" };
 
 export default function UtangPiutang() {
@@ -237,9 +238,9 @@ const toggleLunas = async (id) => {
                     </button>
                   )}
                   {!showRiwayat && (
-                    <button className="utangpiutang__item-edit" onClick={() => openEdit(it)} title="Edit">✏️</button>
+                    <button className="utangpiutang__item-edit" onClick={() => openEdit(it)} title="Edit"><Pencil size={14} /></button>
                   )}
-                  <button className="utangpiutang__item-del" onClick={() => setDelId(it.id)} title="Hapus">🗑</button>
+                  <button className="utangpiutang__item-del" onClick={() => setDelId(it.id)} title="Hapus"><Trash2 size={14} /></button>
                 </div>
               </div>
             );

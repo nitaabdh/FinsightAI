@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { getProfile, getPhoto } from "../utils/profile";
 import "./ChatUI.css";
 
+import { Bot, Send } from "lucide-react";
 const formatText = (text) => {
   if (!text) return "";
   return text
@@ -116,7 +117,7 @@ export default function ChatUI({ messages, loading, onSend, accent, suggestions 
       <div className="chat__messages">
         {visibleMessages.length === 0 && (
           <div className="chat__welcome">
-            <div className="chat__welcome-icon">🤖</div>
+            <div className="chat__welcome-icon"><Bot size={14} /></div>
             <p className="chat__welcome-title">FinSight AI Agent</p>
             <p className="chat__welcome-sub">
               Tanya apa saja tentang keuanganmu.<br/>
@@ -138,7 +139,7 @@ export default function ChatUI({ messages, loading, onSend, accent, suggestions 
           <div key={i} className={"chat__msg chat__msg--" + msg.role}>
             {/* Avatar AI */}
             {msg.role === "assistant" && (
-              <div className="chat__avatar chat__avatar--ai">🤖</div>
+              <div className="chat__avatar chat__avatar--ai"><Bot size={14} /></div>
             )}
 
             <div className={"chat__bubble chat__bubble--" + msg.role + (msg.role === "assistant" ? " chat__bubble--" + accent : "")}>
@@ -166,7 +167,7 @@ export default function ChatUI({ messages, loading, onSend, accent, suggestions 
 
         {loading && (
           <div className="chat__msg chat__msg--assistant">
-            <div className="chat__avatar chat__avatar--ai">🤖</div>
+            <div className="chat__avatar chat__avatar--ai"><Bot size={14} /></div>
             <div className={"chat__bubble chat__bubble--assistant chat__bubble--" + accent}>
               <div className="chat__typing"><span /><span /><span /></div>
             </div>
@@ -212,7 +213,7 @@ export default function ChatUI({ messages, loading, onSend, accent, suggestions 
           onClick={handleSend}
           disabled={loading || !input.trim()}
         >
-          ➤
+          <Send size={14} />
         </button>
       </div>
     </div>

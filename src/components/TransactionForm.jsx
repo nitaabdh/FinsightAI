@@ -7,6 +7,7 @@ import RupiahInput from "./RupiahInput";
 import "./TransactionForm.css";
 import "./TransactionForm.smartcat.css";
 
+import { X } from "lucide-react";
 const KATEGORI_PRODUK = "Penjualan Produk";
 // Kategori khusus: bikin produk buat sample/contoh marketing — stok bahan tetap kepakai
 // sesuai resep, TAPI ini pengeluaran (biaya), BUKAN pemasukan penjualan.
@@ -368,7 +369,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
       <div className="txform animate-fadeUp" onClick={e => e.stopPropagation()}>
         <div className="txform__header">
           <h3 className="txform__title">{isEdit ? "✏️ Edit Transaksi" : "Catat Transaksi"}</h3>
-          <button className="txform__close" onClick={onClose}>✕</button>
+          <button className="txform__close" onClick={onClose}><X size={14} /></button>
         </div>
 
         <div className="txform__type-toggle" style={!showKas ? { gridTemplateColumns: "1fr 1fr" } : undefined}>
@@ -402,7 +403,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
                 autoComplete="off"
               />
               {catQuery && (
-                <button className="txform__cat-clear" onClick={() => { setCatQuery(""); setForm(p => ({ ...p, category: "" })); setCatOpen(true); }}>✕</button>
+                <button className="txform__cat-clear" onClick={() => { setCatQuery(""); setForm(p => ({ ...p, category: "" })); setCatOpen(true); }}><X size={14} /></button>
               )}
               {isCustomInput && (
                 <span className="txform__cat-badge txform__cat-badge--new">Baru</span>
@@ -540,7 +541,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
                   </select>
                   <input className="txform__input" type="number" placeholder="0"
                     value={row.nilai} onChange={e => updateOnlineFeeRow(row.id, "nilai", e.target.value)} />
-                  <button type="button" className="txform__online-fee-remove" onClick={() => removeOnlineFeeRow(row.id)}>✕</button>
+                  <button type="button" className="txform__online-fee-remove" onClick={() => removeOnlineFeeRow(row.id)}><X size={14} /></button>
                 </div>
               ))}
               <button type="button" className="txform__online-addfee" onClick={addOnlineFeeRow}>+ Tambah Potongan</button>
