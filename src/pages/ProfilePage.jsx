@@ -21,7 +21,7 @@ const TANGGUNGAN_OPTIONS = [
 ];
 
 // Ganti dengan username bot Telegram kamu (tanpa "@"), contoh dari @BotFather.
-const TELEGRAM_BOT_USERNAME = "namabot_bot";
+const TELEGRAM_BOT_USERNAME = "finansialsightai_bot";
 
 async function apiFetch(url, options = {}) {
   const token = localStorage.getItem("finsight_token");

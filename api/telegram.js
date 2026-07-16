@@ -146,15 +146,15 @@ const HELP_TEXT_PERSONAL =
   `/laporan semua — semua periode\n` +
   `/laporan juni — bulan tertentu (atau \`2026-06\`)\n` +
   `/utang — daftar utang & cicilan aktif\n` +
-  `/bayar nama_utang — bayar cicilan (contoh: \`/bayar KTA Bank Jago\`)\n` +
+  `/bayar \`nama_utang\` — bayar cicilan (contoh: \`/bayar KTA Bank Jago\`)\n` +
   `/target — progress target tabungan\n` +
-  `/nabung nama_target jumlah — nabung ke target (contoh: \`/nabung Dana Darurat 100rb\`)\n` +
+  `/nabung \`nama_target\` jumlah — nabung ke target (contoh: \`/nabung Dana Darurat 100rb\`)\n` +
   `/riwayat — 10 transaksi terakhir\n` +
   `/acara — acara terdekat\n` +
   `/acara+ tanggal judul — tambah acara (contoh: \`/acara+ 25 juli Rapat\`)\n` +
   `/catatan — lihat catatan (bernomor)\n` +
   `/catatan+ isi — tambah catatan baru\n` +
-  `/catatanedit nomor isi_baru — edit catatan\n` +
+  `/catatanedit nomor \`isi_baru\` — edit catatan\n` +
   `/batal — hapus transaksi terakhir yang salah kecatet\n` +
   `/lupa — reset ingatan obrolan AI\n` +
   `/unlink — putuskan koneksi akun\n` +
@@ -185,7 +185,7 @@ const HELP_TEXT_UMKM =
   `/acara+ tanggal judul — tambah acara (contoh: \`/acara+ 25 juli Rapat\`)\n` +
   `/catatan — lihat catatan (bernomor)\n` +
   `/catatan+ isi — tambah catatan baru\n` +
-  `/catatanedit nomor isi_baru — edit catatan\n` +
+  `/catatanedit nomor \`isi_baru\` — edit catatan\n` +
   `/batal — hapus transaksi terakhir yang salah kecatet\n` +
   `/lupa — reset ingatan obrolan AI\n` +
   `/unlink — putuskan koneksi akun\n` +
