@@ -33,12 +33,22 @@ export async function sendTelegramMessage(chatId, text, options = {}) {
   }
 }
 
-// Kirim pesan dengan tombol interaktif di bawahnya (dipakai buat konfirmasi
-// pas AI ragu-ragu). `buttons` = [{ text: "✅ Benar", data: "confirm:xxx" }, ...]
+// Kirim pesan dengan tombol interaktif di bawahnya. Tiap button:
+// - { text, data } -> tombol callback (data dikirim balik ke webhook, dipakai
+//   buat konfirmasi pas AI ragu-ragu)
+// - { text, url }  -> tombol yang langsung buka link (dipakai buat shortcut
+//   balik ke web app)
 export async function sendTelegramMessageWithButtons(chatId, text, buttons) {
-  return sendTelegramMessage(chatId, text, {
-    reply_markup: { inline_keyboard: [buttons.map(b => ({ text: b.text, callback_data: b.data }))] },
+  const result = await sendTelegramMessage(chatId, text, {
+    reply_markup: { inline_keyboard: [buttons.map(b => b.url ? { text: b.text, url: b.url } : { text: b.text, callback_data: b.data })] },
   });
+  // Kalau Telegram nolak pesannya (misal tombol url invalid/nggak diisi bener),
+  // fallback kirim ulang tanpa tombol biar user tetep dapet balasan, bukan diem total.
+  if (!result.ok) {
+    console.error("[telegram] sendMessageWithButtons gagal, fallback ke plain text:", result.description || result.error);
+    return sendTelegramMessage(chatId, text);
+  }
+  return result;
 }
 
 // Wajib dipanggil tiap ada callback_query masuk, biar tombolnya berhenti "loading"
