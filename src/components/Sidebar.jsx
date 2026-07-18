@@ -40,7 +40,7 @@ export default function Sidebar({ collapsed, onToggle }) {
   const photo       = profile?.photo || null;
   const hasProfile  = profile?.hasProfile || false;
 
-  const handleLogout = () => { logout(); navigate("/", { replace: true }); };
+  const handleLogout = () => { logout(); window.location.href = "/"; };
   const initial = (displayName || user?.name || "U").charAt(0).toUpperCase();
 
   return (

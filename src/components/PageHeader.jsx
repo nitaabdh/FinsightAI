@@ -35,7 +35,9 @@ export default function PageHeader({ title, subtitle }) {
   const handleLogout = () => {
     setOpen(false);
     logout();
-    navigate("/", { replace: true });
+    // Full reload (bukan cuma navigate) — mastiin semua state kebersihan,
+    // gak ada sisa data lama yang nyangkut di komponen yang masih ke-mount.
+    window.location.href = "/";
   };
 
   const handleProfile = () => {
