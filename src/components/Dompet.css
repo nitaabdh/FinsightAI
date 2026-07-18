@@ -241,6 +241,11 @@
 .dompet__item-saldo--neg { color: var(--danger) !important; }
 
 .dompet__item-edit, .dompet__item-del {
+  min-width: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   font-size: 14px;
   padding: 0.25rem;

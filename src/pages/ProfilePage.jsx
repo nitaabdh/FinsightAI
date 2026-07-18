@@ -451,7 +451,7 @@ export default function ProfilePage() {
               Profesi / Status
               <span className="profilepage__hint">Pilih yang paling sesuai</span>
             </label>
-            <div className="profilepage__chips">
+            <div className="profilepage__chips scroll-x-mobile">
               {(PROFESI_OPTIONS[mode] || PROFESI_OPTIONS.personal).map(p => (
                 <button
                   key={p}

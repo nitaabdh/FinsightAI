@@ -161,12 +161,14 @@ export default function Supplier() {
       {list.length > 0 && (
         <div className="supplier__filters">
           <input className="supplier__select" type="text" placeholder="Cari nama supplier..."
-            style={{ flex: 1, minWidth: "160px" }}
+            style={{ width: "100%" }}
             value={search} onChange={e => setSearch(e.target.value)} />
-          <select className="supplier__select" value={filterKategori} onChange={e => setFilterKategori(e.target.value)}>
-            <option value="semua">Semua Kategori</option>
-            {semuaKategori.map(k => <option key={k} value={k}>{k}</option>)}
-          </select>
+          <div className="supplier__filter-row scroll-x-mobile">
+            <select className="supplier__select" value={filterKategori} onChange={e => setFilterKategori(e.target.value)}>
+              <option value="semua">Semua Kategori</option>
+              {semuaKategori.map(k => <option key={k} value={k}>{k}</option>)}
+            </select>
+          </div>
         </div>
       )}
 

@@ -101,6 +101,11 @@
 .kalkharga__item-biaya { color: var(--accent-umkm); font-weight: 600; font-family: var(--font-display); }
 
 .kalkharga__item-remove {
+  min-width: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   color: var(--text-muted);
   font-size: 12px;

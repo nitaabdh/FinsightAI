@@ -30,7 +30,7 @@ export default function ProduksiPage() {
         />
 
         {/* Tab switcher */}
-        <div className="produksipage__tabs">
+        <div className="produksipage__tabs scroll-x-mobile">
           {TABS.map((tab) => (
             <button
               key={tab.id}

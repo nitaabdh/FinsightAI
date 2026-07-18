@@ -190,20 +190,22 @@ export default function TransaksiPage() {
         <div className="txpage__filters">
           <input className={"txpage__search txpage__search--" + accent} type="text"
             placeholder="Cari transaksi..." value={search} onChange={e => setSearch(e.target.value)} />
-          <select className="txpage__select" value={filterType} onChange={e => setFilterType(e.target.value)}>
-            <option value="semua">Semua Tipe</option>
-            <option value="pemasukan">Pemasukan</option>
-            <option value="pengeluaran">Pengeluaran</option>
-            <option value="transfer">Transfer Antar Dompet</option>
-          </select>
-          <select className="txpage__select" value={filterCat} onChange={e => setFilterCat(e.target.value)}>
-            <option value="semua">Semua Kategori</option>
-            {categories.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <select className="txpage__select" value={filterMonth} onChange={e => setFilterMonth(e.target.value)}>
-            <option value="semua">Semua Bulan</option>
-            {months.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
+          <div className="txpage__filter-row scroll-x-mobile">
+            <select className="txpage__select" value={filterType} onChange={e => setFilterType(e.target.value)}>
+              <option value="semua">Semua Tipe</option>
+              <option value="pemasukan">Pemasukan</option>
+              <option value="pengeluaran">Pengeluaran</option>
+              <option value="transfer">Transfer Antar Dompet</option>
+            </select>
+            <select className="txpage__select" value={filterCat} onChange={e => setFilterCat(e.target.value)}>
+              <option value="semua">Semua Kategori</option>
+              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <select className="txpage__select" value={filterMonth} onChange={e => setFilterMonth(e.target.value)}>
+              <option value="semua">Semua Bulan</option>
+              {months.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
         </div>
 
         <div className="txpage__list stagger-list">

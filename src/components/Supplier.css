@@ -103,7 +103,9 @@
 .supplier__btn-danger:hover { background: var(--danger-dim); }
 
 /* Filters */
-.supplier__filters { display: flex; flex-wrap: wrap; gap: 0.65rem; }
+.supplier__filters { display: flex; flex-direction: column; gap: 0.65rem; }
+.supplier__filter-row { display: flex; gap: 0.5rem; }
+.supplier__filter-row .supplier__select { flex-shrink: 0; min-width: 140px; }
 
 .supplier__select {
   background: var(--bg-card);
@@ -157,6 +159,11 @@
 .supplier__card-actions { display: flex; gap: 0.2rem; flex-shrink: 0; }
 
 .supplier__edit, .supplier__del {
+  min-width: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   font-size: 13px;
   padding: 0.25rem;

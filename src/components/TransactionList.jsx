@@ -19,7 +19,7 @@ export default function TransactionList({ transactions, onDelete, accent = "pers
     <div className="txlist stagger-list">
       {/* Controls */}
       <div className="txlist__controls stagger-list">
-        <div className="txlist__filters stagger-list">
+        <div className="txlist__filters stagger-list scroll-x-mobile">
           {[
             { key: "all", label: "Semua" },
             { key: "income", label: "Pemasukan" },

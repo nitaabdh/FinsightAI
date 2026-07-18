@@ -126,9 +126,14 @@
 /* Filters */
 .asetusaha__filters {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 0.65rem;
 }
+.asetusaha__filter-row {
+  display: flex;
+  gap: 0.5rem;
+}
+.asetusaha__filter-row .asetusaha__select { flex-shrink: 0; min-width: 140px; }
 
 .asetusaha__select {
   background: var(--bg-card);
@@ -221,6 +226,11 @@
 }
 
 .asetusaha__item-edit, .asetusaha__item-del {
+  min-width: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   font-size: 14px;
   padding: 0.25rem;

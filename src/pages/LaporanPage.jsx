@@ -310,7 +310,7 @@ export default function LaporanPage() {
           <div className="laporanpage__content">
 
             {/* Tab switcher */}
-            <div className="laporanpage__tabs">
+            <div className="laporanpage__tabs scroll-x-mobile">
               {[
                 { id: "labarugi",     icon: "", label: "Laba-Rugi" },
                 { id: "neraca",       icon: "", label: "Neraca" },

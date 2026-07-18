@@ -450,7 +450,7 @@ export default function TargetPage() {
         />
 
         {/* ── Tab switcher: Target Tabungan / Utang & Cicilan ── */}
-        <div className="targetpage__tabs">
+        <div className="targetpage__tabs scroll-x-mobile">
           <button
             className={"targetpage__tab" + (activeTab === "tabungan" ? " targetpage__tab--active" : "")}
             onClick={() => setActiveTab("tabungan")}

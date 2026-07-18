@@ -91,9 +91,27 @@ html, body {
 #root { height: 100%; }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: var(--bg-primary); }
+* { scrollbar-width: thin; scrollbar-color: var(--border-light) transparent; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ── Focus state — kelihatan jelas pas navigasi keyboard/tab, gak ganggu
+   di klik mouse biasa (pakai :focus-visible, bukan :focus polos) ── */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent-personal);
+  outline-offset: 2px;
+}
+/* Field yang udah punya border-highlight sendiri pas fokus (mis. border
+   berubah warna accent) — outline ring-nya dibikin lebih tipis biar gak dobel */
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline-offset: 1px;
+}
 
 /* Utility */
 .font-display { font-family: var(--font-display); }
@@ -115,6 +133,28 @@ html, body {
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-8px); }
+}
+
+/* ── Filter/tab/chip row: di mobile digeser ke samping, bukan numpuk ke
+   bawah. Tinggal tempel class ini ke container-nya. ── */
+@media (max-width: 640px) {
+  .scroll-x-mobile {
+    display: flex;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: 0.25rem;
+  }
+  .scroll-x-mobile::-webkit-scrollbar { display: none; }
+  .scroll-x-mobile > * {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    white-space: nowrap;
+  }
 }
 
 .animate-fadeUp { animation: fadeUp 0.35s ease forwards; }

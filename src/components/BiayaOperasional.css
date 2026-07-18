@@ -188,6 +188,11 @@
 .biayaops__row-actions { display: flex; gap: 0.2rem; flex-shrink: 0; }
 
 .biayaops__edit, .biayaops__del {
+  min-width: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   font-size: 13px;
   padding: 0.3rem;

@@ -689,7 +689,7 @@ const updateOpenNoteMeta = async (field, value) => {
               </div>
               <div className="cn-field">
                 <label>Kategori</label>
-                <div className="cat-chips">
+                <div className="cat-chips scroll-x-mobile">
                   {NOTE_CATEGORIES.map(c=>(
                     <button key={c.id} className={`cat-chip${calForm.category===c.id?" active":""}`}
                       onClick={()=>setCalForm(f=>({...f,category:c.id}))}>{c.emoji} {c.label}</button>
@@ -740,7 +740,7 @@ const updateOpenNoteMeta = async (field, value) => {
           </div>
           <div className="cn-field">
             <label>Kategori</label>
-            <div className="cat-chips">
+            <div className="cat-chips scroll-x-mobile">
               {NOTE_CATEGORIES.map(c=>(
                 <button key={c.id} className={`cat-chip${noteForm.category===c.id?" active":""}`}
                   onClick={()=>setNoteForm(f=>({...f,category:c.id}))}>{c.emoji} {c.label}</button>
@@ -836,7 +836,7 @@ const updateOpenNoteMeta = async (field, value) => {
             <div className="note-popup__meta-panel">
               <div className="note-popup__meta-row">
                 <span className="note-popup__meta-label">Kategori</span>
-                <div className="cat-chips">
+                <div className="cat-chips scroll-x-mobile">
                   {NOTE_CATEGORIES.map(c => (
                     <button
                       key={c.id}

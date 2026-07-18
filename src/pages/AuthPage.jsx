@@ -30,7 +30,6 @@ export default function AuthPage() {
   const isUMKM   = mode === "umkm";
   const accent   = isUMKM ? "umkm" : "personal";
   const modeLabel = isUMKM ? "UMKM" : "Pribadi";
-  const modeEmoji = isUMKM ? "" : "";
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -104,7 +103,7 @@ export default function AuthPage() {
         </button>
         <div className="auth__card animate-fadeUp">
           <div className="auth__header">
-            <div className={"auth__mode-badge auth__mode-badge--" + accent}>{modeEmoji} Mode {modeLabel}</div>
+            <div className={"auth__mode-badge auth__mode-badge--" + accent}>Mode {modeLabel}</div>
             <div className="auth__logo"><span className="auth__logo-icon">◈</span><span>FinSight AI</span></div>
             <p className="auth__tagline">Reset Password</p>
           </div>
@@ -191,7 +190,7 @@ export default function AuthPage() {
 
       <div className="auth__card animate-fadeUp">
         <div className="auth__header">
-          <div className={"auth__mode-badge auth__mode-badge--" + accent}>{modeEmoji} Mode {modeLabel}</div>
+          <div className={"auth__mode-badge auth__mode-badge--" + accent}>Mode {modeLabel}</div>
           <div className="auth__logo"><span className="auth__logo-icon">◈</span><span>FinSight AI</span></div>
           <p className="auth__tagline">
             {isUMKM ? "Kelola keuangan usahamu dengan cerdas" : "Atur keuangan pribadimu bersama AI"}

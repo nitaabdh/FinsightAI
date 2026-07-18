@@ -124,7 +124,7 @@ export default function ChatUI({ messages, loading, onSend, accent, suggestions 
               AI akan menganalisa dan menghitung secara otomatis.
             </p>
             {suggestions.length > 0 && (
-              <div className="chat__suggestions stagger-list">
+              <div className="chat__suggestions stagger-list scroll-x-mobile">
                 {suggestions.map((s, i) => (
                   <button key={i} className={"chat__suggestion chat__suggestion--" + accent} onClick={() => onSend(s)}>
                     {s}

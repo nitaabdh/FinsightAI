@@ -192,6 +192,11 @@
 .bahanbaku__item-restok:hover { background: var(--accent-umkm-dim); }
 
 .bahanbaku__item-edit, .bahanbaku__item-del {
+  min-width: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   font-size: 14px;
   padding: 0.25rem;

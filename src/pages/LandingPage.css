@@ -192,8 +192,21 @@
 .landing__mode-card:hover::before { opacity: 1; }
 
 .landing__mode-icon {
-  font-size: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
   flex-shrink: 0;
+}
+.landing__mode-card--umkm .landing__mode-icon {
+  background: var(--accent-umkm-dim);
+  color: var(--accent-umkm);
+}
+.landing__mode-card--personal .landing__mode-icon {
+  background: var(--accent-personal-dim);
+  color: var(--accent-personal);
 }
 
 .landing__mode-content {

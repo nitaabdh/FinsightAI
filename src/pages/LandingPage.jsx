@@ -54,7 +54,7 @@ export default function LandingPage() {
             className="landing__mode-card landing__mode-card--umkm"
             onClick={() => navigate("/auth/umkm")}
           >
-            <div className="landing__mode-icon"><Store size={14} /></div>
+            <div className="landing__mode-icon"><Store size={20} /></div>
             <div className="landing__mode-content">
               <h3>Mode UMKM</h3>
               <p>Catat omzet, analisa laba rugi, dan dapatkan saran bisnis dari AI</p>
@@ -66,7 +66,7 @@ export default function LandingPage() {
             className="landing__mode-card landing__mode-card--personal"
             onClick={() => navigate("/auth/personal")}
           >
-            <div className="landing__mode-icon"><User size={14} /></div>
+            <div className="landing__mode-icon"><User size={20} /></div>
             <div className="landing__mode-content">
               <h3>Mode Pribadi</h3>
               <p>Kelola budget, tabungan, dan dapatkan saran keuangan personal dari AI</p>

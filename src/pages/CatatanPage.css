@@ -1131,6 +1131,11 @@
 .calc-saved-card__date { font-size: 11px; color: var(--text-muted); }
 
 .calc-saved-card__del {
+  min-width: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   font-size: 13px;
@@ -1329,7 +1334,7 @@
 .note-popup__meta-btn,
 .note-popup__del-btn,
 .note-popup__close {
-  width: 30px; height: 30px;
+  width: 36px; height: 36px;
   border-radius: var(--radius-md);
   border: none;
   background: rgba(0,0,0,0.08);

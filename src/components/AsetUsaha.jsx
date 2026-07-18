@@ -298,16 +298,18 @@ export default function AsetUsaha() {
       {list.length > 0 && (
         <div className="asetusaha__filters">
           <input className="asetusaha__select" type="text" placeholder="Cari nama aset..."
-            style={{ flex: 1, minWidth: "160px" }}
+            style={{ width: "100%" }}
             value={search} onChange={e => setSearch(e.target.value)} />
-          <select className="asetusaha__select" value={filterKategori} onChange={e => setFilterKategori(e.target.value)}>
-            <option value="semua">Semua Kategori</option>
-            {semuaKategori.map(k => <option key={k} value={k}>{k}</option>)}
-          </select>
-          <select className="asetusaha__select" value={filterKondisi} onChange={e => setFilterKondisi(e.target.value)}>
-            <option value="semua">Semua Kondisi</option>
-            {KONDISI_OPTIONS.map(k => <option key={k.value} value={k.value}>{k.label}</option>)}
-          </select>
+          <div className="asetusaha__filter-row scroll-x-mobile">
+            <select className="asetusaha__select" value={filterKategori} onChange={e => setFilterKategori(e.target.value)}>
+              <option value="semua">Semua Kategori</option>
+              {semuaKategori.map(k => <option key={k} value={k}>{k}</option>)}
+            </select>
+            <select className="asetusaha__select" value={filterKondisi} onChange={e => setFilterKondisi(e.target.value)}>
+              <option value="semua">Semua Kondisi</option>
+              {KONDISI_OPTIONS.map(k => <option key={k.value} value={k.value}>{k.label}</option>)}
+            </select>
+          </div>
         </div>
       )}
 
