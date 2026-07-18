@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import AccountSwitcherList from "./AccountSwitcherList";
 import {
   LayoutDashboard, Receipt, Factory, TrendingUp, FileEdit, Bot,
   CreditCard, Target, Wallet, ClipboardList, Store, User, Pencil,
@@ -105,6 +106,13 @@ export default function Sidebar({ collapsed, onToggle }) {
             </div>
           )}
         </button>
+
+        {!collapsed && (
+          <div className="sidebar__switcher">
+            <p className="sidebar__switcher-label">Ganti Akun</p>
+            <AccountSwitcherList />
+          </div>
+        )}
 
         <button className="sidebar__logout" onClick={handleLogout} title="Keluar">
           <LogOut size={16} /> {!collapsed && "Keluar"}

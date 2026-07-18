@@ -6,6 +6,9 @@ const AuthContext = createContext(null);
 // Token helpers
 // -------------------------------------------------------
 const TOKEN_KEY = "finsight_token";
+// "Kotak akun tersimpan" — kunci per mode, isinya token + info ringkas biar
+// bisa ditampilin di switcher tanpa perlu decode ulang tiap render.
+const ACCOUNTS_KEY = "finsight_accounts";
 
 function saveToken(token) {
   localStorage.setItem(TOKEN_KEY, token);
@@ -17,6 +20,26 @@ function getToken() {
 
 function removeToken() {
   localStorage.removeItem(TOKEN_KEY);
+}
+
+function getSavedAccounts() {
+  try {
+    return JSON.parse(localStorage.getItem(ACCOUNTS_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveAccount(mode, token, decoded) {
+  const accounts = getSavedAccounts();
+  accounts[mode] = { token, name: decoded.name, email: decoded.email };
+  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+}
+
+function removeSavedAccount(mode) {
+  const accounts = getSavedAccounts();
+  delete accounts[mode];
+  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
 }
 
 // Decode JWT payload tanpa verify (verify dilakukan di server)
@@ -59,6 +82,7 @@ export function AuthProvider({ children }) {
   const [user, setUser]       = useState(null);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({ displayName: "", photo: null, hasProfile: false });
+  const [savedAccounts, setSavedAccounts] = useState({});
 
   // Ambil data profil (nama tampilan, foto) SEKALI aja waktu user login/app
   // load — bukan tiap pindah halaman. Ini yang dipakai bareng-bareng sama
@@ -103,6 +127,7 @@ export function AuthProvider({ children }) {
     const theme = localStorage.getItem("finsight_theme") || "dark";
     document.body.classList.toggle("light", theme === "light");
 
+    setSavedAccounts(getSavedAccounts());
     setLoading(false);
   }, []);
 
@@ -116,6 +141,8 @@ export function AuthProvider({ children }) {
     saveToken(result.token);
     const decoded = decodeToken(result.token);
     const u = { id: decoded.id, name: decoded.name, email: decoded.email, mode: decoded.mode };
+    saveAccount(decoded.mode, result.token, decoded);
+    setSavedAccounts(getSavedAccounts());
     setUser(u);
     loadProfile(u);
     return { success: true };
@@ -131,6 +158,8 @@ export function AuthProvider({ children }) {
     saveToken(result.token);
     const decoded = decodeToken(result.token);
     const u = { id: decoded.id, name: decoded.name, email: decoded.email, mode: decoded.mode };
+    saveAccount(decoded.mode, result.token, decoded);
+    setSavedAccounts(getSavedAccounts());
     setUser(u);
     loadProfile(u);
     return { success: true };
@@ -147,6 +176,8 @@ export function AuthProvider({ children }) {
     // Simpan token baru (name sudah diupdate di dalamnya)
     saveToken(result.token);
     const decoded = decodeToken(result.token);
+    saveAccount(decoded.mode, result.token, decoded);
+    setSavedAccounts(getSavedAccounts());
     setUser((prev) => ({ ...prev, name: decoded.name }));
     return { success: true };
   };
@@ -175,6 +206,8 @@ export function AuthProvider({ children }) {
     const token  = getToken();
     const result = await callAPI("/api/auth/update", { action: "deleteAccount", password }, token);
     if (result.success) {
+      if (user?.mode) removeSavedAccount(user.mode);
+      setSavedAccounts(getSavedAccounts());
       removeToken();
       setUser(null);
     }
@@ -182,10 +215,45 @@ export function AuthProvider({ children }) {
   };
 
   // -------------------------------------------------------
+  // switchAccount — pindah ke akun mode lain TANPA login ulang, asal
+  // tokennya masih tersimpan & belum expired. Mirip switch akun di Telegram.
+  // -------------------------------------------------------
+  const switchAccount = async (mode) => {
+    const accounts = getSavedAccounts();
+    const saved = accounts[mode];
+    if (!saved) return { success: false, reason: "not_saved" };
+
+    const decoded = decodeToken(saved.token);
+    if (!decoded || isTokenExpired(decoded)) {
+      removeSavedAccount(mode);
+      setSavedAccounts(getSavedAccounts());
+      return { success: false, reason: "expired" };
+    }
+
+    saveToken(saved.token);
+    const u = { id: decoded.id, name: decoded.name, email: decoded.email, mode: decoded.mode };
+    setUser(u);
+    await loadProfile(u);
+    return { success: true };
+  };
+
+  // Lupain satu akun dari daftar switcher (tanpa nge-logout akun yang lagi
+  // aktif, kecuali yang dihapus emang akun yang lagi aktif).
+  const removeAccount = (mode) => {
+    removeSavedAccount(mode);
+    setSavedAccounts(getSavedAccounts());
+    if (user?.mode === mode) {
+      logout();
+    }
+  };
+
+  // -------------------------------------------------------
   // logout
   // -------------------------------------------------------
   const logout = () => {
     removeToken();
+    if (user?.mode) removeSavedAccount(user.mode);
+    setSavedAccounts(getSavedAccounts());
     setUser(null);
     setProfile({ displayName: "", photo: null, hasProfile: false });
   };
@@ -195,7 +263,7 @@ export function AuthProvider({ children }) {
   const refreshProfile = () => loadProfile(user);
 
   return (
-    <AuthContext.Provider value={{ user, loading, profile, refreshProfile, register, login, logout, updateName, checkEmailExists, resetPassword, deleteAccount, getToken }}>
+    <AuthContext.Provider value={{ user, loading, profile, refreshProfile, savedAccounts, switchAccount, removeAccount, register, login, logout, updateName, checkEmailExists, resetPassword, deleteAccount, getToken }}>
       {children}
     </AuthContext.Provider>
   );

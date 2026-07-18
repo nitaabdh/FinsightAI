@@ -50,6 +50,9 @@
 .sidebar__user-info { overflow:hidden; }
 .sidebar__user-name { font-size:12px; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .sidebar__user-email { display:flex; align-items:center; gap:0.3rem; font-size:10px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sidebar__switcher { border-top: 1px solid var(--border); padding-top: 0.6rem; margin-top: 0.2rem; }
+.sidebar__switcher-label { font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); padding: 0 0.2rem 0.3rem; margin: 0; }
+
 .sidebar__logout { display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.65rem; border-radius:var(--radius-sm); background:transparent; border:1px solid transparent; color:var(--text-muted); font-family:var(--font-body); font-size:12px; transition:var(--transition); white-space:nowrap; }
 .sidebar__logout:hover { background:rgba(239,68,68,0.1); border-color:rgba(239,68,68,0.2); color:#f87171; }
 

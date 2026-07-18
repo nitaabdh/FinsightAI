@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import CountUp from "../components/CountUp";
+import AccountSwitcherList from "../components/AccountSwitcherList";
 import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, Tooltip, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   Eye, EyeOff, Wallet, ShoppingCart, PieChart as PieChartIcon,
@@ -237,6 +238,9 @@ export default function DashboardPersonal() {
                       <p className="dp2__avatar-dropdown-email">{user?.email}</p>
                     </div>
                   </div>
+                  <div className="dp2__avatar-dropdown-divider" />
+                  <p className="dp2__avatar-dropdown-label">Ganti Akun</p>
+                  <AccountSwitcherList onAfterAction={() => setMenuOpen(false)} />
                   <div className="dp2__avatar-dropdown-divider" />
                   <button className="dp2__avatar-dropdown-item" onClick={() => { setMenuOpen(false); navigate(`/dashboard/${user?.mode}/profile`); }}>
                     <span><Pencil size={14} /></span><span>Edit Profil</span>

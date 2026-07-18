@@ -1,0 +1,87 @@
+.account-switcher {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.account-switcher__row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.25rem;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.account-switcher__main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  text-align: left;
+  min-height: 44px;
+  transition: var(--transition);
+}
+.account-switcher__main:hover { background: var(--bg-secondary); }
+
+.account-switcher__row--active .account-switcher__main {
+  background: var(--bg-secondary);
+  border-color: var(--border);
+}
+
+.account-switcher__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+.account-switcher__icon--umkm     { background: var(--accent-umkm-dim);     color: var(--accent-umkm); }
+.account-switcher__icon--personal { background: var(--accent-personal-dim); color: var(--accent-personal); }
+
+.account-switcher__info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.account-switcher__name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.account-switcher__sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-switcher__check {
+  color: var(--success);
+  flex-shrink: 0;
+}
+
+.account-switcher__remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  transition: var(--transition);
+}
+.account-switcher__remove:hover { background: var(--danger-dim); color: var(--danger); }

@@ -117,7 +117,7 @@
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  width: 220px;
+  width: 260px;
   background: var(--bg-card);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
@@ -179,6 +179,16 @@
 .page-header__dropdown-divider {
   height: 1px;
   background: var(--border);
+  margin: 0;
+}
+
+.page-header__dropdown-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0.6rem 0.9rem 0.2rem;
   margin: 0;
 }
 

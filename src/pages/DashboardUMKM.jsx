@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import CountUp from "../components/CountUp";
+import AccountSwitcherList from "../components/AccountSwitcherList";
 import { BarChart, Bar, ResponsiveContainer, Tooltip, CartesianGrid, XAxis, YAxis } from "recharts";
 import { getTransactions, calcSummary, formatRupiah, groupByCategory, isModalUsaha, computeKasStats, getKasEmoji } from "../utils/storage";
 import { labelJatuhTempo, selisihHari } from "../utils/umkmCalc";
@@ -190,6 +191,9 @@ export default function DashboardUMKM() {
                     <p className="du__avatar-dropdown-email">{user?.email}</p>
                   </div>
                 </div>
+                <div className="du__avatar-dropdown-divider" />
+                <p className="du__avatar-dropdown-label">Ganti Akun</p>
+                <AccountSwitcherList onAfterAction={() => setMenuOpen(false)} />
                 <div className="du__avatar-dropdown-divider" />
                 <button className="du__avatar-dropdown-item" onClick={() => { setMenuOpen(false); navigate(`/dashboard/umkm/profile`); }}>
                   <span><Pencil size={14} /></span><span>Edit Profil</span>

@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import "./PageHeader.css";
 
 import { LogOut, Pencil } from "lucide-react";
+import AccountSwitcherList from "./AccountSwitcherList";
 export default function PageHeader({ title, subtitle }) {
   const { user, profile, logout } = useAuth();
   const navigate  = useNavigate();
@@ -87,6 +88,11 @@ export default function PageHeader({ title, subtitle }) {
                   <p className="page-header__dropdown-email">{user?.email}</p>
                 </div>
               </div>
+
+              <div className="page-header__dropdown-divider" />
+
+              <p className="page-header__dropdown-label">Ganti Akun</p>
+              <AccountSwitcherList onAfterAction={() => setOpen(false)} />
 
               <div className="page-header__dropdown-divider" />
 
