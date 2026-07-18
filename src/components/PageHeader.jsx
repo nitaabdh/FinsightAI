@@ -18,15 +18,18 @@ export default function PageHeader({ title, subtitle }) {
   const photo       = profile?.photo || null;
   const hasProfile  = profile?.hasProfile || false;
 
-  // Tutup dropdown kalau klik di luar
+  // Tutup dropdown kalau klik di luar.
+  // Pakai "click" (bukan "mousedown") — di layar sentuh, mousedown bisa
+  // kejadian duluan sebelum tap-nya "kelar", jadi dropdown keburu ke-close
+  // sebelum tombol di dalamnya (mis. Keluar) sempat kepencet.
   useEffect(() => {
     const handler = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setOpen(false);
       }
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
   }, []);
 
   const handleLogout = () => {

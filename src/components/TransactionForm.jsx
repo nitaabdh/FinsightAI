@@ -152,8 +152,8 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
         setKasTujuanQuery(form.kasTujuan || ""); // buang teks pencarian yang belum dipilih
       }
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
   }, [form.kas, form.kasTujuan]);
 
   useEffect(() => {

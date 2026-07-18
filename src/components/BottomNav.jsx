@@ -46,11 +46,9 @@ export default function BottomNav() {
   useEffect(() => {
     if (!moreOpen) return;
     const onOutside = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setMoreOpen(false); };
-    document.addEventListener("mousedown", onOutside);
-    document.addEventListener("touchstart", onOutside);
+    document.addEventListener("click", onOutside);
     return () => {
-      document.removeEventListener("mousedown", onOutside);
-      document.removeEventListener("touchstart", onOutside);
+      document.removeEventListener("click", onOutside);
     };
   }, [moreOpen]);
 
