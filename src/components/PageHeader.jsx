@@ -18,23 +18,23 @@ export default function PageHeader({ title, subtitle }) {
   const photo       = profile?.photo || null;
   const hasProfile  = profile?.hasProfile || false;
 
-  // Tutup dropdown kalau klik di luar.
-  // Pakai "click" (bukan "mousedown") — di layar sentuh, mousedown bisa
-  // kejadian duluan sebelum tap-nya "kelar", jadi dropdown keburu ke-close
-  // sebelum tombol di dalamnya (mis. Keluar) sempat kepencet.
+  // Tutup dropdown kalau klik di luar. Avatar & dropdown-nya sendiri
+  // di-stopPropagation, jadi klik di dalam situ gak pernah nyampe ke sini
+  // — gak ada lagi tabrakan/timing-race soal urutan event kayak sebelumnya.
   useEffect(() => {
-    const handler = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-    };
+    if (!open) return;
+    const handler = () => setOpen(false);
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
-  }, []);
+  }, [open]);
 
   const handleLogout = () => {
     setOpen(false);
-    logout();
+    try {
+      logout();
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
     // Full reload (bukan cuma navigate) — mastiin semua state kebersihan,
     // gak ada sisa data lama yang nyangkut di komponen yang masih ke-mount.
     window.location.href = "/";
@@ -64,7 +64,7 @@ export default function PageHeader({ title, subtitle }) {
         <div className="page-header__avatar-wrap" ref={dropdownRef}>
           <button
             className={`page-header__avatar page-header__avatar--${accent}`}
-            onClick={() => setOpen((v) => !v)}
+            onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
             title={displayName || "Profil"}
           >
             {photo
@@ -74,7 +74,7 @@ export default function PageHeader({ title, subtitle }) {
           </button>
 
           {open && (
-            <div className="page-header__dropdown">
+            <div className="page-header__dropdown" onClick={(e) => e.stopPropagation()}>
               <div className="page-header__dropdown-user">
                 <div className={`page-header__dropdown-avatar page-header__dropdown-avatar--${accent}`}>
                   {photo

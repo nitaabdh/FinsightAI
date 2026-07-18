@@ -9,6 +9,7 @@ import {
   TrendingUp, Target, Calendar, Sparkles, Landmark, CreditCard,
   UtensilsCrossed, Car, ShoppingBag, Gamepad2, Pill, BookOpen,
   Receipt, Lightbulb, Droplet, Wifi, Smartphone, Briefcase, Gift, FolderClosed, BarChart3,
+  Pencil, LogOut,
 } from "lucide-react";
 import { getTransactions, calcSummary, formatRupiah, groupByCategory, computeKasStats, getKasEmoji } from "../utils/storage";
 import "./Dashboard.css";
@@ -87,12 +88,11 @@ export default function DashboardPersonal() {
   const menuRef = useRef(null);
 
   useEffect(() => {
-    const handler = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
-    };
+    if (!menuOpen) return;
+    const handler = () => setMenuOpen(false);
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
-  }, []);
+  }, [menuOpen]);
 
   useEffect(() => {
     if (!user) return;
@@ -217,14 +217,14 @@ export default function DashboardPersonal() {
               <span className={"dp2__alert-dot dp2__alert-dot--" + budgetStatus} title={budgetStatus === "danger" ? "Pengeluaran melebihi pemasukan!" : "Pengeluaran hampir melebihi pemasukan"} />
             )}
             <div className="dp2__avatar-wrap dp2__avatar-wrap--mobile-only" ref={menuRef}>
-              <div className="dp2__avatar" onClick={() => setMenuOpen(v => !v)}>
+              <div className="dp2__avatar" onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}>
                 {avatarUrl
                   ? <img src={avatarUrl} alt="avatar" className="dp2__avatar-img" />
                   : <span className="dp2__avatar-initials">{inisial}</span>
                 }
               </div>
               {menuOpen && (
-                <div className="dp2__avatar-dropdown">
+                <div className="dp2__avatar-dropdown" onClick={(e) => e.stopPropagation()}>
                   <div className="dp2__avatar-dropdown-user">
                     <div className="dp2__avatar-dropdown-avatar">
                       {avatarUrl
@@ -239,10 +239,10 @@ export default function DashboardPersonal() {
                   </div>
                   <div className="dp2__avatar-dropdown-divider" />
                   <button className="dp2__avatar-dropdown-item" onClick={() => { setMenuOpen(false); navigate(`/dashboard/${user?.mode}/profile`); }}>
-                    <span></span><span>Edit Profil</span>
+                    <span><Pencil size={14} /></span><span>Edit Profil</span>
                   </button>
-                  <button className="dp2__avatar-dropdown-item dp2__avatar-dropdown-item--danger" onClick={() => { setMenuOpen(false); logout(); navigate("/", { replace: true }); }}>
-                    <span></span><span>Keluar</span>
+                  <button className="dp2__avatar-dropdown-item dp2__avatar-dropdown-item--danger" onClick={() => { setMenuOpen(false); logout(); window.location.href = "/"; }}>
+                    <span><LogOut size={14} /></span><span>Keluar</span>
                   </button>
                 </div>
               )}

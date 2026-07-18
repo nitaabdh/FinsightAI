@@ -41,15 +41,16 @@ export default function BottomNav() {
   const isUMKM = user?.mode === "umkm";
   const accent = isUMKM ? "umkm" : "personal";
 
-  // Tutup popup pas ganti halaman atau pas tap di luar popup
+  // Tutup popup pas ganti halaman
   useEffect(() => { setMoreOpen(false); }, [location.pathname]);
+  // Tutup popup pas klik di luar. Tombol "+" dan popup-nya sendiri
+  // di-stopPropagation, jadi klik di dalam situ TIDAK PERNAH nyampe ke
+  // listener ini — gak ada lagi tabrakan/timing-race soal urutan event.
   useEffect(() => {
     if (!moreOpen) return;
-    const onOutside = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setMoreOpen(false); };
+    const onOutside = () => setMoreOpen(false);
     document.addEventListener("click", onOutside);
-    return () => {
-      document.removeEventListener("click", onOutside);
-    };
+    return () => document.removeEventListener("click", onOutside);
   }, [moreOpen]);
 
   const isMoreActive = !isUMKM && morePersonal.some(m => m.path === location.pathname);
@@ -78,7 +79,7 @@ export default function BottomNav() {
     <div className="bottom-nav-wrap" ref={wrapRef}>
       {/* Popup "Menu Lainnya" — muncul di atas tombol + */}
       {moreOpen && (
-        <div className="bottom-nav__more-popup">
+        <div className="bottom-nav__more-popup" onClick={(e) => e.stopPropagation()}>
           {morePersonal.map((item) => {
             const active = location.pathname === item.path;
             return (
@@ -116,7 +117,7 @@ export default function BottomNav() {
             sama-sama flex:1, jadi posisinya presisi di tengah nggak peduli isi tiap sisi */}
         <button
           className={`bottom-nav__plus ${moreOpen || isMoreActive ? "bottom-nav__plus--active" : ""}`}
-          onClick={() => setMoreOpen((p) => !p)}
+          onClick={(e) => { e.stopPropagation(); setMoreOpen((p) => !p); }}
           aria-label="Menu lainnya"
         >
           <span className="bottom-nav__plus-icon">{moreOpen ? <X size={22} /> : <Plus size={24} />}</span>

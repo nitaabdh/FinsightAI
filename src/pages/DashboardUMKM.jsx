@@ -31,7 +31,7 @@ async function apiFetch(url, options = {}) {
 }
 
 export default function DashboardUMKM() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate  = useNavigate();
   const [transactions,  setTransactions]  = useState([]);
   const [utangPiutang,  setUtangPiutang]  = useState([]);
@@ -43,12 +43,11 @@ export default function DashboardUMKM() {
   const menuRef = useRef(null);
 
   useEffect(() => {
-    const handler = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
-    };
+    if (!menuOpen) return;
+    const handler = () => setMenuOpen(false);
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
-  }, []);
+  }, [menuOpen]);
 
   useEffect(() => {
     if (!user) return;
@@ -171,14 +170,14 @@ export default function DashboardUMKM() {
             <p className="du__greeting-sub">Ringkasan keuangan usahamu hari ini</p>
           </div>
           <div className="du__avatar-wrap du__avatar-wrap--mobile-only" ref={menuRef}>
-            <div className="du__avatar" onClick={() => setMenuOpen(v => !v)}>
+            <div className="du__avatar" onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}>
               {avatarUrl
                 ? <img src={avatarUrl} alt="avatar" className="du__avatar-img" />
                 : <span className="du__avatar-initials">{inisial}</span>
               }
             </div>
             {menuOpen && (
-              <div className="du__avatar-dropdown">
+              <div className="du__avatar-dropdown" onClick={(e) => e.stopPropagation()}>
                 <div className="du__avatar-dropdown-user">
                   <div className="du__avatar-dropdown-av">
                     {avatarUrl
@@ -195,7 +194,7 @@ export default function DashboardUMKM() {
                 <button className="du__avatar-dropdown-item" onClick={() => { setMenuOpen(false); navigate(`/dashboard/umkm/profile`); }}>
                   <span><Pencil size={14} /></span><span>Edit Profil</span>
                 </button>
-                <button className="du__avatar-dropdown-item du__avatar-dropdown-item--danger" onClick={() => { setMenuOpen(false); }}>
+                <button className="du__avatar-dropdown-item du__avatar-dropdown-item--danger" onClick={() => { setMenuOpen(false); logout(); window.location.href = "/"; }}>
                   <span><LogOut size={14} /></span><span>Keluar</span>
                 </button>
               </div>
