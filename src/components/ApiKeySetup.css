@@ -57,7 +57,10 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 0 0.75rem;
-  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
   transition: var(--transition);
 }
 

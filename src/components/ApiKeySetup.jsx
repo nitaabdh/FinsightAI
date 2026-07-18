@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "./ApiKeySetup.css";
 
-import { KeyRound } from "lucide-react";
+import { KeyRound, Eye, EyeOff } from "lucide-react";
 export default function ApiKeySetup({ onSave, accent }) {
   const [key, setKey]     = useState("");
   const [show, setShow]   = useState(false);
@@ -44,7 +44,7 @@ export default function ApiKeySetup({ onSave, accent }) {
           onChange={(e) => { setKey(e.target.value); setError(""); }}
         />
         <button className="apikey__toggle" onClick={() => setShow((p) => !p)}>
-          {show ? "" : ""}
+          {show ? <EyeOff size={16} /> : <Eye size={16} />}
         </button>
       </div>
 

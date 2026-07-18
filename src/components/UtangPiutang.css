@@ -34,7 +34,8 @@
 }
 
 @media (max-width: 600px) {
-  .utangpiutang__sisi-switch { grid-template-columns: 1fr; }
+  .utangpiutang__sisi-switch { grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+  .utangpiutang__sisi-btn { padding: 0.65rem 0.5rem; font-size: 12px; }
 }
 
 /* Total aktif */

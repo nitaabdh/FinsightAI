@@ -3,17 +3,19 @@ import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard, Receipt, Factory, TrendingUp, FileEdit, Bot,
   CreditCard, Target, Wallet, ClipboardList, Store, User, Pencil,
-  AlertTriangle, LogOut,
+  AlertTriangle, LogOut, HandCoins,
 } from "lucide-react";
 import "./Sidebar.css";
 
 const menuUMKM = [
-  { path: "/dashboard/umkm",           icon: LayoutDashboard, label: "Dashboard" },
-  { path: "/dashboard/umkm/transaksi", icon: Receipt,         label: "Transaksi" },
-  { path: "/dashboard/umkm/produksi",  icon: Factory,         label: "Produksi & Stok" },
-  { path: "/dashboard/umkm/laporan",   icon: TrendingUp,      label: "Laporan" },
-  { path: "/dashboard/umkm/catatan",   icon: FileEdit,        label: "Catatan" },
-  { path: "/dashboard/umkm/ai",        icon: Bot,             label: "AI Agent" },
+  { path: "/dashboard/umkm",              icon: LayoutDashboard, label: "Dashboard" },
+  { path: "/dashboard/umkm/transaksi",    icon: Receipt,         label: "Transaksi" },
+  { path: "/dashboard/umkm/produksi",     icon: Factory,         label: "Produksi & Stok" },
+  { path: "/dashboard/umkm/dompet",       icon: Wallet,          label: "Dompet" },
+  { path: "/dashboard/umkm/utang-piutang",icon: HandCoins,       label: "Utang-Piutang" },
+  { path: "/dashboard/umkm/laporan",      icon: TrendingUp,      label: "Laporan" },
+  { path: "/dashboard/umkm/catatan",      icon: FileEdit,        label: "Catatan" },
+  { path: "/dashboard/umkm/ai",           icon: Bot,             label: "AI Agent" },
 ];
 
 const menuPersonal = [

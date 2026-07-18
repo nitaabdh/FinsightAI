@@ -7,7 +7,7 @@ import {
 import RupiahInput from "./RupiahInput";
 import "./UtangPiutang.css";
 
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, CheckCircle2, HandCoins, Receipt } from "lucide-react";
 const emptyForm = { jenis: "piutang", nama: "", nominal: "", jatuhTempo: "", catatan: "" };
 
 export default function UtangPiutang() {
@@ -199,7 +199,9 @@ const toggleLunas = async (id) => {
       <div className="utangpiutang__list stagger-list">
         {filtered.length === 0 ? (
           <div className="utangpiutang__empty">
-            <p>{showRiwayat ? "" : sisi === "piutang" ? "" : ""}</p>
+            <p style={{ opacity: 0.5 }}>
+              {showRiwayat ? <CheckCircle2 size={26} /> : sisi === "piutang" ? <HandCoins size={26} /> : <Receipt size={26} />}
+            </p>
             <p>
               {showRiwayat
                 ? "Belum ada riwayat yang lunas."

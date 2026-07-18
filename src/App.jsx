@@ -16,6 +16,8 @@ import ProfilePage        from "./pages/ProfilePage";
 import CatatanPage        from "./pages/CatatanPage";
 import ProduksiPage       from "./pages/ProduksiPage";
 import DompetPage         from "./pages/DompetPage";
+import DompetUMKMPage     from "./pages/DompetUMKMPage";
+import UtangPiutangPage   from "./pages/UtangPiutangPage";
 import LaporanPersonalPage from "./pages/LaporanPersonalPage";
 import FloatingCalcWrapper from "./components/FloatingCalcWrapper";
 
@@ -48,6 +50,8 @@ export default function App() {
             <Route path="/dashboard/umkm/ai"         element={<U><AIAgentPage /></U>} />
             <Route path="/dashboard/umkm/profile"    element={<U><ProfilePage /></U>} />
             <Route path="/dashboard/umkm/catatan"    element={<U><CatatanPage /></U>} />
+            <Route path="/dashboard/umkm/dompet"        element={<U><DompetUMKMPage /></U>} />
+            <Route path="/dashboard/umkm/utang-piutang"  element={<U><UtangPiutangPage /></U>} />
 
             {/* Personal */}
             <Route path="/dashboard/personal"           element={<P><DashboardPersonal /></P>} />

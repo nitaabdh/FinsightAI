@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import {
   genId,
@@ -46,6 +46,8 @@ export default function BahanBaku() {
   const [delTxList,  setDelTxList]  = useState([]); // transaksi yang nempel ke bahan yg mau dihapus
   const [delTxLoading, setDelTxLoading] = useState(false);
   const [hapusTxJuga, setHapusTxJuga] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const formRef = useRef(null);
 
   // Halaman detail
   const [detailId,      setDetailId]      = useState(null);
@@ -117,7 +119,7 @@ export default function BahanBaku() {
 
   const isPack = form.satuanBeli === "pack";
 
-  const resetForm = () => { setForm(emptyForm); setEditId(null); setEditLocked(false); setError(""); setShowYield(false); };
+  const resetForm = () => { setForm(emptyForm); setEditId(null); setEditLocked(false); setError(""); setShowYield(false); setShowForm(false); };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -257,6 +259,8 @@ export default function BahanBaku() {
     // harga? Pakai tombol "+ Stok" / "− Kurangi Stok" di halaman detail, itu jalurnya benar.
     setEditLocked(+b.jumlahBeli > 0 && +b.hargaBeli > 0);
     setError("");
+    setShowForm(true);
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   };
 
   const openDel = async (id) => {
@@ -512,7 +516,12 @@ export default function BahanBaku() {
 
       {/* ══════════ FORM + DAFTAR BAHAN (disembunyikan kalau lagi lihat detail) ══════════ */}
       {!detailId && (<>
-      <div className="bahanbaku__form">
+      {!showForm ? (
+        <button className="bahanbaku__btn-primary" style={{ alignSelf: "flex-start" }} onClick={() => setShowForm(true)}>
+          + Tambah Bahan Baku
+        </button>
+      ) : (
+      <div className="bahanbaku__form" ref={formRef}>
         <h3 className="bahanbaku__form-title">{editId ? "Koreksi Data Bahan" : "+ Tambah Bahan Baku"}</h3>
 
         {!editId && (
@@ -620,12 +629,13 @@ export default function BahanBaku() {
         {error && <p className="bahanbaku__error">{error}</p>}
 
         <div className="bahanbaku__form-actions">
-          {editId && <button className="bahanbaku__btn-sec" onClick={resetForm}>Batal</button>}
+          <button className="bahanbaku__btn-sec" onClick={resetForm}>Batal</button>
           <button className="bahanbaku__btn-primary" onClick={handleSubmit}>
             {editId ? "Simpan Perubahan" : "+ Tambah Bahan"}
           </button>
         </div>
       </div>
+      )}
 
       {list.length > 0 && (
         <div className="bahanbaku__stok-summary">

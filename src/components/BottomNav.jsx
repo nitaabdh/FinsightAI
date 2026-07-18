@@ -3,17 +3,24 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard, Receipt, Factory, TrendingUp, ClipboardList, Bot,
-  CreditCard, Target, Plus, X, Wallet,
+  CreditCard, Target, Plus, X, Wallet, HandCoins,
 } from "lucide-react";
 import "./BottomNav.css";
 
-const menuUMKM = [
+// UMKM: sama polanya kayak Personal — 4 menu utama + tombol "+" buat sisanya.
+// Dompet & Utang-Piutang sebelumnya nyempil jadi tab di Laporan, sekarang
+// jadi halaman sendiri di sini biar gampang ketemu.
+const primaryUMKM = [
   { path: "/dashboard/umkm",           icon: LayoutDashboard, label: "Dashboard" },
   { path: "/dashboard/umkm/transaksi", icon: Receipt,         label: "Transaksi" },
   { path: "/dashboard/umkm/produksi",  icon: Factory,         label: "Produksi" },
   { path: "/dashboard/umkm/laporan",   icon: TrendingUp,      label: "Laporan" },
-  { path: "/dashboard/umkm/catatan",   icon: ClipboardList,   label: "Catatan" },
-  { path: "/dashboard/umkm/ai",        icon: Bot,             label: "AI" },
+];
+const moreUMKM = [
+  { path: "/dashboard/umkm/dompet",        icon: Wallet,          label: "Dompet" },
+  { path: "/dashboard/umkm/utang-piutang", icon: HandCoins,       label: "Utang-Piutang" },
+  { path: "/dashboard/umkm/catatan",       icon: ClipboardList,   label: "Catatan" },
+  { path: "/dashboard/umkm/ai",            icon: Bot,             label: "AI" },
 ];
 
 // Personal: 4 menu utama tampil langsung (2 kiri, 2 kanan), tombol "+" persis
@@ -41,6 +48,9 @@ export default function BottomNav() {
   const isUMKM = user?.mode === "umkm";
   const accent = isUMKM ? "umkm" : "personal";
 
+  const primary = isUMKM ? primaryUMKM : primaryPersonal;
+  const more    = isUMKM ? moreUMKM    : morePersonal;
+
   // Tutup popup pas ganti halaman
   useEffect(() => { setMoreOpen(false); }, [location.pathname]);
   // Tutup popup pas klik di luar. Tombol "+" dan popup-nya sendiri
@@ -53,34 +63,14 @@ export default function BottomNav() {
     return () => document.removeEventListener("click", onOutside);
   }, [moreOpen]);
 
-  const isMoreActive = !isUMKM && morePersonal.some(m => m.path === location.pathname);
-
-  if (isUMKM) {
-    return (
-      <nav className={`bottom-nav bottom-nav--${accent}`}>
-        {menuUMKM.map((item) => {
-          const active = location.pathname === item.path;
-          return (
-            <button
-              key={item.path}
-              className={`bottom-nav__item ${active ? `bottom-nav__item--active bottom-nav__item--${accent}` : ""}`}
-              onClick={() => navigate(item.path)}
-            >
-              <span className="bottom-nav__icon"><item.icon size={20} /></span>
-              <span className="bottom-nav__label">{item.label}</span>
-            </button>
-          );
-        })}
-      </nav>
-    );
-  }
+  const isMoreActive = more.some(m => m.path === location.pathname);
 
   return (
-    <div className="bottom-nav-wrap" ref={wrapRef}>
+    <div className={`bottom-nav-wrap bottom-nav-wrap--${accent}`} ref={wrapRef}>
       {/* Popup "Menu Lainnya" — muncul di atas tombol + */}
       {moreOpen && (
         <div className="bottom-nav__more-popup" onClick={(e) => e.stopPropagation()}>
-          {morePersonal.map((item) => {
+          {more.map((item) => {
             const active = location.pathname === item.path;
             return (
               <button
@@ -98,7 +88,7 @@ export default function BottomNav() {
 
       <nav className={`bottom-nav bottom-nav--${accent}`}>
         <div className="bottom-nav__side">
-          {primaryPersonal.slice(0, 2).map((item) => {
+          {primary.slice(0, 2).map((item) => {
             const active = location.pathname === item.path;
             return (
               <button
@@ -124,7 +114,7 @@ export default function BottomNav() {
         </button>
 
         <div className="bottom-nav__side">
-          {primaryPersonal.slice(2).map((item) => {
+          {primary.slice(2).map((item) => {
             const active = location.pathname === item.path;
             return (
               <button

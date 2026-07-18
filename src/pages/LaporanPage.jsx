@@ -5,8 +5,6 @@ import PageHeader from "../components/PageHeader";
 import { getTransactions, calcSummary, formatRupiah, groupByMonth, groupByCategory, groupByCategoryType, monthLabel, isModalUsaha, isRealKasTx, computeKasStats, getKasEmoji } from "../utils/storage";
 import { nilaiStok } from "../utils/umkmCalc";
 import BreakEvenPoint from "../components/BreakEvenPoint";
-import UtangPiutang from "../components/UtangPiutang";
-import Dompet from "../components/Dompet";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import CountUp from "../components/CountUp";
@@ -315,9 +313,7 @@ export default function LaporanPage() {
                 { id: "labarugi",     icon: "", label: "Laba-Rugi" },
                 { id: "neraca",       icon: "", label: "Neraca" },
                 { id: "aruskas",      icon: "", label: "Arus Kas" },
-                { id: "dompet",       icon: "", label: "Dompet" },
                 { id: "bep",          icon: "", label: "Break-Even Point" },
-                { id: "utangpiutang", icon: "", label: "Utang-Piutang" },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -328,12 +324,6 @@ export default function LaporanPage() {
                 </button>
               ))}
             </div>
-
-            {/* Tab: Utang-Piutang */}
-            {activeTab === "utangpiutang" && <UtangPiutang />}
-
-            {/* Tab: Dompet */}
-            {activeTab === "dompet" && <Dompet />}
 
             {/* Tab: BEP */}
             {activeTab === "bep" && <BreakEvenPoint />}

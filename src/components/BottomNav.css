@@ -131,14 +131,14 @@
     bottom: calc(100% + 0.5rem);
     left: 50%;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 0.4rem;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: 0.6rem;
     box-shadow: 0 -6px 24px rgba(0,0,0,0.25);
-    min-width: 180px;
+    min-width: 200px;
     animation: bottomNavPopupIn 0.2s ease forwards;
   }
   /* Animasi custom (BUKAN animate-fadeUp) — supaya translateX(-50%) buat
@@ -163,7 +163,12 @@
     cursor: pointer;
   }
   .bottom-nav__more-item:hover { background: var(--border); color: var(--text-primary); }
-  .bottom-nav__more-item--active {
+  .bottom-nav-wrap--umkm .bottom-nav__more-item--active {
+    background: var(--accent-umkm-dim);
+    border-color: var(--accent-umkm-dim);
+    color: var(--accent-umkm);
+  }
+  .bottom-nav-wrap--personal .bottom-nav__more-item--active {
     background: var(--accent-personal-dim);
     border-color: var(--success-dim);
     color: var(--accent-personal);
