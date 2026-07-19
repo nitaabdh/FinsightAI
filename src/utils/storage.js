@@ -6,11 +6,11 @@
 export const CATEGORIES = {
   umkm: {
     pemasukan: ["Modal Usaha", "Penjualan Produk", "Penjualan Aset Usaha", "Jasa", "Komisi", "Investasi", "Lainnya"],
-    pengeluaran: ["Bahan Baku / HPP", "Operasional", "Gaji Karyawan", "Marketing", "Pembelian Aset Usaha", "Kerugian Stok (Rusak/Gagal)", "Sample & Marketing", "Utilitas", "Lainnya"],
+    pengeluaran: ["Bahan Baku / HPP", "Operasional", "Gaji Karyawan", "Marketing", "Pembelian Aset Usaha", "Kerugian Stok (Rusak/Gagal)", "Sample & Marketing", "Utilitas", "Prive Pemilik", "Lainnya"],
   },
   personal: {
-    pemasukan: ["Gaji", "Freelance", "Bisnis Sampingan", "Hadiah", "Lainnya"],
-    pengeluaran: ["Makan & Minum", "Transportasi", "Belanja", "Tagihan", "Hiburan", "Kesehatan", "Pendidikan", "Lainnya"],
+    pemasukan: ["Gaji", "Freelance", "Bisnis Sampingan", "Hadiah", "Tarik dari Usaha", "Lainnya"],
+    pengeluaran: ["Makan & Minum", "Transportasi", "Belanja", "Tagihan", "Hiburan", "Kesehatan", "Pendidikan", "Setor Modal ke Usaha", "Lainnya"],
   },
 };
 
@@ -128,6 +128,12 @@ function normalizeTransaction(tx) {
 // Transaksi kategori "Modal Usaha" adalah setoran modal, bukan pendapatan usaha,
 // jadi harus dikeluarkan dari perhitungan Omzet/Laba supaya laporan keuangan akurat.
 export const isModalUsaha = (t) => t.type === "pemasukan" && t.category === "Modal Usaha";
+
+// ── Prive Pemilik ────────────────────────────────────────────────────────────
+// Kebalikan dari Modal Usaha: pemilik AMBIL uang usaha buat kebutuhan pribadi.
+// Ini bukan biaya operasional usaha, jadi sama kayak Modal Usaha harus dikeluarkan
+// dari perhitungan Omzet/Laba (tapi tetap ngurangin saldo kas & ekuitas di Neraca).
+export const isPriveUsaha = (t) => t.type === "pengeluaran" && t.category === "Prive Pemilik";
 
 // Emoji per nama kas/dompet — dipakai bareng computeKasStats di beberapa halaman
 const KAS_EMOJI = { "kas tunai": "💵", "rekening bank": "🏦", "e-wallet": "📱", "qris": "🇮🇩" };

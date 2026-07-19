@@ -2,10 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { genId, formatRupiah } from "../utils/umkmCalc";
 import CountUp from "./CountUp";
+import RupiahInput from "./RupiahInput";
 import { getTransactions, computeKasStats, getKasEmoji } from "../utils/storage";
 import "./Dompet.css";
 
-import { Pencil, Trash2, Wallet } from "lucide-react";
+import { Pencil, Trash2, Wallet, ArrowLeftRight } from "lucide-react";
 const JENIS_OPTIONS = ["Tunai", "Bank", "E-Wallet", "QRIS", "Lainnya"];
 const emptyForm = { nama: "", jenis: "Tunai", catatan: "" };
 
@@ -27,7 +28,7 @@ async function apiFetch(url, options = {}) {
 //    biar langsung muncul di dropdown pilihan kas pas nyatet transaksi/transfer.
 // 2. Tempat ngasih catatan per dompet (misal nomor rekening, link akun e-wallet, dll).
 export default function Dompet({ mode = "umkm" }) {
-  const { user } = useAuth();
+  const { user, savedAccounts } = useAuth();
   const formRef = useRef(null);
   const [list, setList]         = useState([]); // dompet yang terdaftar (dari tabel dompet)
   const [transactions, setTransactions] = useState([]);
@@ -38,6 +39,75 @@ export default function Dompet({ mode = "umkm" }) {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading]   = useState(true);
   const [submitting, setSubmitting] = useState(false); // guard tombol Simpan/Tambah biar nggak keklik dobel
+
+  // ── Transfer Lintas Akun (Setor Modal / Prive) ──
+  // Halaman Personal -> aksinya "Setor Modal ke Usaha", halaman UMKM -> "Ambil untuk Pribadi (Prive)".
+  // Satu arah aja per halaman biar UX-nya jelas, ketimbang nawarin 2 arah sekaligus.
+  const otherMode = mode === "personal" ? "umkm" : "personal";
+  const arahTransfer = mode === "personal" ? "setor" : "prive";
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferForm, setTransferForm] = useState({ amount: "", kasAsal: "", kasTujuan: "" });
+  const [transferError, setTransferError] = useState("");
+  const [transferSubmitting, setTransferSubmitting] = useState(false);
+  const [otherDompetList, setOtherDompetList] = useState(null); // null = belum dicoba fetch
+
+  const openTransferModal = async () => {
+    setTransferError("");
+    setTransferForm({ amount: "", kasAsal: "", kasTujuan: "" });
+    setShowTransferModal(true);
+
+    const targetToken = savedAccounts?.[otherMode]?.token;
+    if (!targetToken) { setOtherDompetList([]); return; } // belum login di akun satunya, biar form yang ngasih tau
+    try {
+      const res = await fetch(`/api/umkm?table=dompet`, {
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${targetToken}` },
+      });
+      const r = await res.json();
+      setOtherDompetList(r.success ? r.data : []);
+    } catch {
+      setOtherDompetList([]);
+    }
+  };
+
+  const handleTransferSubmit = async () => {
+    if (transferSubmitting) return;
+    const amt = Number(transferForm.amount || 0);
+    if (!amt || amt <= 0) return setTransferError("Nominal tidak valid.");
+    if (!transferForm.kasAsal) return setTransferError(arahTransfer === "setor" ? "Pilih dompet asal (dompet Personal kamu)." : "Pilih dompet asal (dompet Usaha kamu).");
+    if (!transferForm.kasTujuan) return setTransferError(arahTransfer === "setor" ? "Pilih dompet tujuan (dompet Usaha kamu)." : "Pilih dompet tujuan (dompet Personal kamu).");
+
+    const targetToken = savedAccounts?.[otherMode]?.token;
+    if (!targetToken) {
+      return setTransferError(`Akun ${otherMode === "umkm" ? "UMKM" : "Personal"} kamu belum login di device ini. Login dulu sekali ke akun itu (lewat halaman Login, mode ${otherMode === "umkm" ? "UMKM" : "Personal"}), abis itu otomatis ke-save dan bisa transfer dari sini.`);
+    }
+
+    setTransferSubmitting(true);
+    setTransferError("");
+    try {
+      const myToken = localStorage.getItem("finsight_token");
+      const res = await fetch("/api/transfer-lintas-akun", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${myToken}` },
+        body: JSON.stringify({
+          targetToken,
+          arah: arahTransfer,
+          amount: amt,
+          kasAsal: transferForm.kasAsal,
+          kasTujuan: transferForm.kasTujuan,
+        }),
+      });
+      const r = await res.json();
+      if (!r.success) { setTransferError(r.message || "Gagal memproses transfer."); return; }
+
+      const txData = await getTransactions(user.id, mode); // refresh biar saldo dompet langsung update
+      setTransactions(txData);
+      setShowTransferModal(false);
+    } catch {
+      setTransferError("Gagal menghubungi server, coba lagi ya.");
+    } finally {
+      setTransferSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -132,9 +202,15 @@ export default function Dompet({ mode = "umkm" }) {
       )}
 
       {!showForm ? (
-        <button className="dompet__btn-primary" style={{ alignSelf: "flex-start" }} onClick={() => setShowForm(true)}>
-          + Tambah Dompet
-        </button>
+        <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+          <button className="dompet__btn-primary" style={{ alignSelf: "flex-start" }} onClick={() => setShowForm(true)}>
+            + Tambah Dompet
+          </button>
+          <button className="dompet__btn-sec" style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: "0.4rem" }} onClick={openTransferModal}>
+            <ArrowLeftRight size={14} />
+            {arahTransfer === "setor" ? "Setor Modal ke Usaha" : "Ambil untuk Pribadi (Prive)"}
+          </button>
+        </div>
       ) : (
         <div className="dompet__form" ref={formRef}>
           <h3 className="dompet__form-title">{editId ? "Edit Dompet" : "+ Tambah Dompet Baru"}</h3>
@@ -219,6 +295,66 @@ export default function Dompet({ mode = "umkm" }) {
             <div className="dompet__modal-actions">
               <button className="dompet__btn-sec" onClick={() => setDelId(null)}>Batal</button>
               <button className="dompet__btn-danger" onClick={() => handleDel(delId)}>Hapus</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showTransferModal && (
+        <div className="dompet__modal-overlay" onClick={() => !transferSubmitting && setShowTransferModal(false)}>
+          <div className="dompet__modal" onClick={e => e.stopPropagation()}>
+            <h4 className="dompet__modal-title">
+              {arahTransfer === "setor" ? "Setor Modal ke Usaha" : "Ambil untuk Pribadi (Prive)"}
+            </h4>
+            <p className="dompet__modal-sub">
+              {arahTransfer === "setor"
+                ? "Uang dari dompet Personal kamu dipindah jadi modal di akun UMKM. Nggak dihitung sebagai omzet di Laporan."
+                : "Uang dari dompet UMKM kamu diambil buat kebutuhan pribadi. Nggak dihitung sebagai biaya usaha di Laporan."}
+            </p>
+
+            {savedAccounts?.[otherMode]?.token ? (
+              <div className="dompet__grid stagger-list" style={{ marginTop: "0.75rem" }}>
+                <div className="dompet__field dompet__field--wide">
+                  <label className="dompet__label">Nominal</label>
+                  <RupiahInput className="dompet__input" placeholder="0"
+                    value={transferForm.amount}
+                    onChange={(v) => { setTransferForm(p => ({ ...p, amount: v })); setTransferError(""); }} />
+                </div>
+                <div className="dompet__field">
+                  <label className="dompet__label">Dompet Asal ({arahTransfer === "setor" ? "Personal" : "UMKM"})</label>
+                  <select className="dompet__input" value={transferForm.kasAsal}
+                    onChange={(e) => { setTransferForm(p => ({ ...p, kasAsal: e.target.value })); setTransferError(""); }}>
+                    <option value="">Pilih dompet...</option>
+                    {(arahTransfer === "setor" ? [...list, ...dompetDariTransaksi] : (otherDompetList || [])).map(d => (
+                      <option key={d.nama} value={d.nama}>{d.nama}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="dompet__field">
+                  <label className="dompet__label">Dompet Tujuan ({arahTransfer === "setor" ? "UMKM" : "Personal"})</label>
+                  <select className="dompet__input" value={transferForm.kasTujuan}
+                    onChange={(e) => { setTransferForm(p => ({ ...p, kasTujuan: e.target.value })); setTransferError(""); }}>
+                    <option value="">Pilih dompet...</option>
+                    {(arahTransfer === "setor" ? (otherDompetList || []) : [...list, ...dompetDariTransaksi]).map(d => (
+                      <option key={d.nama} value={d.nama}>{d.nama}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            ) : (
+              <p className="dompet__error" style={{ marginTop: "0.75rem" }}>
+                Akun {otherMode === "umkm" ? "UMKM" : "Personal"} kamu belum login di device ini. Login dulu sekali ke akun itu lewat halaman Login (pilih mode {otherMode === "umkm" ? "UMKM" : "Personal"}) — abis itu ke-save otomatis dan kamu bisa langsung transfer dari sini tanpa login ulang lagi.
+              </p>
+            )}
+
+            {transferError && <p className="dompet__error">{transferError}</p>}
+
+            <div className="dompet__modal-actions">
+              <button className="dompet__btn-sec" onClick={() => setShowTransferModal(false)} disabled={transferSubmitting}>Batal</button>
+              {savedAccounts?.[otherMode]?.token && (
+                <button className="dompet__btn-primary" onClick={handleTransferSubmit} disabled={transferSubmitting}>
+                  {transferSubmitting ? "Memproses..." : "Transfer"}
+                </button>
+              )}
             </div>
           </div>
         </div>

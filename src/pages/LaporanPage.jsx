@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import PageHeader from "../components/PageHeader";
-import { getTransactions, calcSummary, formatRupiah, groupByMonth, groupByCategory, groupByCategoryType, monthLabel, isModalUsaha, isRealKasTx, computeKasStats, getKasEmoji } from "../utils/storage";
+import { getTransactions, calcSummary, formatRupiah, groupByMonth, groupByCategory, groupByCategoryType, monthLabel, isModalUsaha, isPriveUsaha, isRealKasTx, computeKasStats, getKasEmoji } from "../utils/storage";
 import { nilaiStok } from "../utils/umkmCalc";
 import BreakEvenPoint from "../components/BreakEvenPoint";
 import jsPDF from "jspdf";
@@ -43,8 +43,9 @@ export default function LaporanPage() {
     }).finally(() => setLoading(false));
   }, [user]);
 
-  const usahaTx = transactions.filter(t => !isModalUsaha(t)); // Omzet/Laba murni, tanpa modal
+  const usahaTx = transactions.filter(t => !isModalUsaha(t) && !isPriveUsaha(t)); // Omzet/Laba murni, tanpa modal & prive
   const modalTx = transactions.filter(isModalUsaha);
+  const priveTx = transactions.filter(isPriveUsaha);
 
   const months = [...new Set(usahaTx.map((t) => (t.date || t.createdAt || "").slice(0, 7)).filter(Boolean))].sort().reverse();
 
@@ -56,6 +57,11 @@ export default function LaporanPage() {
     ? modalTx
     : modalTx.filter((t) => (t.date || t.createdAt || "").slice(0, 7) === filterMonth);
   const totalModal    = modalFiltered.reduce((s, t) => s + Number(t.amount || 0), 0);
+
+  const priveFiltered = filterMonth === "semua"
+    ? priveTx
+    : priveTx.filter((t) => (t.date || t.createdAt || "").slice(0, 7) === filterMonth);
+  const totalPrive    = priveFiltered.reduce((s, t) => s + Number(t.amount || 0), 0);
   const totalNilaiAset = asetUsaha.reduce((s, it) => s + Number(it.hargaBeli || 0), 0);
 
   // ── Saldo per Kas — posisi kas SAAT INI, sengaja TIDAK ikut filter periode ───
@@ -80,11 +86,12 @@ export default function LaporanPage() {
   // Modal Disetor & Laba Ditahan dihitung ALL-TIME (bukan per filter bulan), karena
   // Neraca itu snapshot "per hari ini", bukan pergerakan 1 periode kayak Laba-Rugi.
   const totalModalAllTime = modalTx.reduce((s, t) => s + Number(t.amount || 0), 0);
+  const totalPriveAllTime = priveTx.reduce((s, t) => s + Number(t.amount || 0), 0);
   const labaDitahanAllTime = calcSummary(usahaTx).saldo;
 
   const totalHarta      = totalKasReal + totalPiutang + totalPersediaan + totalNilaiAset;
   const totalKewajiban  = totalUtang;
-  const totalEkuitas    = totalModalAllTime + labaDitahanAllTime;
+  const totalEkuitas    = totalModalAllTime - totalPriveAllTime + labaDitahanAllTime;
   // Selisih pencatatan: bisa muncul karena bahan baku dicatat cash-basis (jadi biaya
   // pas dibeli), bukan akrual penuh (biaya baru diakui pas kepake) — bukan bug,
   // tapi keterbatasan sistem pencatatan sederhana yang ditampilkan apa adanya.
@@ -176,6 +183,7 @@ export default function LaporanPage() {
         ["Laba Bersih", formatRupiah(summary.saldo)],
         ["Margin Laba", `${margin}%`],
         ["Modal Usaha" + (filterMonth === "semua" ? " (total)" : " (periode ini)"), formatRupiah(totalModal)],
+        ["Prive Pemilik" + (filterMonth === "semua" ? " (total)" : " (periode ini)"), formatRupiah(totalPrive)],
         ["Total Aset Usaha (per hari ini)", formatRupiah(totalNilaiAset)],
       ],
       theme: "grid",
@@ -352,6 +360,7 @@ export default function LaporanPage() {
 
                     <tr className="laporanpage__formal-group"><td colSpan={2}>MODAL</td></tr>
                     <tr><td>Modal Disetor (total keseluruhan)</td><td>{formatRupiah(totalModalAllTime)}</td></tr>
+                    <tr><td>Prive Pemilik (total keseluruhan)</td><td>-{formatRupiah(totalPriveAllTime)}</td></tr>
                     <tr><td>Laba Ditahan (akumulasi laba usaha)</td><td>{formatRupiah(labaDitahanAllTime)}</td></tr>
                     <tr className="laporanpage__formal-total"><td>Total Modal</td><td>{formatRupiah(totalEkuitas)}</td></tr>
 
@@ -518,6 +527,11 @@ export default function LaporanPage() {
                       <span className="laporanpage__sum-label">Modal Usaha</span>
                       <span className="laporanpage__sum-value"><CountUp value={totalModal} format={formatRupiah} /></span>
                       <span className="laporanpage__sum-sub">{filterMonth === "semua" ? "Total keseluruhan" : `Periode ${monthLabel(filterMonth)}`} · tidak dihitung sebagai omzet</span>
+                    </div>
+                    <div className="laporanpage__sum-card laporanpage__sum-card--expense">
+                      <span className="laporanpage__sum-label">Prive Pemilik</span>
+                      <span className="laporanpage__sum-value"><CountUp value={totalPrive} format={formatRupiah} /></span>
+                      <span className="laporanpage__sum-sub">{filterMonth === "semua" ? "Total keseluruhan" : `Periode ${monthLabel(filterMonth)}`} · tidak dihitung sebagai biaya</span>
                     </div>
                     <div className="laporanpage__sum-card laporanpage__sum-card--aset">
                       <span className="laporanpage__sum-label">Total Aset Usaha</span>
