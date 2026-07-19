@@ -75,7 +75,6 @@ export default function ScrambleText({ text, delay = 0, duration = 900, classNam
       cancelled = true;
       if (frameRef.current) cancelAnimationFrame(frameRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, delay, duration]);
 
   return (
