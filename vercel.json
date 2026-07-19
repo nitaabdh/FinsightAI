@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/reminder-check",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/reminder-check?job=daily-nudge",
+      "schedule": "0 14 * * *"
     }
   ]
 }
