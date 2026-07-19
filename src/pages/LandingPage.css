@@ -140,6 +140,7 @@
   line-height: 1.15;
   letter-spacing: -0.03em;
   color: var(--text-primary);
+  contain: layout paint; /* isolasi reflow/repaint scramble text biar nggak nyeret elemen lain */
 }
 
 .landing__title-gradient {
