@@ -2,7 +2,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { useEffect } from "react";
-import ScrambleText from "../components/ScrambleText";
 import "./LandingPage.css";
 
 import { Store, User, Moon, Sun } from "lucide-react";
@@ -50,8 +49,8 @@ export default function LandingPage() {
         </div>
 
         <h1 className="landing__title animate-fadeUp" style={{ animationDelay: "0.1s" }}>
-          <ScrambleText text="Keuangan Lebih Cerdas" duration={800} /><br />
-          <ScrambleText text="Bersama AI Agent" className="landing__title-gradient" duration={800} delay={200} />
+          Keuangan Lebih Cerdas<br />
+          <span className="landing__title-gradient">Bersama AI Agent</span>
         </h1>
 
         <p className="landing__subtitle animate-fadeUp" style={{ animationDelay: "0.2s" }}>
