@@ -1,12 +1,15 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { useEffect } from "react";
+import ScrambleText from "../components/ScrambleText";
 import "./LandingPage.css";
 
-import { Store, User } from "lucide-react";
+import { Store, User, Moon, Sun } from "lucide-react";
 export default function LandingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   // Kalau sudah login, redirect langsung ke dashboard
   useEffect(() => {
@@ -29,6 +32,14 @@ export default function LandingPage() {
           <span>FinSight</span>
           <span className="landing__logo-ai">AI</span>
         </div>
+
+        <button
+          className="landing__theme-toggle"
+          onClick={toggleTheme}
+          title={theme === "dark" ? "Ganti ke Light Mode" : "Ganti ke Dark Mode"}
+        >
+          {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
       </nav>
 
       {/* Hero */}
@@ -39,8 +50,8 @@ export default function LandingPage() {
         </div>
 
         <h1 className="landing__title animate-fadeUp" style={{ animationDelay: "0.1s" }}>
-          Keuangan Lebih Cerdas<br />
-          <span className="landing__title-gradient">Bersama AI Agent</span>
+          <ScrambleText text="Keuangan Lebih Cerdas" duration={800} /><br />
+          <ScrambleText text="Bersama AI Agent" className="landing__title-gradient" duration={800} delay={200} />
         </h1>
 
         <p className="landing__subtitle animate-fadeUp" style={{ animationDelay: "0.2s" }}>
