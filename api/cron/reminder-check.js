@@ -182,31 +182,55 @@ export default async function handler(req, res) {
   }
 }
 
-// ── Job malam: ingetin user yang BELUM catat transaksi apa-apa hari ini ──
-// Sengaja cuma kirim ke yang beneran belum nyatet apa-apa (bukan spam ke semua
-// orang tiap hari), biar nggak ganggu yang udah rajin.
+// ── Job malam: ingetin user buat catat transaksi ──
+// Tiap user bisa atur sendiri lewat bot: jam kirim (nudge_hour, WIB), pesan custom
+// (nudge_message), dan mode kirim (nudge_mode: "skip_if_logged" = default, cuma
+// kirim kalau belum nyatet apa-apa hari itu; "always" = tetap kirim tiap hari).
+//
+// Cron ini didaftarin 24x di vercel.json (satu per jam UTC, 00-23), masing-masing
+// nembak endpoint ini dengan ?hour=<jam UTC>. Function ini cuma proses user yang
+// nudge_hour (WIB)-nya cocok sama jam yang lagi jalan sekarang, biar tiap user bisa
+// punya jam pengingat sendiri-sendiri walau tetep di Vercel Hobby plan.
+function wibHourToUtcHour(wibHour) {
+  return ((wibHour - 7) % 24 + 24) % 24;
+}
+
 async function handleDailyNudge(req, res) {
   const todayStr = new Date().toISOString().slice(0, 10);
+  const requestedUtcHour = parseInt(req.query.hour, 10);
   let sent = 0, skipped = 0, errors = 0;
 
   try {
-    const { data: links, error } = await supabase.from("telegram_links").select("user_id, telegram_chat_id, daily_nudge_enabled");
+    const { data: links, error } = await supabase
+      .from("telegram_links")
+      .select("user_id, telegram_chat_id, daily_nudge_enabled, nudge_hour, nudge_message, nudge_mode");
     if (error) throw error;
 
     for (const link of links || []) {
       try {
         if (link.daily_nudge_enabled === false) { skipped++; continue; }
 
-        const { data: txToday } = await supabase
-          .from("transactions").select("id").eq("user_id", link.user_id).eq("date", todayStr).limit(1);
-        if (txToday && txToday.length > 0) { skipped++; continue; } // udah nyatet, skip
+        // Cuma proses user yang jam pilihannya cocok sama jam cron yang lagi jalan.
+        const nudgeHourWib = link.nudge_hour ?? 21; // default 21:00 WIB kalau belum pernah diset
+        if (!Number.isNaN(requestedUtcHour) && wibHourToUtcHour(nudgeHourWib) !== requestedUtcHour) {
+          continue; // bukan giliran user ini, skip diam-diam (bukan error/skip beneran)
+        }
 
-        const { data: userRow } = await supabase.from("users").select("mode").eq("id", link.user_id).maybeSingle();
-        const mode = userRow?.mode || "personal";
+        // Mode "always" tetap kirim walau udah nyatet; default tetap cek dulu.
+        if (link.nudge_mode !== "always") {
+          const { data: txToday } = await supabase
+            .from("transactions").select("id").eq("user_id", link.user_id).eq("date", todayStr).limit(1);
+          if (txToday && txToday.length > 0) { skipped++; continue; } // udah nyatet, skip
+        }
 
-        const text = mode === "umkm"
-          ? "🌙 Udah malem nih! Ada penjualan atau pengeluaran usaha hari ini? Jangan lupa dicatet ya biar laporan bulan ini tetep akurat 📊"
-          : "🌙 Udah malem nih! Ada pemasukan atau pengeluaran apa aja hari ini? Jangan lupa dicatet keuangannya ya 💰\n\nTinggal ketik aja langsung, misal \"beli kopi 20rb\".";
+        let text = link.nudge_message?.trim();
+        if (!text) {
+          const { data: userRow } = await supabase.from("users").select("mode").eq("id", link.user_id).maybeSingle();
+          const mode = userRow?.mode || "personal";
+          text = mode === "umkm"
+            ? "🌙 Udah malem nih! Ada penjualan atau pengeluaran usaha hari ini? Jangan lupa dicatet ya biar laporan bulan ini tetep akurat 📊"
+            : "🌙 Udah malem nih! Ada pemasukan atau pengeluaran apa aja hari ini? Jangan lupa dicatet keuangannya ya 💰\n\nTinggal ketik aja langsung, misal \"beli kopi 20rb\".";
+        }
 
         const result = await sendTelegramMessageWithButtons(link.telegram_chat_id, text, APP_BUTTON);
         if (result.ok) sent++; else errors++;
@@ -216,7 +240,7 @@ async function handleDailyNudge(req, res) {
       }
     }
 
-    return res.status(200).json({ ok: true, job: "daily-nudge", checked: (links || []).length, sent, skipped, errors, date: todayStr });
+    return res.status(200).json({ ok: true, job: "daily-nudge", hour: requestedUtcHour, checked: (links || []).length, sent, skipped, errors, date: todayStr });
   } catch (err) {
     console.error("[cron/daily-nudge] error:", err);
     return res.status(500).json({ ok: false, message: err.message });

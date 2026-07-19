@@ -7,7 +7,11 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { decryptSecret } from "./crypto.js";
-import { computeKasStats, calcSummary, getTransactions, formatRupiahTG, parseFlexibleDate, addAcara, addCatatan, adjustStok } from "./telegram-data.js";
+import {
+  computeKasStats, calcSummary, getTransactions, formatRupiahTG, parseFlexibleDate, addAcara, addCatatan, adjustStok,
+  getSaldoText, getLaporanText, getRiwayatText, getUpcomingAcaraText, getCatatanListText,
+  getUtangText, getTargetText, getStokText, getHargaText, getAsetText, getUtangPiutangText, getBiayaText,
+} from "./telegram-data.js";
 import { getTelegramFileBase64, getTelegramFileBuffer } from "./telegram.js";
 import { interpretGroqError, logGroqError } from "./groq-error.js";
 
@@ -142,12 +146,15 @@ async function buildContext(userId, mode) {
   return ctx;
 }
 
+const QUERY_TYPES_PERSONAL = ["saldo", "laporan", "riwayat", "acara", "catatan", "utang", "target"];
+const QUERY_TYPES_UMKM = ["saldo", "laporan", "riwayat", "acara", "catatan", "stok", "harga", "aset", "utangpiutang", "biaya"];
+
 const SYSTEM_PROMPT = (mode, contextText) => `Kamu adalah asisten keuangan FinSight yang menerima pesan bebas dari Telegram.
-Tugas kamu: KLASIFIKASIKAN pesan user jadi salah satu dari ${mode === "umkm" ? "5" : "4"} intent, lalu balas HANYA dalam format JSON (tanpa markdown code fence, tanpa teks lain di luar JSON):
+Tugas kamu: KLASIFIKASIKAN pesan user jadi salah satu dari ${mode === "umkm" ? "6" : "5"} intent, lalu balas HANYA dalam format JSON (tanpa markdown code fence, tanpa teks lain di luar JSON):
 
 {
-  "intent": "transaction" | "note" | "event" | ${mode === "umkm" ? `"stock_adjust" | ` : ""}"chat",
-  "confidence": "tinggi" atau "rendah" (WAJIB diisi buat SEMUA intent kecuali "chat" — pilih "rendah" kalau kalimatnya bisa ditafsirin lebih dari satu cara, ada bagian yang nggak jelas/kurang lengkap, atau kamu ragu ini beneran maksud user),
+  "intent": "transaction" | "note" | "event" | ${mode === "umkm" ? `"stock_adjust" | ` : ""}"query" | "chat",
+  "confidence": "tinggi" atau "rendah" (WAJIB diisi buat SEMUA intent kecuali "chat"/"query" — pilih "rendah" kalau kalimatnya bisa ditafsirin lebih dari satu cara, ada bagian yang nggak jelas/kurang lengkap, atau kamu ragu ini beneran maksud user),
   "transaction": {
     "type": "pemasukan" atau "pengeluaran",
     "amount": <angka murni tanpa titik/koma/Rp>,
@@ -156,22 +163,24 @@ Tugas kamu: KLASIFIKASIKAN pesan user jadi salah satu dari ${mode === "umkm" ? "
   } (isi null kalau intent bukan "transaction"),
   "note": { "title": "<isi catatan, ringkas tapi jelas>" } (isi null kalau intent bukan "note"),
   "event": { "title": "<judul acara>", "date_text": "<teks tanggal APA ADANYA dari user, contoh: '25 juli', 'besok', '2026-07-25'>" } (isi null kalau intent bukan "event"),
-  ${mode === "umkm" ? `"stock_adjust": { "item": "<nama bahan baku>", "quantity": <angka>, "direction": "tambah" atau "kurang" } (isi null kalau intent bukan "stock_adjust"),\n  ` : ""}"reply": "<balasan singkat kamu ke user, ramah, pakai Bahasa Indonesia casual>"
+  ${mode === "umkm" ? `"stock_adjust": { "item": "<nama bahan baku>", "quantity": <angka>, "direction": "tambah" atau "kurang" } (isi null kalau intent bukan "stock_adjust"),\n  ` : ""}"query": { "type": "${(mode === "umkm" ? QUERY_TYPES_UMKM : QUERY_TYPES_PERSONAL).join('" | "')}", "period_text": "<khusus type 'laporan': nama bulan APA ADANYA dari user kalau disebut, contoh 'juni', 'bulan lalu', 'semua'; kosongin string kalau nggak disebut/mau bulan ini>" } (isi null kalau intent bukan "query"),
+  "reply": "<balasan singkat kamu ke user, ramah, pakai Bahasa Indonesia casual>"
 }
 
 Aturan klasifikasi:
 - "transaction" kalau user cerita udah BELANJA/BAYAR/TERIMA UANG sesuatu dengan nominal jelas (boleh singkatan "20rb"=20000, "1jt"=1000000, "1,5jt"=1500000)
 - "note" kalau user minta DICATETIN sesuatu yang BUKAN soal uang/tanggal spesifik (pengingat umum, ide, to-do). Kata kunci: "catat", "inget", "jangan lupa" TANPA ada tanggal jelas
-- "event" kalau user nyebut acara/jadwal DENGAN tanggal/waktu spesifik (hari ini, besok, lusa, atau tanggal jelas)
-${mode === "umkm" ? `- "stock_adjust" kalau user bilang nambah/kurang STOK BAHAN BAKU (bukan uang). Kata kunci: "stok", "restock", "abis", "kurangin", "tambahin" + nama bahan + jumlah\n` : ""}- "chat" kalau user nanya sesuatu, curhat, minta saran, atau nggak jelas termasuk kategori mana SAMA SEKALI
-- Kalau kamu YAKIN termasuk salah satu kategori (transaction/note/event${mode === "umkm" ? "/stock_adjust" : ""}) tapi ada detail yang kurang jelas/lengkap (contoh: nominal kedengeran tapi bisa ke-mix sama angka lain, atau nama barang/bahan agak beda dari yang biasa dicatet), pilih intent yang sesuai TAPI kasih confidence "rendah" — JANGAN dialihkan ke "chat"
+- "event" kalau user nyebut acara/jadwal DENGAN tanggal/waktu spesifik (hari ini, besok, lusa, atau tanggal jelas) YANG MAU DITAMBAHIN BARU
+${mode === "umkm" ? `- "stock_adjust" kalau user bilang nambah/kurang STOK BAHAN BAKU (bukan uang). Kata kunci: "stok", "restock", "abis", "kurangin", "tambahin" + nama bahan + jumlah\n` : ""}- "query" kalau user cuma mau NGECEK/LIHAT data yang UDAH ADA, BUKAN nambah data baru. Kata kunci: "cek", "lihat", "ada apa aja", "berapa", "gimana", awalan tanya lainnya. Contoh: "ada acara apa aja minggu ini?" → query type "acara". "catatan aku apa aja ya?" → query type "catatan". "saldo aku berapa?" → query type "saldo". "laporan bulan juni gimana?" → query type "laporan", period_text "juni". Kalau nggak yakin query-nya soal apa dari daftar type yang tersedia, JANGAN pilih "query" — pilih "chat" aja
+- "chat" kalau user nanya sesuatu, curhat, minta saran, atau nggak jelas termasuk kategori mana SAMA SEKALI
+- Kalau kamu YAKIN termasuk salah satu kategori (transaction/note/event${mode === "umkm" ? "/stock_adjust" : ""}) tapi ada detail yang kurang jelas/lengkap (contoh: nominal kedengeran tapi bisa ke-mix sama angka lain, atau nama barang/bahan agak beda dari yang biasa dicatet), pilih intent yang sesuai TAPI kasih confidence "rendah" — JANGAN dialihkan ke "chat". Ini TIDAK berlaku buat "query" karena cuma nampilin data, bukan ubah data — "query" nggak butuh confidence
 - Kalau kamu bener-bener nggak tau ini masuk kategori mana (bisa "note" atau bisa "chat", dst), baru pilih "chat" dan di reply-nya tanya balik buat klarifikasi
 - Mode akun ini: ${mode === "umkm" ? "UMKM (bisnis)" : "Keuangan Pribadi"}
 
 Konteks keuangan user saat ini:
 ${contextText}
 
-Kalau intent selain "chat", isi reply dengan konfirmasi singkat kayak "Oke, dicatet!" — detailnya nggak perlu diulang di reply karena udah ditampilin terpisah.`;
+Kalau intent selain "chat"/"query", isi reply dengan konfirmasi singkat kayak "Oke, dicatet!" — detailnya nggak perlu diulang di reply karena udah ditampilin terpisah. Kalau intent "query", isi reply dengan string kosong "" karena datanya bakal ditampilin terpisah juga.`;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // VOICE NOTE — download dari Telegram, transkrip pakai Whisper (Groq), lalu
@@ -338,7 +347,7 @@ export async function handleFreeText(userId, mode, text) {
 
   // ── Kalau AI-nya sendiri ragu (confidence "rendah"), JANGAN langsung eksekusi —
   // simpen dulu sebagai "pending", minta konfirmasi user lewat tombol dulu ──
-  if (parsed.intent !== "chat" && parsed.confidence === "rendah") {
+  if (parsed.intent !== "chat" && parsed.intent !== "query" && parsed.confidence === "rendah") {
     let payload = null;
     let previewText = "";
 
@@ -439,7 +448,42 @@ export async function handleFreeText(userId, mode, text) {
     }
   }
 
+  if (parsed.intent === "query" && parsed.query?.type) {
+    try {
+      const text = await resolveQueryText(userId, mode, parsed.query.type, parsed.query.period_text || "");
+      if (text === null) {
+        return { type: "chat", reply: "Hmm, aku belum bisa cek itu lewat chat. Coba buka aplikasinya ya." };
+      }
+      return { type: "query_result", text };
+    } catch (err) {
+      console.error("[telegram-ai] gagal proses query:", err);
+      return { type: "error", message: "Aku ngerti maksudnya, tapi gagal ngambil datanya. Coba lagi ya." };
+    }
+  }
+
   return { type: "chat", reply: parsed.reply || "Hmm, coba diperjelas lagi ya." };
+}
+
+// ── Query read-only: mapping query_type (dari klasifikasi AI) ke fungsi lookup yang
+// sama persis dipakai command slash (/saldo, /acara, dst) — jadi jawabannya selalu
+// data asli dari database, bukan karangan AI. Return null kalau type nggak dikenal
+// atau nggak tersedia buat mode ini.
+async function resolveQueryText(userId, mode, queryType, periodText) {
+  switch (queryType) {
+    case "saldo":   return await getSaldoText(userId, mode);
+    case "laporan": return await getLaporanText(userId, mode, periodText || "");
+    case "riwayat": return await getRiwayatText(userId, mode);
+    case "acara":   return await getUpcomingAcaraText(userId, mode);
+    case "catatan": return await getCatatanListText(userId, mode);
+    case "utang":   return mode === "personal" ? await getUtangText(userId) : null;
+    case "target":  return mode === "personal" ? await getTargetText(userId) : null;
+    case "stok":    return mode === "umkm" ? await getStokText(userId) : null;
+    case "harga":   return mode === "umkm" ? await getHargaText(userId) : null;
+    case "aset":    return mode === "umkm" ? await getAsetText(userId) : null;
+    case "utangpiutang": return mode === "umkm" ? await getUtangPiutangText(userId) : null;
+    case "biaya":   return mode === "umkm" ? await getBiayaText(userId) : null;
+    default:        return null;
+  }
 }
 
 // Hapus transaksi terakhir yang dicatet lewat bot (buat command /batal) — jaga-jaga

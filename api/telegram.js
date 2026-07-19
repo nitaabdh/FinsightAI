@@ -205,12 +205,16 @@ const HELP_TEXT_PERSONAL =
   `/lupa — reset ingatan obrolan AI\n` +
   `/unlink — putuskan akun aktif (atau \`/unlink semua\`, \`/unlink personal\`, \`/unlink umkm\`)\n` +
   `/switch — pindah ke akun Personal/UMKM lain (kalau chat ini terhubung ke 2 akun)\n` +
-  `/nudgeoff — matiin reminder malam catat keuangan\n\n` +
+  `/nudgeoff — matiin reminder malam catat keuangan\n` +
+  `/nudgejam jam — atur jam reminder, 0-23 WIB (contoh: \`/nudgejam 20\`)\n` +
+  `/nudgepesan teks — atur pesan reminder sendiri (\`/nudgepesan reset\` buat default)\n` +
+  `/nudgemode selalu/skip — tetep kirim tiap hari, atau skip kalau udah nyatet\n\n` +
   `Kamu juga bisa langsung ngetik bebas, misal:\n` +
   `_"beli kopi 20rb"_ → langsung kecatet (nggak butuh API key)\n` +
   `_"inget rapat sama klien besok"_ → otomatis jadi acara (butuh API key)\n` +
   `_"catat jangan lupa isi ulang token listrik"_ → otomatis jadi catatan (butuh API key)\n` +
-  `_"gimana cara nabung yang efektif?"_ → tanya AI Agent (butuh API key Groq di Profil)\n\n` +
+  `_"gimana cara nabung yang efektif?"_ → tanya AI Agent (butuh API key Groq di Profil)\n` +
+  `_"ada acara apa aja minggu ini?"_ / _"catatan aku apa aja?"_ / _"saldo aku berapa?"_ → langsung dijawab pakai data asli, nggak perlu buka web (butuh API key)\n\n` +
   `📸 Kirim *foto struk belanja* juga bisa — otomatis kebaca & kecatet (butuh API key Groq juga)\n\n` +
   `🎙️ Kirim *pesan suara* juga bisa — tinggal ngomong aja, nanti ditranskrip & diproses otomatis (butuh API key Groq juga)`;
 
@@ -237,12 +241,16 @@ const HELP_TEXT_UMKM =
   `/lupa — reset ingatan obrolan AI\n` +
   `/unlink — putuskan akun aktif (atau \`/unlink semua\`, \`/unlink personal\`, \`/unlink umkm\`)\n` +
   `/switch — pindah ke akun Personal/UMKM lain (kalau chat ini terhubung ke 2 akun)\n` +
-  `/nudgeoff — matiin reminder malam catat keuangan\n\n` +
+  `/nudgeoff — matiin reminder malam catat keuangan\n` +
+  `/nudgejam jam — atur jam reminder, 0-23 WIB (contoh: \`/nudgejam 20\`)\n` +
+  `/nudgepesan teks — atur pesan reminder sendiri (\`/nudgepesan reset\` buat default)\n` +
+  `/nudgemode selalu/skip — tetep kirim tiap hari, atau skip kalau udah nyatet\n\n` +
   `Kamu juga bisa langsung ngetik bebas, misal:\n` +
   `_"jual 2 kopi susu 40rb"_ → langsung kecatet (nggak butuh API key)\n` +
   `_"tambahin stok kopi arabika 5kg"_ → otomatis update stok (butuh API key)\n` +
   `_"inget rapat sama supplier besok"_ → otomatis jadi acara (butuh API key)\n` +
-  `_"gimana strategi naikin omzet?"_ → tanya AI Agent (butuh API key Groq di Profil)\n\n` +
+  `_"gimana strategi naikin omzet?"_ → tanya AI Agent (butuh API key Groq di Profil)\n` +
+  `_"ada acara apa aja minggu ini?"_ / _"stok bahan baku sisa berapa?"_ / _"saldo berapa?"_ → langsung dijawab pakai data asli, nggak perlu buka web (butuh API key)\n\n` +
   `📸 Kirim *foto struk belanja* juga bisa — otomatis kebaca & kecatet (butuh API key Groq juga)\n\n` +
   `🎙️ Kirim *pesan suara* juga bisa — tinggal ngomong aja, nanti ditranskrip & diproses otomatis (butuh API key Groq juga)`;
 
@@ -269,6 +277,8 @@ async function displayFreeTextResult(chatId, result) {
     const s = result.data;
     const arrow = s.stokBaru >= s.stokLama ? "📈" : "📉";
     await sendTelegramMessage(chatId, `${arrow} *Stok ${s.nama} diperbarui!* 🤖\n${s.stokLama} → *${s.stokBaru}* ${s.satuan}\n\n${result.reply || ""}`);
+  } else if (result.type === "query_result") {
+    await sendTelegramMessage(chatId, result.text);
   } else if (result.type === "needs_confirmation") {
     await sendTelegramMessageWithButtons(
       chatId,
@@ -627,6 +637,55 @@ async function handleTelegramWebhook(req, res) {
     if (text === "/nudgeon") {
       await supabase.from("telegram_links").update({ daily_nudge_enabled: true }).eq("telegram_chat_id", chatId).eq("user_id", userId);
       await sendTelegramMessage(chatId, `🔔 Oke, reminder malam buat akun *${MODE_LABEL[mode]}* aku nyalain lagi.`);
+      return res.status(200).json({ ok: true });
+    }
+
+    // /nudgejam 20 -> atur jam reminder (WIB), 0-23, sekali sehari
+    if (text.startsWith("/nudgejam")) {
+      const arg = text.replace("/nudgejam", "").trim();
+      const jam = parseInt(arg, 10);
+      if (arg === "" || Number.isNaN(jam) || jam < 0 || jam > 23) {
+        await sendTelegramMessage(chatId, "Format-nya `/nudgejam <jam>`, jam-nya 0-23 (WIB). Contoh: `/nudgejam 20` buat jam 8 malam.");
+        return res.status(200).json({ ok: true });
+      }
+      await supabase.from("telegram_links").update({ nudge_hour: jam }).eq("telegram_chat_id", chatId).eq("user_id", userId);
+      await sendTelegramMessage(chatId, `⏰ Oke, reminder malam buat akun *${MODE_LABEL[mode]}* sekarang dikirim jam *${jam}:00 WIB* tiap hari.`);
+      return res.status(200).json({ ok: true });
+    }
+
+    // /nudgepesan <teks> -> atur pesan reminder custom. /nudgepesan reset -> balik ke default
+    if (text.startsWith("/nudgepesan")) {
+      const arg = text.replace("/nudgepesan", "").trim();
+      if (arg === "") {
+        await sendTelegramMessage(chatId, "Format-nya `/nudgepesan <teks>`, contoh: `/nudgepesan Woy jangan lupa nyatet ya!`. Ketik `/nudgepesan reset` buat balik ke pesan default.");
+        return res.status(200).json({ ok: true });
+      }
+      if (arg.toLowerCase() === "reset") {
+        await supabase.from("telegram_links").update({ nudge_message: null }).eq("telegram_chat_id", chatId).eq("user_id", userId);
+        await sendTelegramMessage(chatId, "🔄 Oke, pesan reminder dibalikin ke default.");
+        return res.status(200).json({ ok: true });
+      }
+      if (arg.length > 500) {
+        await sendTelegramMessage(chatId, "Pesannya kepanjangan, maksimal 500 karakter ya.");
+        return res.status(200).json({ ok: true });
+      }
+      await supabase.from("telegram_links").update({ nudge_message: arg }).eq("telegram_chat_id", chatId).eq("user_id", userId);
+      await sendTelegramMessage(chatId, `✏️ Oke, pesan reminder buat akun *${MODE_LABEL[mode]}* udah diganti jadi:\n\n"${arg}"`);
+      return res.status(200).json({ ok: true });
+    }
+
+    // /nudgemode selalu|skip -> tetap kirim tiap hari, atau skip kalau udah nyatet (default)
+    if (text.startsWith("/nudgemode")) {
+      const arg = text.replace("/nudgemode", "").trim().toLowerCase();
+      if (arg !== "selalu" && arg !== "skip") {
+        await sendTelegramMessage(chatId, "Format-nya `/nudgemode selalu` (tetep kirim tiap hari walau udah nyatet) atau `/nudgemode skip` (default, skip kalau udah nyatet hari itu).");
+        return res.status(200).json({ ok: true });
+      }
+      const nudgeMode = arg === "selalu" ? "always" : "skip_if_logged";
+      await supabase.from("telegram_links").update({ nudge_mode: nudgeMode }).eq("telegram_chat_id", chatId).eq("user_id", userId);
+      await sendTelegramMessage(chatId, arg === "selalu"
+        ? `🔁 Oke, reminder buat akun *${MODE_LABEL[mode]}* bakal tetep kekirim tiap hari walau kamu udah nyatet.`
+        : `✅ Oke, reminder buat akun *${MODE_LABEL[mode]}* bakal di-skip kalau kamu udah nyatet transaksi hari itu.`);
       return res.status(200).json({ ok: true });
     }
 
