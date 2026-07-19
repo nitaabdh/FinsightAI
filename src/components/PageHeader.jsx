@@ -3,12 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "./PageHeader.css";
 
-import { LogOut, Pencil } from "lucide-react";
+import { LogOut, Pencil, Repeat, ChevronDown } from "lucide-react";
 import AccountSwitcherList from "./AccountSwitcherList";
 export default function PageHeader({ title, subtitle }) {
   const { user, profile, logout } = useAuth();
   const navigate  = useNavigate();
   const [open, setOpen]               = useState(false);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
   const dropdownRef                   = useRef(null);
 
   const isUMKM   = user?.mode === "umkm";
@@ -27,6 +28,12 @@ export default function PageHeader({ title, subtitle }) {
     const handler = () => setOpen(false);
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
+  }, [open]);
+
+  // Tiap dropdown utama ketutup, sub-daftar "Beralih Akun" ikut ketutup —
+  // biar pas dibuka lagi nanti gak nyangkut kebuka duluan.
+  useEffect(() => {
+    if (!open) setSwitcherOpen(false);
   }, [open]);
 
   const handleLogout = () => {
@@ -91,8 +98,21 @@ export default function PageHeader({ title, subtitle }) {
 
               <div className="page-header__dropdown-divider" />
 
-              <p className="page-header__dropdown-label">Ganti Akun</p>
-              <AccountSwitcherList onAfterAction={() => setOpen(false)} />
+              <div className="page-header__dropdown-divider" />
+
+              <button
+                className={`page-header__dropdown-item ${switcherOpen ? "page-header__dropdown-item--active" : ""}`}
+                onClick={() => setSwitcherOpen((v) => !v)}
+              >
+                <span><Repeat size={14} /></span>
+                <span>Beralih Akun</span>
+                <ChevronDown size={14} className={`page-header__switcher-chevron ${switcherOpen ? "page-header__switcher-chevron--open" : ""}`} />
+              </button>
+              {switcherOpen && (
+                <div className="page-header__switcher-list">
+                  <AccountSwitcherList onAfterAction={() => { setSwitcherOpen(false); setOpen(false); }} />
+                </div>
+              )}
 
               <div className="page-header__dropdown-divider" />
 

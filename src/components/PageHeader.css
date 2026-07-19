@@ -220,6 +220,25 @@
   color: var(--danger);
 }
 
+.page-header__dropdown-item--active {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.page-header__switcher-chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.page-header__switcher-chevron--open {
+  transform: rotate(180deg);
+}
+
+.page-header__switcher-list {
+  padding: 0.2rem 0.5rem 0.5rem;
+}
+
 /* ── Mobile ── */
 /* Desktop: avatar di header disembunyikan (sudah ada di sidebar) */
 @media (min-width: 768px) {

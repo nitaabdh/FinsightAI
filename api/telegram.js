@@ -62,6 +62,52 @@ function genCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
+// ═════════════════════════════════════════════════════════════════════════
+// Multi-akun per chat: satu chat Telegram sekarang boleh terhubung ke
+// MAKSIMAL 2 akun sekaligus (1 Personal + 1 UMKM, karena cuma itu 2 mode
+// yang ada). Yang aktif (dipakai buat proses command) ditandai `is_active`.
+// Satu akun (user_id) tetap cuma boleh nempel ke 1 chat pada satu waktu.
+// ═════════════════════════════════════════════════════════════════════════
+
+// Semua link di satu chat, sudah digabung sama mode akunnya masing-masing.
+async function getLinksForChat(chatId) {
+  const { data: links } = await supabase
+    .from("telegram_links")
+    .select("user_id, is_active, telegram_username, telegram_first_name")
+    .eq("telegram_chat_id", chatId);
+  if (!links || links.length === 0) return [];
+
+  const ids = links.map((l) => l.user_id);
+  const { data: users } = await supabase.from("users").select("id, mode, name").in("id", ids);
+  return links.map((l) => ({
+    ...l,
+    mode: users?.find((u) => u.id === l.user_id)?.mode || "personal",
+    name: users?.find((u) => u.id === l.user_id)?.name || "",
+  }));
+}
+
+// Link yang lagi AKTIF di suatu chat (yang dipakai proses command/foto/voice).
+// Kalau ada link tapi somehow gak ada yang `is_active` (harusnya gak kejadian),
+// self-heal: pilih yang pertama & set aktif, biar bot gak macet total.
+async function getActiveLink(chatId) {
+  const links = await getLinksForChat(chatId);
+  if (links.length === 0) return null;
+  let active = links.find((l) => l.is_active);
+  if (!active) {
+    active = links[0];
+    await supabase.from("telegram_links").update({ is_active: true }).eq("telegram_chat_id", chatId).eq("user_id", active.user_id);
+  }
+  return active;
+}
+
+// Jadiin satu akun sebagai aktif, nonaktifin akun lain di chat yang sama.
+async function setActiveLink(chatId, userId) {
+  await supabase.from("telegram_links").update({ is_active: true }).eq("telegram_chat_id", chatId).eq("user_id", userId);
+  await supabase.from("telegram_links").update({ is_active: false }).eq("telegram_chat_id", chatId).neq("user_id", userId);
+}
+
+const MODE_LABEL = { umkm: "UMKM", personal: "Personal" };
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -157,7 +203,8 @@ const HELP_TEXT_PERSONAL =
   `/catatanedit nomor \`isi_baru\` — edit catatan\n` +
   `/batal — hapus transaksi terakhir yang salah kecatet\n` +
   `/lupa — reset ingatan obrolan AI\n` +
-  `/unlink — putuskan koneksi akun\n` +
+  `/unlink — putuskan akun aktif (atau \`/unlink semua\`, \`/unlink personal\`, \`/unlink umkm\`)\n` +
+  `/switch — pindah ke akun Personal/UMKM lain (kalau chat ini terhubung ke 2 akun)\n` +
   `/nudgeoff — matiin reminder malam catat keuangan\n\n` +
   `Kamu juga bisa langsung ngetik bebas, misal:\n` +
   `_"beli kopi 20rb"_ → langsung kecatet (nggak butuh API key)\n` +
@@ -188,7 +235,8 @@ const HELP_TEXT_UMKM =
   `/catatanedit nomor \`isi_baru\` — edit catatan\n` +
   `/batal — hapus transaksi terakhir yang salah kecatet\n` +
   `/lupa — reset ingatan obrolan AI\n` +
-  `/unlink — putuskan koneksi akun\n` +
+  `/unlink — putuskan akun aktif (atau \`/unlink semua\`, \`/unlink personal\`, \`/unlink umkm\`)\n` +
+  `/switch — pindah ke akun Personal/UMKM lain (kalau chat ini terhubung ke 2 akun)\n` +
   `/nudgeoff — matiin reminder malam catat keuangan\n\n` +
   `Kamu juga bisa langsung ngetik bebas, misal:\n` +
   `_"jual 2 kopi susu 40rb"_ → langsung kecatet (nggak butuh API key)\n` +
@@ -303,23 +351,16 @@ async function handleTelegramWebhook(req, res) {
 
     // ── Foto dikirim -> kemungkinan struk belanja ──
     if (message.photo && message.photo.length > 0) {
-      const { data: photoLink } = await supabase
-        .from("telegram_links")
-        .select("user_id")
-        .eq("telegram_chat_id", chatId)
-        .maybeSingle();
+      const photoActive = await getActiveLink(chatId);
 
-      if (!photoLink) {
+      if (!photoActive) {
         await sendTelegramMessage(chatId, HELP_TEXT_UNLINKED);
         return res.status(200).json({ ok: true });
       }
 
-      const { data: userRow2 } = await supabase.from("users").select("mode").eq("id", photoLink.user_id).maybeSingle();
-      const photoMode = userRow2?.mode || "personal";
-
-      await sendTelegramMessage(chatId, "📸 Foto diterima, aku baca dulu struknya...");
+      await sendTelegramMessage(chatId, `📸 Foto diterima (akun ${MODE_LABEL[photoActive.mode]}), aku baca dulu struknya...`);
       const biggestPhoto = message.photo[message.photo.length - 1]; // resolusi paling besar
-      const result = await handleReceiptPhoto(photoLink.user_id, photoMode, biggestPhoto.file_id);
+      const result = await handleReceiptPhoto(photoActive.user_id, photoActive.mode, biggestPhoto.file_id);
 
       if (result.type === "need_api_key") {
         await sendTelegramMessage(chatId, "Fitur baca struk butuh API key Groq kamu dulu — atur di halaman *Profil* di web ya (gratis, tinggal daftar di console.groq.com).");
@@ -346,22 +387,15 @@ async function handleTelegramWebhook(req, res) {
 
     // ── Voice note dikirim -> transkrip dulu, baru diproses kayak teks biasa ──
     if (message.voice) {
-      const { data: voiceLink } = await supabase
-        .from("telegram_links")
-        .select("user_id")
-        .eq("telegram_chat_id", chatId)
-        .maybeSingle();
+      const voiceActive = await getActiveLink(chatId);
 
-      if (!voiceLink) {
+      if (!voiceActive) {
         await sendTelegramMessage(chatId, HELP_TEXT_UNLINKED);
         return res.status(200).json({ ok: true });
       }
 
-      const { data: userRow3 } = await supabase.from("users").select("mode").eq("id", voiceLink.user_id).maybeSingle();
-      const voiceMode = userRow3?.mode || "personal";
-
-      await sendTelegramMessage(chatId, "🎙️ Pesan suara diterima, aku dengerin dulu...");
-      const result = await handleVoiceMessage(voiceLink.user_id, voiceMode, message.voice.file_id);
+      await sendTelegramMessage(chatId, `🎙️ Pesan suara diterima (akun ${MODE_LABEL[voiceActive.mode]}), aku dengerin dulu...`);
+      const result = await handleVoiceMessage(voiceActive.user_id, voiceActive.mode, message.voice.file_id);
 
       if (result.transcript) {
         await sendTelegramMessage(chatId, `_"${result.transcript}"_`);
@@ -373,20 +407,14 @@ async function handleTelegramWebhook(req, res) {
     if (!message.text) return res.status(200).json({ ok: true });
     const text = message.text.trim();
 
-    const { data: link } = await supabase
-      .from("telegram_links")
-      .select("user_id")
-      .eq("telegram_chat_id", chatId)
-      .maybeSingle();
+    // Semua akun yang nempel di chat ini sekarang (0, 1, atau 2 — max 1 Personal + 1 UMKM)
+    const linksNow = await getLinksForChat(chatId);
+    const activeNow = linksNow.find((l) => l.is_active) || linksNow[0] || null;
 
     // Logic linking dipisah jadi function biar bisa dipanggil dari 2 jalur:
     // 1) user ketik manual "/link 123456"
     // 2) user pencet tombol shortcut di web -> buka t.me/bot?start=link_123456
     async function performLink(code) {
-      if (link) {
-        await sendTelegramMessage(chatId, "Chat ini udah terhubung ke sebuah akun. Ketik /unlink dulu kalau mau ganti akun.");
-        return;
-      }
       if (!code) {
         await sendTelegramMessage(chatId, "Format: `/link 123456` — ambil kode 6 digitnya dari halaman Profil di web.");
         return;
@@ -430,13 +458,39 @@ async function handleTelegramWebhook(req, res) {
         return;
       }
 
-      await supabase.from("telegram_links").delete().eq("telegram_chat_id", chatId);
+      const { data: targetUserRow } = await supabase.from("users").select("mode").eq("id", codeRow.user_id).maybeSingle();
+      const targetMode = targetUserRow?.mode || "personal";
+      const targetLabel = MODE_LABEL[targetMode];
+
+      const already = linksNow.find((l) => l.user_id === codeRow.user_id);
+
+      if (!already) {
+        // Chat ini udah punya akun dengan MODE yang sama (misal udah ada Personal,
+        // terus coba link akun Personal lain) -> tolak, harus unlink dulu.
+        const sameModeOther = linksNow.find((l) => l.mode === targetMode);
+        if (sameModeOther) {
+          await sendTelegramMessage(chatId,
+            `Chat ini udah terhubung ke akun *${targetLabel}* lain. Ketik \`/unlink ${targetMode}\` dulu kalau mau ganti akun ${targetLabel}-nya.`);
+          return;
+        }
+        // Maksimal 2 akun per chat (1 Personal + 1 UMKM) — kasus ini seharusnya
+        // gak pernah kejadian karena cuma ada 2 mode, tapi dijaga buat aman.
+        if (linksNow.length >= 2) {
+          await sendTelegramMessage(chatId, "Chat ini udah terhubung ke 2 akun (maksimal). Ketik /unlink dulu kalau mau ganti salah satu.");
+          return;
+        }
+      }
+
+      // Pastiin akun (user_id) ini gak nyangkut di chat Telegram LAIN — 1 akun cuma
+      // boleh nempel ke 1 chat pada satu waktu (kalau pindah HP/akun TG, ke-replace).
+      await supabase.from("telegram_links").delete().eq("user_id", codeRow.user_id);
 
       const { error: insertErr } = await supabase.from("telegram_links").insert({
         user_id: codeRow.user_id,
         telegram_chat_id: chatId,
         telegram_username: from.username || null,
         telegram_first_name: from.first_name || null,
+        is_active: true,
       });
       await supabase.from("telegram_link_codes").delete().eq("code", code);
       await supabase.from("telegram_link_attempts").delete().eq("telegram_chat_id", chatId);
@@ -447,9 +501,18 @@ async function handleTelegramWebhook(req, res) {
         return;
       }
 
-      await sendTelegramMessageWithButtons(chatId, `✅ Berhasil terhubung! Ketik /help buat lihat semua perintah yang bisa dipakai.`, [
-        { text: "🌐 Buka Aplikasi", url: APP_URL },
-      ]);
+      // Akun yang baru di-link jadi AKTIF; nonaktifin akun lain di chat yang sama (kalau ada).
+      await supabase.from("telegram_links").update({ is_active: false }).eq("telegram_chat_id", chatId).neq("user_id", codeRow.user_id);
+
+      const totalLinked = already ? linksNow.length : linksNow.length + 1;
+      const extraHint = totalLinked > 1
+        ? `\n\nChat ini sekarang terhubung ke 2 akun (Personal & UMKM). Ketik /switch buat pindah-pindah kapan aja.`
+        : "";
+
+      await sendTelegramMessageWithButtons(chatId,
+        `✅ Berhasil terhubung ke akun *${targetLabel}*!${extraHint}\n\nKetik /help buat lihat semua perintah yang bisa dipakai.`, [
+          { text: "🌐 Buka Aplikasi", url: APP_URL },
+        ]);
     }
 
     if (text === "/start" || text.startsWith("/start ")) {
@@ -461,8 +524,9 @@ async function handleTelegramWebhook(req, res) {
         await performLink(payload.replace("link_", "").trim());
         return res.status(200).json({ ok: true });
       }
-      if (link) {
-        await sendTelegramMessageWithButtons(chatId, `Halo lagi, ${escapeMd(from.first_name || "")}! Akun kamu udah terhubung. Ketik /help buat lihat perintah yang ada.`, [
+      if (activeNow) {
+        const otherHint = linksNow.length > 1 ? ` (akun aktif: *${MODE_LABEL[activeNow.mode]}*, ketik /switch buat ganti)` : "";
+        await sendTelegramMessageWithButtons(chatId, `Halo lagi, ${escapeMd(from.first_name || "")}! Akun kamu udah terhubung${otherHint}. Ketik /help buat lihat perintah yang ada.`, [
           { text: "🌐 Buka Aplikasi", url: APP_URL },
         ]);
       } else {
@@ -476,34 +540,102 @@ async function handleTelegramWebhook(req, res) {
       return res.status(200).json({ ok: true });
     }
 
-    if (!link) {
+    if (!activeNow) {
       await sendTelegramMessage(chatId, HELP_TEXT_UNLINKED);
       return res.status(200).json({ ok: true });
     }
 
-    const userId = link.user_id;
-    const { data: userRow } = await supabase.from("users").select("mode, name").eq("id", userId).maybeSingle();
-    const mode = userRow?.mode || "personal";
+    const userId = activeNow.user_id;
+    const mode = activeNow.mode;
 
-    if (text === "/unlink") {
-      await supabase.from("telegram_links").delete().eq("telegram_chat_id", chatId);
-      await sendTelegramMessage(chatId, "🔌 Akun berhasil diputuskan dari bot ini. Ketik /link <kode> kalau mau hubungin lagi.");
+    // /unlink            -> putuskan akun yang lagi AKTIF di chat ini
+    // /unlink semua      -> putuskan SEMUA akun di chat ini (personal & umkm)
+    // /unlink personal   -> putuskan akun Personal secara spesifik (nggak peduli lagi aktif atau nggak)
+    // /unlink umkm       -> putuskan akun UMKM secara spesifik
+    if (text === "/unlink" || text.startsWith("/unlink ")) {
+      const arg = text.replace("/unlink", "").trim().toLowerCase();
+
+      if (arg === "semua" || arg === "all") {
+        await supabase.from("telegram_links").delete().eq("telegram_chat_id", chatId);
+        await sendTelegramMessage(chatId, "🔌 Semua akun berhasil diputuskan dari bot ini. Ketik /link <kode> kalau mau hubungin lagi.");
+        return res.status(200).json({ ok: true });
+      }
+
+      if (arg === "personal" || arg === "umkm") {
+        const target = linksNow.find((l) => l.mode === arg);
+        if (!target) {
+          await sendTelegramMessage(chatId, `Chat ini nggak ada akun ${MODE_LABEL[arg]} yang terhubung.`);
+          return res.status(200).json({ ok: true });
+        }
+        await supabase.from("telegram_links").delete().eq("telegram_chat_id", chatId).eq("user_id", target.user_id);
+        const remaining = linksNow.filter((l) => l.user_id !== target.user_id);
+        if (remaining.length > 0) {
+          await setActiveLink(chatId, remaining[0].user_id);
+          await sendTelegramMessage(chatId, `🔌 Akun ${MODE_LABEL[arg]} diputuskan. Otomatis pindah ke akun *${MODE_LABEL[remaining[0].mode]}* yang masih terhubung.`);
+        } else {
+          await sendTelegramMessage(chatId, `🔌 Akun ${MODE_LABEL[arg]} berhasil diputuskan dari bot ini. Ketik /link <kode> kalau mau hubungin lagi.`);
+        }
+        return res.status(200).json({ ok: true });
+      }
+
+      // Tanpa argumen -> putuskan akun yang lagi aktif aja
+      await supabase.from("telegram_links").delete().eq("telegram_chat_id", chatId).eq("user_id", userId);
+      const remaining = linksNow.filter((l) => l.user_id !== userId);
+      if (remaining.length > 0) {
+        await setActiveLink(chatId, remaining[0].user_id);
+        await sendTelegramMessage(chatId, `🔌 Akun *${MODE_LABEL[mode]}* diputuskan. Otomatis pindah ke akun *${MODE_LABEL[remaining[0].mode]}* yang masih terhubung.`);
+      } else {
+        await sendTelegramMessage(chatId, "🔌 Akun berhasil diputuskan dari bot ini. Ketik /link <kode> kalau mau hubungin lagi.");
+      }
+      return res.status(200).json({ ok: true });
+    }
+
+    // /switch            -> kalau ada 2 akun terhubung, pindah ke yang satunya
+    // /switch personal   -> pindah eksplisit ke akun Personal
+    // /switch umkm       -> pindah eksplisit ke akun UMKM
+    if (text === "/switch" || text.startsWith("/switch ")) {
+      const arg = text.replace("/switch", "").trim().toLowerCase();
+
+      if (linksNow.length < 2) {
+        await sendTelegramMessage(chatId, `Chat ini cuma terhubung ke 1 akun (*${MODE_LABEL[mode]}*). Hubungkan akun satunya dulu lewat \`/link <kode>\` dari halaman Profil akun itu.`);
+        return res.status(200).json({ ok: true });
+      }
+
+      let target;
+      if (arg === "personal" || arg === "umkm") {
+        target = linksNow.find((l) => l.mode === arg);
+        if (!target) {
+          await sendTelegramMessage(chatId, `Chat ini nggak ada akun ${MODE_LABEL[arg]} yang terhubung.`);
+          return res.status(200).json({ ok: true });
+        }
+      } else {
+        target = linksNow.find((l) => l.user_id !== userId); // toggle ke akun lainnya
+      }
+
+      await setActiveLink(chatId, target.user_id);
+      await sendTelegramMessageWithButtons(chatId, `🔀 Pindah ke akun *${MODE_LABEL[target.mode]}*. Ketik /help buat lihat perintah yang tersedia di mode ini.`, [
+        { text: "🌐 Buka Aplikasi", url: APP_URL },
+      ]);
       return res.status(200).json({ ok: true });
     }
 
     if (text === "/nudgeoff") {
-      await supabase.from("telegram_links").update({ daily_nudge_enabled: false }).eq("telegram_chat_id", chatId);
-      await sendTelegramMessage(chatId, "🔕 Oke, reminder malam \"jangan lupa catat keuangan\" aku matiin. Ketik /nudgeon kalau mau nyalain lagi.");
+      await supabase.from("telegram_links").update({ daily_nudge_enabled: false }).eq("telegram_chat_id", chatId).eq("user_id", userId);
+      await sendTelegramMessage(chatId, `🔕 Oke, reminder malam "jangan lupa catat keuangan" buat akun *${MODE_LABEL[mode]}* aku matiin. Ketik /nudgeon kalau mau nyalain lagi.`);
       return res.status(200).json({ ok: true });
     }
     if (text === "/nudgeon") {
-      await supabase.from("telegram_links").update({ daily_nudge_enabled: true }).eq("telegram_chat_id", chatId);
-      await sendTelegramMessage(chatId, "🔔 Oke, reminder malam aku nyalain lagi.");
+      await supabase.from("telegram_links").update({ daily_nudge_enabled: true }).eq("telegram_chat_id", chatId).eq("user_id", userId);
+      await sendTelegramMessage(chatId, `🔔 Oke, reminder malam buat akun *${MODE_LABEL[mode]}* aku nyalain lagi.`);
       return res.status(200).json({ ok: true });
     }
 
     if (text === "/help") {
-      await sendTelegramMessageWithButtons(chatId, mode === "umkm" ? HELP_TEXT_UMKM : HELP_TEXT_PERSONAL, [
+      const baseHelp = mode === "umkm" ? HELP_TEXT_UMKM : HELP_TEXT_PERSONAL;
+      const switchHint = linksNow.length > 1
+        ? `\n\n🔀 Chat ini terhubung ke 2 akun. Sekarang lagi aktif: *${MODE_LABEL[mode]}*. Ketik /switch buat pindah ke akun ${MODE_LABEL[mode] === "UMKM" ? "Personal" : "UMKM"}.`
+        : "";
+      await sendTelegramMessageWithButtons(chatId, baseHelp + switchHint, [
         { text: "🌐 Buka Aplikasi", url: APP_URL },
       ]);
       return res.status(200).json({ ok: true });

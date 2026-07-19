@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import AccountSwitcherList from "./AccountSwitcherList";
 import {
   LayoutDashboard, Receipt, Factory, TrendingUp, FileEdit, Bot,
   CreditCard, Target, Wallet, ClipboardList, Store, User, Pencil,
-  AlertTriangle, LogOut, HandCoins,
+  AlertTriangle, LogOut, HandCoins, Repeat, ChevronDown,
 } from "lucide-react";
 import "./Sidebar.css";
 
@@ -33,6 +34,7 @@ export default function Sidebar({ collapsed, onToggle }) {
   const { user, profile, logout } = useAuth();
   const navigate  = useNavigate();
   const location  = useLocation();
+  const [showSwitcher, setShowSwitcher] = useState(false);
 
   const isUMKM  = user?.mode === "umkm";
   const menu    = isUMKM ? menuUMKM : menuPersonal;
@@ -46,10 +48,17 @@ export default function Sidebar({ collapsed, onToggle }) {
   const handleLogout = () => { logout(); window.location.href = "/"; };
   const initial = (displayName || user?.name || "U").charAt(0).toUpperCase();
 
+  // Tutup daftar switcher tiap kali sidebar di-collapse, biar pas dibuka
+  // lagi nanti nggak nyangkut kebuka duluan tanpa diklik.
+  const handleToggleCollapse = () => {
+    setShowSwitcher(false);
+    onToggle();
+  };
+
   return (
     <aside className={`sidebar sidebar--${accent} ${collapsed ? "sidebar--collapsed" : ""}`}>
       {/* Logo — klik untuk toggle collapse/expand sidebar */}
-      <button className="sidebar__logo" onClick={onToggle} title={collapsed ? "Buka sidebar" : "Tutup sidebar"}>
+      <button className="sidebar__logo" onClick={handleToggleCollapse} title={collapsed ? "Buka sidebar" : "Tutup sidebar"}>
         <span className="sidebar__logo-icon">◈</span>
         {!collapsed && (
           <span className="sidebar__logo-text">
@@ -109,8 +118,19 @@ export default function Sidebar({ collapsed, onToggle }) {
 
         {!collapsed && (
           <div className="sidebar__switcher">
-            <p className="sidebar__switcher-label">Ganti Akun</p>
-            <AccountSwitcherList />
+            <button
+              className={`sidebar__switcher-toggle ${showSwitcher ? "sidebar__switcher-toggle--open" : ""}`}
+              onClick={() => setShowSwitcher((v) => !v)}
+            >
+              <span className="sidebar__switcher-toggle-icon"><Repeat size={14} /></span>
+              <span className="sidebar__switcher-toggle-label">Beralih Akun</span>
+              <ChevronDown size={14} className="sidebar__switcher-chevron" />
+            </button>
+            {showSwitcher && (
+              <div className="sidebar__switcher-list">
+                <AccountSwitcherList onAfterAction={() => setShowSwitcher(false)} />
+              </div>
+            )}
           </div>
         )}
 
