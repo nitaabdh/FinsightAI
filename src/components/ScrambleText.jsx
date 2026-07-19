@@ -32,6 +32,8 @@ export default function ScrambleText({ text, delay = 0, duration = 900, classNam
   useEffect(() => {
     let cancelled = false;
     let startTime = null;
+    let lastUpdate = 0;
+    const UPDATE_INTERVAL = 40; // ms — cukup buat kesan "acak", nggak perlu render tiap frame (60x/detik)
 
     // Tiap karakter dapat jendela waktu "mulai settle" & "selesai settle" yang
     // sedikit acak, biar hurufnya nggak ke-reveal rata kiri-ke-kanan kaku,
@@ -46,6 +48,22 @@ export default function ScrambleText({ text, delay = 0, duration = 900, classNam
       if (cancelled) return;
       if (startTime === null) startTime = timestamp;
       const elapsed = timestamp - startTime - delay;
+
+      // Masih di fase delay (buat stagger antar ScrambleText) -> jangan
+      // render apa-apa dulu, biar nggak sia-sia makan waktu render pas
+      // halaman lagi baru load.
+      if (elapsed < 0) {
+        frameRef.current = requestAnimationFrame(tick);
+        return;
+      }
+
+      // Throttle: update tampilan paling cepat tiap UPDATE_INTERVAL ms
+      // (bukan tiap frame) — jauh lebih ringan tapi visualnya tetep mulus.
+      if (timestamp - lastUpdate < UPDATE_INTERVAL) {
+        frameRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      lastUpdate = timestamp;
 
       let output = "";
       let allSettled = true;

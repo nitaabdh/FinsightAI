@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useLayoutEffect } from "react";
 
 const ThemeContext = createContext(null);
 
@@ -9,8 +9,10 @@ export function ThemeProvider({ children }) {
     () => localStorage.getItem(THEME_KEY) || "dark"
   );
 
-  useEffect(() => {
-    // Terapkan theme ke root element
+  // useLayoutEffect (bukan useEffect) -> attribute-nya keset SEBELUM browser
+  // sempet nge-paint frame, jadi nggak ada "kedip" balik ke tema lama dulu
+  // baru lompat ke tema yang bener pas reload / pindah halaman.
+  useLayoutEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem(THEME_KEY, theme);
   }, [theme]);

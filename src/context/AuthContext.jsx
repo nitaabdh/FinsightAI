@@ -123,10 +123,6 @@ export function AuthProvider({ children }) {
       removeToken();
     }
 
-    // Apply saved theme
-    const theme = localStorage.getItem("finsight_theme") || "dark";
-    document.body.classList.toggle("light", theme === "light");
-
     setSavedAccounts(getSavedAccounts());
     setLoading(false);
   }, []);

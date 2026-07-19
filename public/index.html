@@ -2,6 +2,16 @@
 <html lang="id">
   <head>
     <meta charset="utf-8" />
+    <script>
+  (function () {
+    try {
+      var theme = localStorage.getItem("finsight_theme") || "dark";
+      document.documentElement.setAttribute("data-theme", theme);
+    } catch (e) {
+      // localStorage diblokir (mode privat dsb) -> biarin fallback dark dari CSS
+    }
+  })();
+</script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#0a0f1e" />
     <meta name="description" content="FinSight AI — Platform Keuangan Cerdas" />
