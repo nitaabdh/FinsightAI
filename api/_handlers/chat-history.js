@@ -1,7 +1,13 @@
-// /api/chat-history.js — Vercel Serverless Function
-// GET    /api/chat-history?mode=umkm   -> ambil riwayat chat AI Agent user ini
-// PUT    /api/chat-history             -> simpan/replace riwayat { mode, displayMsgs, apiMsgs }
-// DELETE /api/chat-history?mode=umkm   -> hapus riwayat chat mode itu
+// api/_handlers/chat-history.js — dipanggil dari api/data.js?resource=chat-history
+// GET    ?resource=chat-history&mode=umkm   -> ambil riwayat chat AI Agent user ini
+// PUT    ?resource=chat-history             -> simpan/replace riwayat { mode, displayMsgs, apiMsgs }
+// DELETE ?resource=chat-history&mode=umkm   -> hapus riwayat chat mode itu
+//
+// CATATAN MIGRASI: versi asli (api/chat-history.js) matiin bodyParser bawaan &
+// parse body manual (getJsonBody). Sekarang digabung 1 function bareng resource
+// lain yang semuanya pakai bodyParser default, jadi di sini tinggal pakai
+// `req.body` langsung (parsing otomatis udah dihandle Vercel). sizeLimit-nya
+// dinaikin di config `api/data.js` biar riwayat chat yang panjang tetap muat.
 
 import { createClient } from "@supabase/supabase-js";
 import jwt from "jsonwebtoken";
@@ -34,21 +40,6 @@ function isKasirToken(req) {
   try { return jwt.verify(token, JWT_SECRET)?.role === "kasir"; }
   catch { return false; }
 }
-
-function getJsonBody(req) {
-  return new Promise((resolve, reject) => {
-    let data = "";
-    req.on("data", chunk => (data += chunk));
-    req.on("end", () => {
-      try { resolve(JSON.parse(data || "{}")); } catch (e) { reject(e); }
-    });
-    req.on("error", reject);
-  });
-}
-
-export const config = {
-  api: { bodyParser: false },
-};
 
 const VALID_MODES = ["umkm", "personal"];
 
@@ -86,8 +77,7 @@ export default async function handler(req, res) {
 
     // ── PUT: simpan/replace riwayat ─────────────────────────────────────────
     if (req.method === "PUT") {
-      const body = await getJsonBody(req);
-      const { mode, displayMsgs, apiMsgs } = body;
+      const { mode, displayMsgs, apiMsgs } = req.body;
       if (!VALID_MODES.includes(mode)) {
         return res.status(400).json({ success: false, message: "Mode tidak valid." });
       }

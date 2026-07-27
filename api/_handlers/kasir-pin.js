@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { createClient } from "@supabase/supabase-js";
-import { rejectIfKasir } from "./_lib/auth-guard.js";
+import { rejectIfKasir } from "../_lib/auth-guard.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,

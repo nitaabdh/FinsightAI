@@ -100,5 +100,16 @@
       "path": "/api/cron/reminder-check?job=daily-nudge&hour=23",
       "schedule": "0 23 * * *"
     }
+  ],
+  "rewrites": [
+    { "source": "/api/debts",                 "destination": "/api/data?resource=debts" },
+    { "source": "/api/notes",                 "destination": "/api/data?resource=notes" },
+    { "source": "/api/targets",               "destination": "/api/data?resource=targets" },
+    { "source": "/api/transactions",          "destination": "/api/data?resource=transactions" },
+    { "source": "/api/chat-history",          "destination": "/api/data?resource=chat-history" },
+    { "source": "/api/transfer-lintas-akun",  "destination": "/api/data?resource=transfer-lintas-akun" },
+    { "source": "/api/kasir-login",           "destination": "/api/kasir?action=login" },
+    { "source": "/api/kasir-pin",             "destination": "/api/kasir?action=pin" },
+    { "source": "/api/kasir-checkout",        "destination": "/api/kasir?action=checkout" }
   ]
 }

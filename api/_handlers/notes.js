@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { rejectIfKasir } from "./_lib/auth-guard.js";
+import { rejectIfKasir } from "../_lib/auth-guard.js";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -26,36 +26,50 @@ export default async function handler(req, res) {
 
   const userId = decoded.id;
 
+  // `table` query param menentukan tabel mana: "cal_notes" atau "notes"
+  const table = req.query.table;
+  if (!["cal_notes", "notes"].includes(table)) {
+    return res.status(400).json({ success: false, message: "Query param 'table' harus 'cal_notes' atau 'notes'." });
+  }
+
   try {
     // ── GET ──────────────────────────────────────────────────────────────────
     if (req.method === "GET") {
-      const { data, error } = await supabase
-        .from("targets")
+      const mode = req.query.mode;
+      let query = supabase
+        .from(table)
         .select("*")
         .eq("user_id", userId)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: table === "notes" ? false : true });
 
+      if (mode) query = query.eq("mode", mode);
+
+      const { data, error } = await query;
       if (error) throw error;
       return res.status(200).json({ success: true, data: data.map(normalize) });
     }
 
-    // ── POST: tambah target baru ─────────────────────────────────────────────
+    // ── POST: tambah baru ────────────────────────────────────────────────────
     if (req.method === "POST") {
-      const { nama, target, terkumpul, deadline, penempatan } = req.body;
-      if (!nama || !target) {
-        return res.status(400).json({ success: false, message: "Nama dan nominal target wajib diisi." });
+      const { id, mode, title, body, category, color, date } = req.body;
+
+      if (!title || !mode) {
+        return res.status(400).json({ success: false, message: "Field title dan mode wajib diisi." });
       }
 
+      const payload = {
+        id,       // pakai id dari client (genId()) supaya konsisten
+        user_id:  userId,
+        mode,
+        title,
+        body:     body || "",
+        category: category || "umum",
+        ...(table === "cal_notes" ? { date } : { color: color || "yellow" }),
+      };
+
       const { data, error } = await supabase
-        .from("targets")
-        .insert({
-          user_id:    userId,
-          nama,
-          target,
-          terkumpul:  terkumpul || 0,
-          deadline:   deadline  || null,
-          penempatan: penempatan || null,
-        })
+        .from(table)
+        .insert(payload)
         .select()
         .single();
 
@@ -63,14 +77,22 @@ export default async function handler(req, res) {
       return res.status(201).json({ success: true, data: normalize(data) });
     }
 
-    // ── PUT: update terkumpul atau data target ───────────────────────────────
+    // ── PUT: update ──────────────────────────────────────────────────────────
     if (req.method === "PUT") {
-      const { id, nama, target, terkumpul, deadline, penempatan } = req.body;
-      if (!id) return res.status(400).json({ success: false, message: "ID target wajib diisi." });
+      const { id, title, body, category, color, date } = req.body;
+      if (!id) return res.status(400).json({ success: false, message: "ID wajib diisi." });
+
+      const updates = {
+        title,
+        body:       body || "",
+        category,
+        updated_at: new Date().toISOString(),
+        ...(table === "cal_notes" ? { date } : { color }),
+      };
 
       const { data, error } = await supabase
-        .from("targets")
-        .update({ nama, target, terkumpul, deadline, penempatan })
+        .from(table)
+        .update(updates)
         .eq("id", id)
         .eq("user_id", userId)
         .select()
@@ -83,10 +105,10 @@ export default async function handler(req, res) {
     // ── DELETE ───────────────────────────────────────────────────────────────
     if (req.method === "DELETE") {
       const { id } = req.query;
-      if (!id) return res.status(400).json({ success: false, message: "ID target wajib diisi." });
+      if (!id) return res.status(400).json({ success: false, message: "ID wajib diisi." });
 
       const { error } = await supabase
-        .from("targets")
+        .from(table)
         .delete()
         .eq("id", id)
         .eq("user_id", userId);
@@ -97,19 +119,21 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ success: false, message: "Method tidak diizinkan." });
   } catch (err) {
-    console.error("[targets] error:", err);
+    console.error(`[${table}] error:`, err);
     return res.status(500).json({ success: false, message: "Terjadi kesalahan server." });
   }
 }
 
-function normalize(t) {
+function normalize(n) {
   return {
-    id:         t.id,
-    nama:       t.nama,
-    target:     t.target,
-    terkumpul:  t.terkumpul,
-    deadline:   t.deadline,
-    penempatan: t.penempatan,
-    createdAt:  t.created_at,
+    id:        n.id,
+    mode:      n.mode,
+    title:     n.title,
+    body:      n.body || "",
+    category:  n.category,
+    color:     n.color   || undefined,
+    date:      n.date    || undefined,
+    createdAt: n.created_at,
+    updatedAt: n.updated_at,
   };
 }

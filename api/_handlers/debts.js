@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { rejectIfKasir } from "./_lib/auth-guard.js";
+import { rejectIfKasir } from "../_lib/auth-guard.js";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
