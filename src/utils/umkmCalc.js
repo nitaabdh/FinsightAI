@@ -245,6 +245,16 @@ export const formatRupiah = (num) =>
 export const formatAngka = (num, maxDec = 4) =>
   parseFloat((parseFloat(num) || 0).toFixed(maxDec)).toLocaleString("id-ID");
 
+// Warna avatar fallback yang KONSISTEN buat produk yang sama (dihitung dari nama-nya),
+// dipakai pas produk belum punya foto — biar tetep gampang dibedain sekilas di grid Kasir,
+// bukan cuma kotak abu-abu polos semua.
+const AVATAR_PALETTE = ["#6366f1", "#ec4899", "#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#8b5cf6", "#14b8a6"];
+export const colorFromName = (name = "") => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
+};
+
 // ── Utang-Piutang: hitung selisih hari ke jatuh tempo ──────────────────────────
 // Timezone-safe: bandingkan tanggal kalender (Y-M-D lokal), bukan timestamp absolut,
 // supaya "hari ini" konsisten berapa pun jam saat ini dieksekusi (lihat catatan bug WIB sebelumnya).

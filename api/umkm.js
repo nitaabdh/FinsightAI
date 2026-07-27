@@ -199,6 +199,11 @@ function buildPayload(body, table, userId, isUpdate = false) {
     } else if (body.hargaModal !== undefined) {
       payload.harga_modal = body.hargaModal;
     }
+    // foto_url biasanya diisi lewat /api/upload-image (bukan dari form ini), tapi
+    // tetep didukung di sini jaga-jaga kalau mau di-clear manual (kirim null/"").
+    if (body.fotoUrl !== undefined) {
+      payload.foto_url = body.fotoUrl || null;
+    }
     return payload;
   }
 
@@ -297,7 +302,7 @@ function normalize(row, table) {
   }
 
   if (table === "produk") {
-    return { ...base, nama: row.nama, items: row.items || [], biayaOperasionalItems: row.ops_items || [], biayaOperasional: row.biaya_operasional, targetUntung: row.target_untung, biayaBahan: row.biaya_bahan, totalBiaya: row.total_biaya, hargaJual: row.harga_jual, hargaOnline: row.harga_online || 0, onlineFeeRows: row.online_fee_rows || [], tipeProduk: row.tipe_produk || "racikan", pakaiStok: row.pakai_stok || false, stokJadi: row.stok_jadi || 0, hargaModal: row.harga_modal || 0 };
+    return { ...base, nama: row.nama, items: row.items || [], biayaOperasionalItems: row.ops_items || [], biayaOperasional: row.biaya_operasional, targetUntung: row.target_untung, biayaBahan: row.biaya_bahan, totalBiaya: row.total_biaya, hargaJual: row.harga_jual, hargaOnline: row.harga_online || 0, onlineFeeRows: row.online_fee_rows || [], tipeProduk: row.tipe_produk || "racikan", pakaiStok: row.pakai_stok || false, stokJadi: row.stok_jadi || 0, hargaModal: row.harga_modal || 0, fotoUrl: row.foto_url || null };
   }
 
   if (table === "biaya_operasional") {

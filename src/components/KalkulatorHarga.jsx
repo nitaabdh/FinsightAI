@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import {
   genId, formatRupiah, biayaItem, totalBiayaBahan, validUsageUnits,
-  biayaOpsItem, totalBiayaOperasional, cekKecukupanStok, applyStokDelta, baseUnitLabel,
+  biayaOpsItem, totalBiayaOperasional, cekKecukupanStok, applyStokDelta, baseUnitLabel, colorFromName,
 } from "../utils/umkmCalc";
 import RupiahInput from "./RupiahInput";
 import CountUp from "./CountUp";
@@ -52,6 +52,13 @@ export default function KalkulatorHarga() {
   const [showForm, setShowForm] = useState(false);
   const [pilihTipeDulu, setPilihTipeDulu] = useState(true); // true = lagi milih tipe produk dulu (cuma buat produk BARU)
   const [search,   setSearch]   = useState("");
+
+  // ── Foto produk ──────────────────────────────────────────────────────────
+  const [fotoFile,      setFotoFile]      = useState(null); // File yang lagi nunggu di-upload (belum ke-submit)
+  const [fotoPreview,   setFotoPreview]   = useState(null); // URL buat preview (bisa foto lama, bisa hasil pilih baru)
+  const [fotoUploading, setFotoUploading] = useState(false);
+  const [fotoError,     setFotoError]     = useState("");
+  const fotoInputRef = useRef(null);
 
   // ── Produksi (racikan+pakaiStok) & Restock (jadi_stok) — dua-duanya nambah stok_jadi,
   // bedanya Produksi NGURANGIN bahan baku dulu (sesuai resep), Restock nggak.
@@ -133,6 +140,8 @@ export default function KalkulatorHarga() {
     setSelBahan(""); setSelJumlah(""); setSelSatuan("");
     setSelOps(""); setSelOpsJumlah("1");
     setShowForm(false);
+    setFotoFile(null); setFotoPreview(null); setFotoError("");
+    if (fotoInputRef.current) fotoInputRef.current.value = "";
   };
 
   const openEdit = (p) => {
@@ -154,9 +163,82 @@ export default function KalkulatorHarga() {
     setEditId(p.id); setError(""); setPilihTipeDulu(false);
     setSelBahan(""); setSelJumlah(""); setSelSatuan("");
     setSelOps(""); setSelOpsJumlah("1");
+    setFotoFile(null); setFotoPreview(p.fotoUrl || null); setFotoError("");
+    if (fotoInputRef.current) fotoInputRef.current.value = "";
     setShowForm(true);
     setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   };
+
+  function compressImage(file, maxSize) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ratio  = Math.min(maxSize / img.width, maxSize / img.height, 1);
+          canvas.width  = img.width  * ratio;
+          canvas.height = img.height * ratio;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.85);
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Foto baru cuma DIPILIH dulu di sini (preview lokal) — beneran ke-upload
+  // belakangan pas handleSubmit (butuh produk ID dulu, yang buat produk BARU
+  // baru kebentuk setelah baris resep/harganya berhasil disimpen).
+  const handleFotoPick = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFotoError("");
+    if (file.size > 5 * 1024 * 1024) { setFotoError("Ukuran foto maksimal 5MB."); return; }
+    setFotoFile(file);
+    setFotoPreview(URL.createObjectURL(file));
+  };
+
+  // Hapus foto yang UDAH kesimpen (produk lama) — langsung ke server, beda sama
+  // batalin pilihan foto yang baru dipilih (itu cukup di-clear state lokal aja).
+  const handleHapusFotoTersimpan = async () => {
+    if (!editId) { setFotoFile(null); setFotoPreview(null); if (fotoInputRef.current) fotoInputRef.current.value = ""; return; }
+    await apiFetch(`/api/upload-image?target=produk&id=${editId}`, { method: "DELETE" });
+    setFotoFile(null); setFotoPreview(null);
+    if (fotoInputRef.current) fotoInputRef.current.value = "";
+    setProdukList(p => p.map(x => x.id === editId ? { ...x, fotoUrl: null } : x));
+  };
+
+  // Dipanggil SETELAH produk berhasil disimpen (create/update) — upload foto yang
+  // masih nunggu di state, kalau ada.
+  const uploadPendingFoto = async (produkId) => {
+    if (!fotoFile) return null;
+    setFotoUploading(true);
+    try {
+      const compressed = await compressImage(fotoFile, 500);
+      const formData = new FormData();
+      formData.append("file", compressed, "produk.jpg");
+      const token = localStorage.getItem("finsight_token");
+      const res = await fetch(`/api/upload-image?target=produk&id=${produkId}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const r = await res.json();
+      if (r.success) return r.fotoUrl;
+      setFotoError(r.message || "Produk tersimpan, tapi foto gagal ke-upload.");
+      return null;
+    } catch {
+      setFotoError("Produk tersimpan, tapi foto gagal ke-upload (koneksi bermasalah).");
+      return null;
+    } finally {
+      setFotoUploading(false);
+      setFotoFile(null);
+    }
+  };
+
 
   const handlePilihBahan = (id) => {
     setSelBahan(id);
@@ -222,18 +304,23 @@ export default function KalkulatorHarga() {
           body: JSON.stringify({ id: editId, ...payload }),
         });
         if (r.success) {
-          setProdukList(p => p.map(x => x.id === editId ? r.data : x));
+          const fotoUrl = await uploadPendingFoto(editId);
+          const savedProduk = fotoUrl ? { ...r.data, fotoUrl } : r.data;
+          setProdukList(p => p.map(x => x.id === editId ? savedProduk : x));
           window.dispatchEvent(new CustomEvent("produkUpdated"));
         } else {
           return setError(r.message || "Gagal menyimpan perubahan produk. Coba lagi.");
         }
       } else {
+        const newId = genId();
         const r = await apiFetch(`/api/umkm?table=produk`, {
           method: "POST",
-          body: JSON.stringify({ id: genId(), ...payload, createdAt: Date.now() }),
+          body: JSON.stringify({ id: newId, ...payload, createdAt: Date.now() }),
         });
         if (r.success) {
-          setProdukList(p => [r.data, ...p]);
+          const fotoUrl = await uploadPendingFoto(newId);
+          const savedProduk = fotoUrl ? { ...r.data, fotoUrl } : r.data;
+          setProdukList(p => [savedProduk, ...p]);
           window.dispatchEvent(new CustomEvent("produkUpdated"));
         } else {
           return setError(r.message || "Gagal menyimpan produk. Coba lagi.");
@@ -455,6 +542,28 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
             value={form.nama} onChange={e => { setForm(p => ({ ...p, nama: e.target.value })); setError(""); }} />
         </div>
 
+        <div className="kalkharga__field">
+          <label className="kalkharga__label">Foto Produk <span className="kalkharga__hint">(opsional, biar keliatan di grid Kasir)</span></label>
+          <div className="kalkharga__foto-row">
+            <div className="kalkharga__foto-preview" style={!fotoPreview ? { background: colorFromName(form.nama || "?") } : undefined}>
+              {fotoUploading ? (
+                <span className="kalkharga__foto-loading">⏳</span>
+              ) : fotoPreview ? (
+                <img src={fotoPreview} alt="Preview produk" />
+              ) : (
+                <span className="kalkharga__foto-initial">{(form.nama || "?").charAt(0).toUpperCase()}</span>
+              )}
+            </div>
+            <div className="kalkharga__foto-actions">
+              <input ref={fotoInputRef} type="file" accept="image/*" onChange={handleFotoPick} className="kalkharga__foto-input" />
+              {fotoPreview && (
+                <button type="button" className="kalkharga__foto-remove" onClick={handleHapusFotoTersimpan}>Hapus foto</button>
+              )}
+              {fotoError && <p className="kalkharga__foto-error">{fotoError}</p>}
+            </div>
+          </div>
+        </div>
+
         {isRacikan ? (
         <>
         <div className="kalkharga__addbahan">
@@ -626,7 +735,12 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
             {filteredProdukList.map(p => (
               <div key={p.id} className="kalkharga__produk-card">
                 <div className="kalkharga__produk-header">
-                  <span className="kalkharga__produk-nama">{p.nama}</span>
+                  <div className="kalkharga__produk-titlewrap">
+                    <div className="kalkharga__produk-thumb" style={!p.fotoUrl ? { background: colorFromName(p.nama) } : undefined}>
+                      {p.fotoUrl ? <img src={p.fotoUrl} alt={p.nama} /> : <span>{p.nama.charAt(0).toUpperCase()}</span>}
+                    </div>
+                    <span className="kalkharga__produk-nama">{p.nama}</span>
+                  </div>
                   <div className="kalkharga__produk-actions">
                     <button className="kalkharga__produk-edit" onClick={() => openEdit(p)} title="Edit"><Pencil size={14} /></button>
                     <button className="kalkharga__produk-del" onClick={() => setDelId(p.id)} title="Hapus"><Trash2 size={14} /></button>

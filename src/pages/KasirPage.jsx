@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import PageHeader from "../components/PageHeader";
 import RupiahInput from "../components/RupiahInput";
-import { formatRupiah } from "../utils/umkmCalc";
+import { formatRupiah, colorFromName } from "../utils/umkmCalc";
 import "./KasirPage.css";
 
 import { ShoppingCart, Plus, Minus, Trash2, Search, X } from "lucide-react";
@@ -148,13 +148,24 @@ export default function KasirPage() {
                 return (
                   <button key={p.id} className={"kasir__card" + (habis ? " kasir__card--habis" : "")}
                     disabled={habis} onClick={() => addToCart(p)}>
-                    <span className="kasir__card-nama">{p.nama}</span>
-                    <span className="kasir__card-harga">{formatRupiah(p.hargaJual)}</span>
-                    {sisa !== Infinity && (
-                      <span className={"kasir__card-stok" + (habis ? " kasir__card-stok--habis" : "")}>
-                        {habis ? "Stok habis" : `Stok: ${sisa}`}
-                      </span>
-                    )}
+                    <div className="kasir__card-thumb">
+                      {p.fotoUrl ? (
+                        <img src={p.fotoUrl} alt={p.nama} className="kasir__card-img" loading="lazy" />
+                      ) : (
+                        <div className="kasir__card-initial" style={{ background: colorFromName(p.nama) }}>
+                          {p.nama.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      {sisa !== Infinity && (
+                        <span className={"kasir__card-stok-badge" + (habis ? " kasir__card-stok-badge--habis" : "")}>
+                          {habis ? "Habis" : sisa}
+                        </span>
+                      )}
+                    </div>
+                    <div className="kasir__card-info">
+                      <span className="kasir__card-nama">{p.nama}</span>
+                      <span className="kasir__card-harga">{formatRupiah(p.hargaJual)}</span>
+                    </div>
                   </button>
                 );
               })

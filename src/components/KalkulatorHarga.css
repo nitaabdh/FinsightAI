@@ -53,6 +53,36 @@
 
 .kalkharga__hint { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
 
+/* Foto Produk */
+.kalkharga__foto-row { display: flex; align-items: center; gap: 0.9rem; }
+.kalkharga__foto-preview {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+}
+.kalkharga__foto-preview img { width: 100%; height: 100%; object-fit: cover; }
+.kalkharga__foto-initial { font-size: 1.6rem; font-weight: 800; color: #fff; font-family: var(--font-display); }
+.kalkharga__foto-loading { font-size: 1.2rem; }
+.kalkharga__foto-actions { display: flex; flex-direction: column; gap: 0.35rem; flex: 1; }
+.kalkharga__foto-input { font-size: 12px; color: var(--text-secondary); }
+.kalkharga__foto-remove {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: #e5484d;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+.kalkharga__foto-error { font-size: 12px; color: #e5484d; margin: 0; }
+
 .kalkharga__addbahan-row {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr auto;
@@ -249,7 +279,14 @@
 .kalkharga__produk-card:hover { border-color: var(--accent-umkm); }
 
 .kalkharga__produk-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
-.kalkharga__produk-nama { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.kalkharga__produk-titlewrap { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.kalkharga__produk-thumb {
+  width: 30px; height: 30px; flex-shrink: 0; border-radius: 8px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.kalkharga__produk-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.kalkharga__produk-thumb span { font-size: 12px; font-weight: 800; color: #fff; font-family: var(--font-display); }
+.kalkharga__produk-nama { font-size: 14px; font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kalkharga__produk-actions { display: flex; gap: 0.2rem; flex-shrink: 0; }
 
 .kalkharga__produk-edit, .kalkharga__produk-del {
