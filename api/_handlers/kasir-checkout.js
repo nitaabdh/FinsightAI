@@ -209,12 +209,25 @@ export default async function handler(req, res) {
       const { error: biErr } = await supabase.from("penjualan_items").insert(breakdownWithRef);
       if (biErr) throw biErr;
 
+      // Ambil template struk (nama toko, alamat, footer) buat langsung dipakai
+      // nge-print struk abis checkout — diambil di sini (bukan lewat /api/profile)
+      // soalnya /api/profile diblokir buat token Mode Kasir (lihat auth-guard.js),
+      // dan struk emang perlu bisa diprint langsung dari sesi Kasir juga.
+      const { data: profileRow } = await supabase
+        .from("profiles").select("struk_settings, display_name").eq("user_id", userId).maybeSingle();
+
       return res.status(201).json({
         success: true,
         refId,
         totalPemasukan,
         totalModalDropship,
         itemCount: items.length,
+        items: breakdownWithRef.map(it => ({
+          produkNama: it.produk_nama, tipeProduk: it.tipe_produk,
+          qty: it.qty, hargaSatuan: it.harga_satuan, subtotal: it.subtotal,
+        })),
+        strukSettings: profileRow?.struk_settings || { namaToko: profileRow?.display_name || "Toko Saya" },
+        tanggal: dateStr,
       });
     } catch (writeErr) {
       // Rollback best-effort — urutan kebalik dari yang kesave

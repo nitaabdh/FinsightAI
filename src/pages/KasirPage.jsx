@@ -4,6 +4,8 @@ import DashboardLayout from "../components/DashboardLayout";
 import PageHeader from "../components/PageHeader";
 import RupiahInput from "../components/RupiahInput";
 import { formatRupiah, colorFromName } from "../utils/umkmCalc";
+import { buildReceiptData } from "../utils/thermalPrint";
+import StrukModal from "../components/StrukModal";
 import "./KasirPage.css";
 
 import { ShoppingCart, Plus, Minus, Trash2, Search, X } from "lucide-react";
@@ -33,6 +35,8 @@ export default function KasirPage() {
   const [submitting, setSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
   const [successInfo, setSuccessInfo] = useState(null); // { totalPemasukan, itemCount }
+  const [receipt, setReceipt] = useState(null); // data struk siap-print, dari response checkout
+  const [showStruk, setShowStruk] = useState(false);
 
   const loadData = () => {
     setLoading(true);
@@ -112,6 +116,13 @@ export default function KasirPage() {
       });
       if (!r.success) { setCheckoutError(r.message || "Gagal memproses checkout."); return; }
       setSuccessInfo({ totalPemasukan: r.totalPemasukan, itemCount: totalItem });
+      setReceipt(buildReceiptData({
+        strukSettings: r.strukSettings,
+        items: r.items,
+        totalPemasukan: r.totalPemasukan,
+        tanggal: r.tanggal,
+        refId: r.refId,
+      }));
       setCart([]);
       setShowCheckout(false);
       setKasTujuan("");
@@ -249,10 +260,19 @@ export default function KasirPage() {
               Transaksinya udah otomatis kecatet di Transaksi &amp; Laporan.
             </p>
             <div className="kasir__modal-actions">
-              <button className="kasir__btn-primary" onClick={() => setSuccessInfo(null)}>Oke</button>
+              <button className="kasir__btn-sec" onClick={() => setSuccessInfo(null)}>Tutup</button>
+              {receipt && (
+                <button className="kasir__btn-primary" onClick={() => { setSuccessInfo(null); setShowStruk(true); }}>
+                  🧾 Lihat &amp; Cetak Struk
+                </button>
+              )}
             </div>
           </div>
         </div>
+      )}
+
+      {showStruk && receipt && (
+        <StrukModal receipt={receipt} onClose={() => setShowStruk(false)} />
       )}
     </DashboardLayout>
   );

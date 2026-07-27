@@ -1,0 +1,74 @@
+.struk-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200;
+  padding: 1rem;
+}
+.struk-modal {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  max-width: 380px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+.struk-modal__close {
+  position: absolute; top: 0.75rem; right: 0.75rem;
+  background: none; border: none; cursor: pointer;
+  color: var(--text-secondary);
+  padding: 0.3rem;
+}
+
+/* Struk itu sendiri — dibuat kayak kertas thermal, font monospace biar
+   rata kiri-kanannya kebayang persis kayak hasil print aslinya. */
+.struk-receipt {
+  font-family: "Courier New", monospace;
+  font-size: 13px;
+  color: #111;
+  background: #fff;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+.struk-receipt__toko { text-align: center; font-weight: 800; font-size: 15px; margin: 0 0 0.2rem; }
+.struk-receipt__alamat, .struk-receipt__tanggal { text-align: center; font-size: 11px; margin: 0.1rem 0; }
+.struk-receipt__divider { border-top: 1px dashed #999; margin: 0.5rem 0; }
+.struk-receipt__item { margin-bottom: 0.3rem; }
+.struk-receipt__item-nama { margin: 0; font-weight: 600; }
+.struk-receipt__item-row { display: flex; justify-content: space-between; }
+.struk-receipt__total { display: flex; justify-content: space-between; font-weight: 800; font-size: 14px; }
+.struk-receipt__footer { text-align: center; font-size: 11px; margin-top: 0.6rem; }
+
+.struk-modal__error { color: #e5484d; font-size: 12px; margin-bottom: 0.5rem; }
+.struk-modal__actions { display: flex; flex-direction: column; gap: 0.5rem; }
+.struk-modal__btn {
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  padding: 0.7rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+.struk-modal__btn--primary { background: var(--accent-umkm); color: #fff; }
+.struk-modal__btn--sec { background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border); }
+.struk-modal__btn:disabled { opacity: 0.6; cursor: default; }
+.struk-modal__hint { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 0.5rem; }
+
+/* Pas nge-print (window.print()), sembunyiin SEMUA elemen di halaman KECUALI
+   #struk-print-area — biar hasil print/PDF-nya cuma struk doang, rapi, nggak
+   ikut nyetak tombol/overlay/sidebar/dll. */
+@media print {
+  body * { visibility: hidden; }
+  #struk-print-area, #struk-print-area * { visibility: visible; }
+  #struk-print-area {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    box-shadow: none;
+    border-radius: 0;
+  }
+}

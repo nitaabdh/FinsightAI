@@ -107,23 +107,26 @@ export default async function handler(req, res) {
     // ── PUT: update field profil ──
     if (req.method === "PUT") {
       const body = await getJsonBody(req);
-      const { display_name, profesi, deskripsi, pendapatan, tanggungan, tujuan } = body;
+      const { display_name, profesi, deskripsi, pendapatan, tanggungan, tujuan, strukSettings } = body;
+
+      const payload = {
+        user_id: userId,
+        display_name,
+        profesi,
+        deskripsi,
+        pendapatan,
+        tanggungan,
+        tujuan,
+        updated_at: new Date().toISOString(),
+      };
+      // strukSettings cuma ditulis kalau dikirim eksplisit — biar update profil biasa
+      // (nama, deskripsi, dst dari form yang nggak nyentuh bagian struk) nggak
+      // ikut nge-reset template struk yang udah diatur ke null.
+      if (strukSettings !== undefined) payload.struk_settings = strukSettings;
 
       const { data, error } = await supabase
         .from("profiles")
-        .upsert(
-          {
-            user_id: userId,
-            display_name,
-            profesi,
-            deskripsi,
-            pendapatan,
-            tanggungan,
-            tujuan,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id" }
-        )
+        .upsert(payload, { onConflict: "user_id" })
         .select()
         .single();
 

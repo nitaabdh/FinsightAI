@@ -60,6 +60,11 @@ export default function ProfilePage() {
   const [kasirPinSaving, setKasirPinSaving]   = useState(false);
   const [kasirPinMsg, setKasirPinMsg]     = useState("");
   const [kasirPinError, setKasirPinError] = useState("");
+
+  // ── Template Struk (khusus UMKM, cuma owner) ──
+  const [strukSettings, setStrukSettings] = useState({ namaToko: "", alamat: "", footerText: "" });
+  const [strukSaving, setStrukSaving]     = useState(false);
+  const [strukMsg, setStrukMsg]           = useState("");
   const [deleteError, setDeleteError]             = useState("");
   const [deleting, setDeleting]                   = useState(false);
 
@@ -147,6 +152,11 @@ export default function ProfilePage() {
           tujuan:      r.data.tujuan       || "",
         });
         setPhotoUrl(r.data.avatar_url || null);
+        if (r.data.struk_settings) setStrukSettings({
+          namaToko: r.data.struk_settings.namaToko || "",
+          alamat: r.data.struk_settings.alamat || "",
+          footerText: r.data.struk_settings.footerText || "",
+        });
       } else {
         setForm(p => ({ ...p, displayName: user.name || "" }));
       }
@@ -301,6 +311,36 @@ export default function ProfilePage() {
       setKasirPinError("Gagal menghubungi server, coba lagi ya.");
     } finally {
       setKasirPinSaving(false);
+    }
+  };
+
+  // ── Template Struk: simpan ──
+  // Sengaja ikut ngirim field profil yang LAIN juga (display_name dkk dari `form`
+  // yang lagi ke-load) — soalnya PUT /api/profile nulis ulang semua field yang
+  // dikirim, kalau cuma kirim strukSettings doang, field lain kayak nama bisa
+  // ke-null-in nggak sengaja.
+  const handleSaveStruk = async () => {
+    setStrukMsg("");
+    setStrukSaving(true);
+    try {
+      const r = await apiFetch("/api/profile", {
+        method: "PUT",
+        body: JSON.stringify({
+          display_name: form.displayName,
+          profesi: form.profesi,
+          deskripsi: form.deskripsi,
+          pendapatan: form.pendapatan,
+          tanggungan: form.tanggungan,
+          tujuan: form.tujuan,
+          strukSettings,
+        }),
+      });
+      if (!r.success) { setStrukMsg(r.message || "Gagal menyimpan template struk."); return; }
+      setStrukMsg("Template struk berhasil disimpan.");
+    } catch {
+      setStrukMsg("Gagal menghubungi server, coba lagi ya.");
+    } finally {
+      setStrukSaving(false);
     }
   };
 
@@ -607,6 +647,45 @@ export default function ProfilePage() {
             <p className="profilepage__telegram-since">
               Login Kasir cuma bisa akses halaman Kasir doang (jualan &amp; checkout) — nggak bisa liat Laporan, Dompet, atau data lain.
             </p>
+          </div>
+          )}
+
+          {mode === "umkm" && (
+          <div className="profilepage__telegram">
+            <div className="profilepage__telegram-header">
+              <span className="profilepage__telegram-icon">🧾</span>
+              <div>
+                <h3>Template Struk</h3>
+                <p>Diisi di sini bakal langsung kepake pas cetak struk dari halaman Kasir.</p>
+              </div>
+            </div>
+
+            <div className="profilepage__field">
+              <label className="profilepage__label">Nama Toko</label>
+              <input className="profilepage__input" type="text" placeholder="Misal: Toko Berkah Jaya"
+                value={strukSettings.namaToko}
+                onChange={e => { setStrukSettings(p => ({ ...p, namaToko: e.target.value })); setStrukMsg(""); }} />
+            </div>
+            <div className="profilepage__field">
+              <label className="profilepage__label">Alamat (opsional)</label>
+              <input className="profilepage__input" type="text" placeholder="Misal: Jl. Merdeka No. 10, Surabaya"
+                value={strukSettings.alamat}
+                onChange={e => { setStrukSettings(p => ({ ...p, alamat: e.target.value })); setStrukMsg(""); }} />
+            </div>
+            <div className="profilepage__field">
+              <label className="profilepage__label">Pesan Footer</label>
+              <input className="profilepage__input" type="text" placeholder="Misal: Terima kasih telah berbelanja!"
+                value={strukSettings.footerText}
+                onChange={e => { setStrukSettings(p => ({ ...p, footerText: e.target.value })); setStrukMsg(""); }} />
+            </div>
+
+            {strukMsg && <p className="profilepage__saved-note">{strukMsg}</p>}
+
+            <div className="profilepage__actions">
+              <button className={"profilepage__save profilepage__save--" + accent} onClick={handleSaveStruk} disabled={strukSaving}>
+                {strukSaving ? "Menyimpan..." : "Simpan Template Struk"}
+              </button>
+            </div>
           </div>
           )}
 
