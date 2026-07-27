@@ -15,6 +15,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { createClient } from "@supabase/supabase-js";
 import { rejectIfKasir } from "../_lib/auth-guard.js";
+import kasirLoginHandler from "../_handlers/kasir-login.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -232,6 +233,14 @@ export default async function handler(req, res) {
       }
 
       return res.status(400).json({ success: false, message: `Action '${action}' tidak dikenali.` });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // POST /api/auth/kasir-login — didelegasikan ke handler Kasir (logic aslinya
+    // ada di api/_handlers/kasir-login.js, nggak diduplikat di sini)
+    // ═══════════════════════════════════════════════════════════════════════
+    if (routeAction === "kasir-login") {
+      return kasirLoginHandler(req, res);
     }
 
     // routeAction (dari URL) nggak dikenali sama sekali
