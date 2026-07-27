@@ -36,6 +36,16 @@ function getUserId(req) {
   }
 }
 
+// Mode Kasir (PIN login) nggak boleh akses fitur AI (bisa aja dipakai buat ngintip
+// data lewat pertanyaan bebas, atau ganti setting API key).
+function isKasirToken(req) {
+  const auth = req.headers.authorization || "";
+  const token = auth.replace("Bearer ", "");
+  if (!token) return false;
+  try { return jwt.verify(token, JWT_SECRET)?.role === "kasir"; }
+  catch { return false; }
+}
+
 // ── Tools & eksekusi tool — sama persis dengan utils/aiAgent.js ─────────────
 const TOOLS = [
   {
@@ -188,6 +198,7 @@ export default async function handler(req, res) {
 
   const userId = getUserId(req);
   if (!userId) return res.status(401).json({ success: false, message: "Unauthorized" });
+  if (isKasirToken(req)) return res.status(403).json({ success: false, message: "Mode Kasir nggak punya akses ke fitur ini." });
 
   try {
     const { messages, mode, summary, profileContext, financeContext } = req.body || {};

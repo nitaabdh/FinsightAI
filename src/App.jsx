@@ -6,6 +6,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 import LandingPage        from "./pages/LandingPage";
 import AuthPage           from "./pages/AuthPage";
+import KasirLoginPage     from "./pages/KasirLoginPage";
 import DashboardUMKM      from "./pages/DashboardUMKM";
 import DashboardPersonal  from "./pages/DashboardPersonal";
 import TransaksiPage      from "./pages/TransaksiPage";
@@ -15,6 +16,7 @@ import LaporanPage        from "./pages/LaporanPage";
 import ProfilePage        from "./pages/ProfilePage";
 import CatatanPage        from "./pages/CatatanPage";
 import ProduksiPage       from "./pages/ProduksiPage";
+import KasirPage          from "./pages/KasirPage";
 import DompetPage         from "./pages/DompetPage";
 import DompetUMKMPage     from "./pages/DompetUMKMPage";
 import UtangPiutangPage   from "./pages/UtangPiutangPage";
@@ -23,6 +25,7 @@ import FloatingCalcWrapper from "./components/FloatingCalcWrapper";
 
 function U({ children }) { return <ProtectedRoute requiredMode="umkm">{children}</ProtectedRoute>; }
 function P({ children }) { return <ProtectedRoute requiredMode="personal">{children}</ProtectedRoute>; }
+function UK({ children }) { return <ProtectedRoute requiredMode="umkm" allowKasir>{children}</ProtectedRoute>; }
 
 export default function App() {
   const [showFloat, setShowFloat] = useState(false);
@@ -40,10 +43,12 @@ export default function App() {
         <AuthProvider>
           <Routes>
             <Route path="/"           element={<LandingPage />} />
+            <Route path="/kasir-login" element={<KasirLoginPage />} />
             <Route path="/auth/:mode" element={<AuthPage />} />
 
             {/* UMKM */}
             <Route path="/dashboard/umkm"            element={<U><DashboardUMKM /></U>} />
+            <Route path="/dashboard/umkm/kasir"      element={<UK><KasirPage /></UK>} />
             <Route path="/dashboard/umkm/transaksi"  element={<U><TransaksiPage /></U>} />
             <Route path="/dashboard/umkm/produksi"   element={<U><ProduksiPage /></U>} />
             <Route path="/dashboard/umkm/laporan"    element={<U><LaporanPage /></U>} />

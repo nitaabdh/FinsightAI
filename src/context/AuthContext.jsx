@@ -115,9 +115,15 @@ export function AuthProvider({ children }) {
     const decoded = token ? decodeToken(token) : null;
 
     if (decoded && !isTokenExpired(decoded)) {
-      const u = { id: decoded.id, name: decoded.name, email: decoded.email, mode: decoded.mode };
+      const u = { id: decoded.id, name: decoded.name, email: decoded.email, mode: decoded.mode, role: decoded.role };
       setUser(u);
-      loadProfile(u);
+      // Mode Kasir nggak punya akses ke /api/profile (diblokir server), jadi
+      // skip fetch-nya dan langsung pakai nama dari token aja.
+      if (decoded.role === "kasir") {
+        setProfile({ hasProfile: false, displayName: "Kasir", photo: null });
+      } else {
+        loadProfile(u);
+      }
     } else {
       // Token tidak ada atau expired — hapus saja
       removeToken();
@@ -244,6 +250,30 @@ export function AuthProvider({ children }) {
   };
 
   // -------------------------------------------------------
+  // loginKasir / logoutKasir — Mode Kasir (PIN login dari landing page)
+  // -------------------------------------------------------
+  // SENGAJA terpisah dari login()/logout() biasa dan SENGAJA nggak nyentuh
+  // saveAccount/removeSavedAccount sama sekali. Alasannya: sesi Kasir pakai
+  // mode "umkm" juga (sama kayak akun owner beneran) — kalau ikut kesimpen/
+  // kehapus di savedAccounts (yang di-key per mode), sesi Kasir bisa nimpa
+  // atau ngehapus token akun UMKM asli si owner yang kebetulan login juga
+  // di device yang sama. Sesi Kasir emang harusnya "numpang lewat" doang,
+  // nggak masuk ke daftar switcher akun.
+  const loginKasir = (token) => {
+    saveToken(token);
+    const decoded = decodeToken(token);
+    const u = { id: decoded.id, name: decoded.name, email: decoded.email, mode: decoded.mode, role: decoded.role };
+    setUser(u);
+    setProfile({ hasProfile: false, displayName: "Kasir", photo: null });
+  };
+
+  const logoutKasir = () => {
+    removeToken();
+    setUser(null);
+    setProfile({ displayName: "", photo: null, hasProfile: false });
+  };
+
+  // -------------------------------------------------------
   // logout
   // -------------------------------------------------------
   const logout = () => {
@@ -259,7 +289,7 @@ export function AuthProvider({ children }) {
   const refreshProfile = () => loadProfile(user);
 
   return (
-    <AuthContext.Provider value={{ user, loading, profile, refreshProfile, savedAccounts, switchAccount, removeAccount, register, login, logout, updateName, checkEmailExists, resetPassword, deleteAccount, getToken }}>
+    <AuthContext.Provider value={{ user, loading, profile, refreshProfile, savedAccounts, switchAccount, removeAccount, register, login, logout, loginKasir, logoutKasir, updateName, checkEmailExists, resetPassword, deleteAccount, getToken }}>
       {children}
     </AuthContext.Provider>
   );

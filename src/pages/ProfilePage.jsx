@@ -53,6 +53,13 @@ export default function ProfilePage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deletePassword, setDeletePassword]       = useState("");
+
+  // ── Mode Kasir — PIN 6 digit (khusus UMKM, cuma owner yang bisa atur) ──
+  const [kasirPin, setKasirPin]           = useState("");
+  const [kasirPinConfirm, setKasirPinConfirm] = useState("");
+  const [kasirPinSaving, setKasirPinSaving]   = useState(false);
+  const [kasirPinMsg, setKasirPinMsg]     = useState("");
+  const [kasirPinError, setKasirPinError] = useState("");
   const [deleteError, setDeleteError]             = useState("");
   const [deleting, setDeleting]                   = useState(false);
 
@@ -263,6 +270,38 @@ export default function ProfilePage() {
     if (!r.success) { setDeleteError(r.message || "Gagal menghapus akun."); return; }
     // deleteAccount() di context udah nge-clear token & user; tinggal balik ke landing.
     navigate("/", { replace: true });
+  };
+
+  // ── Mode Kasir: atur PIN ────────────────────────────
+  const handleSaveKasirPin = async () => {
+    setKasirPinError(""); setKasirPinMsg("");
+    if (!/^\d{6}$/.test(kasirPin)) return setKasirPinError("PIN harus 6 digit angka.");
+    if (kasirPin !== kasirPinConfirm) return setKasirPinError("Konfirmasi PIN tidak sama.");
+    setKasirPinSaving(true);
+    try {
+      const r = await apiFetch("/api/kasir-pin", { method: "POST", body: JSON.stringify({ pin: kasirPin }) });
+      if (!r.success) { setKasirPinError(r.message || "Gagal menyimpan PIN."); return; }
+      setKasirPinMsg("PIN Kasir berhasil diatur. Sekarang kasir bisa login dari halaman awal pakai email ini + PIN barusan.");
+      setKasirPin(""); setKasirPinConfirm("");
+    } catch {
+      setKasirPinError("Gagal menghubungi server, coba lagi ya.");
+    } finally {
+      setKasirPinSaving(false);
+    }
+  };
+
+  const handleDisableKasir = async () => {
+    setKasirPinError(""); setKasirPinMsg("");
+    setKasirPinSaving(true);
+    try {
+      const r = await apiFetch("/api/kasir-pin", { method: "DELETE" });
+      if (!r.success) { setKasirPinError(r.message || "Gagal mematikan Mode Kasir."); return; }
+      setKasirPinMsg("Mode Kasir dimatiin. PIN lama udah nggak bisa dipakai login lagi.");
+    } catch {
+      setKasirPinError("Gagal menghubungi server, coba lagi ya.");
+    } finally {
+      setKasirPinSaving(false);
+    }
   };
 
   return (
@@ -530,6 +569,46 @@ export default function ProfilePage() {
                 AI Agent sekarang akan memberikan saran yang lebih personal untukmu </p>
             )}
           </div>
+
+          {mode === "umkm" && (
+          <div className="profilepage__telegram">
+            <div className="profilepage__telegram-header">
+              <span className="profilepage__telegram-icon">🧾</span>
+              <div>
+                <h3>Mode Kasir</h3>
+                <p>Atur PIN 6 digit biar karyawan bisa login Kasir dari halaman awal tanpa pakai akun kamu langsung.</p>
+              </div>
+            </div>
+
+            <div className="profilepage__field">
+              <label className="profilepage__label">PIN Baru (6 digit)</label>
+              <input className="profilepage__input" type="password" inputMode="numeric" maxLength={6}
+                placeholder="••••••" value={kasirPin}
+                onChange={e => { setKasirPin(e.target.value.replace(/\D/g, "")); setKasirPinError(""); setKasirPinMsg(""); }} />
+            </div>
+            <div className="profilepage__field">
+              <label className="profilepage__label">Konfirmasi PIN</label>
+              <input className="profilepage__input" type="password" inputMode="numeric" maxLength={6}
+                placeholder="••••••" value={kasirPinConfirm}
+                onChange={e => { setKasirPinConfirm(e.target.value.replace(/\D/g, "")); setKasirPinError(""); setKasirPinMsg(""); }} />
+            </div>
+
+            {kasirPinError && <p className="profilepage__saved-note" style={{ color: "var(--danger, #e5484d)" }}>{kasirPinError}</p>}
+            {kasirPinMsg && <p className="profilepage__saved-note">{kasirPinMsg}</p>}
+
+            <div className="profilepage__actions">
+              <button className={"profilepage__save profilepage__save--" + accent} onClick={handleSaveKasirPin} disabled={kasirPinSaving}>
+                {kasirPinSaving ? "Menyimpan..." : "Simpan PIN Kasir"}
+              </button>
+              <button className="profilepage__danger-btn" onClick={handleDisableKasir} disabled={kasirPinSaving} style={{ marginLeft: "0.6rem" }}>
+                Matikan Mode Kasir
+              </button>
+            </div>
+            <p className="profilepage__telegram-since">
+              Login Kasir cuma bisa akses halaman Kasir doang (jualan &amp; checkout) — nggak bisa liat Laporan, Dompet, atau data lain.
+            </p>
+          </div>
+          )}
 
           {/* ── Danger Zone ── */}
           <div className="profilepage__danger">

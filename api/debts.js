@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { rejectIfKasir } from "./_lib/auth-guard.js";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -25,6 +26,7 @@ export default async function handler(req, res) {
 
   const decoded = verifyToken(req);
   if (!decoded) return res.status(401).json({ success: false, message: "Unauthorized." });
+  if (rejectIfKasir(decoded, res)) return;
 
   const userId = decoded.id;
 

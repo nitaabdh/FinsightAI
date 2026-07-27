@@ -7,6 +7,16 @@
 // isModelIssue true kalau ini soal MODEL (bukan salah user), biar caller bisa
 // log lebih menonjol di server (developer perlu tau & ganti model/env var).
 export function interpretGroqError(errBody, modelName) {
+  // Vercel yang matiin function paksa (kelamaan proses) balikin bentuk beda dari
+  // error Groq biasa — "error" di sini STRING, bukan object kayak error Groq/OpenAI.
+  // Ini paling sering kejadian pas pertanyaannya butuh AI mikir lebih lama/rumit.
+  if (typeof errBody?.error === "string" && errBody.error.includes("TIMEOUT")) {
+    return {
+      userMessage: "Prosesnya kelamaan (timeout) — biasanya karena pertanyaannya rumit/butuh mikir panjang. Coba tanya yang lebih sederhana, atau pecah jadi beberapa pertanyaan ya.",
+      isModelIssue: false,
+    };
+  }
+
   const code = errBody?.error?.code;
   const message = errBody?.error?.message || "";
   const lowerMsg = message.toLowerCase();

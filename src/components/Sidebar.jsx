@@ -5,12 +5,13 @@ import AccountSwitcherList from "./AccountSwitcherList";
 import {
   LayoutDashboard, Receipt, Factory, TrendingUp, FileEdit, Bot,
   CreditCard, Target, Wallet, ClipboardList, Store, User, Pencil,
-  AlertTriangle, LogOut, HandCoins, Repeat, ChevronDown,
+  AlertTriangle, LogOut, HandCoins, Repeat, ChevronDown, ShoppingCart,
 } from "lucide-react";
 import "./Sidebar.css";
 
 const menuUMKM = [
   { path: "/dashboard/umkm",              icon: LayoutDashboard, label: "Dashboard" },
+  { path: "/dashboard/umkm/kasir",        icon: ShoppingCart,    label: "Kasir" },
   { path: "/dashboard/umkm/transaksi",    icon: Receipt,         label: "Transaksi" },
   { path: "/dashboard/umkm/produksi",     icon: Factory,         label: "Produksi & Stok" },
   { path: "/dashboard/umkm/dompet",       icon: Wallet,          label: "Dompet" },
@@ -31,13 +32,17 @@ const menuPersonal = [
 ];
 
 export default function Sidebar({ collapsed, onToggle }) {
-  const { user, profile, logout } = useAuth();
+  const { user, profile, logout, logoutKasir } = useAuth();
   const navigate  = useNavigate();
   const location  = useLocation();
   const [showSwitcher, setShowSwitcher] = useState(false);
 
   const isUMKM  = user?.mode === "umkm";
-  const menu    = isUMKM ? menuUMKM : menuPersonal;
+  const isKasir = user?.role === "kasir";
+  // Mode Kasir cuma boleh liat 1 menu doang — sisanya ditolak server juga
+  // (auth-guard.js), ini cuma biar nggak kelihatan menu yang bakal error kalau diklik.
+  const menu    = isKasir ? [{ path: "/dashboard/umkm/kasir", icon: ShoppingCart, label: "Kasir" }]
+                : isUMKM ? menuUMKM : menuPersonal;
   const accent  = isUMKM ? "umkm" : "personal";
   const profPath = `/dashboard/${user?.mode}/profile`;
 
@@ -45,7 +50,10 @@ export default function Sidebar({ collapsed, onToggle }) {
   const photo       = profile?.photo || null;
   const hasProfile  = profile?.hasProfile || false;
 
-  const handleLogout = () => { logout(); window.location.href = "/"; };
+  const handleLogout = () => {
+    if (isKasir) { logoutKasir(); window.location.href = "/kasir-login"; return; }
+    logout(); window.location.href = "/";
+  };
   const initial = (displayName || user?.name || "U").charAt(0).toUpperCase();
 
   // Tutup daftar switcher tiap kali sidebar di-collapse, biar pas dibuka
@@ -70,7 +78,7 @@ export default function Sidebar({ collapsed, onToggle }) {
       {/* Mode Badge */}
       {!collapsed && (
         <div className={`sidebar__mode sidebar__mode--${accent}`}>
-          {isUMKM ? <><Store size={13} /> Mode UMKM</> : <><User size={13} /> Mode Pribadi</>}
+          {isKasir ? <><ShoppingCart size={13} /> Mode Kasir</> : isUMKM ? <><Store size={13} /> Mode UMKM</> : <><User size={13} /> Mode Pribadi</>}
         </div>
       )}
 
@@ -92,8 +100,9 @@ export default function Sidebar({ collapsed, onToggle }) {
         })}
       </nav>
 
-      {/* Footer — Profile + Logout */}
+      {/* Footer — Profile + Logout (Mode Kasir cuma dapet tombol Keluar doang, nggak ada Profil/switcher) */}
       <div className="sidebar__footer">
+        {!isKasir && (
         <button
           className={`sidebar__profile-btn ${location.pathname.includes("/profile") ? "sidebar__profile-btn--active sidebar__profile-btn--" + accent : ""}`}
           onClick={() => navigate(profPath)}
@@ -115,8 +124,9 @@ export default function Sidebar({ collapsed, onToggle }) {
             </div>
           )}
         </button>
+        )}
 
-        {!collapsed && (
+        {!collapsed && !isKasir && (
           <div className="sidebar__switcher">
             <button
               className={`sidebar__switcher-toggle ${showSwitcher ? "sidebar__switcher-toggle--open" : ""}`}

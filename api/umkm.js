@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { createClient } from "@supabase/supabase-js";
+import { isKasirRole } from "./_lib/auth-guard.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -13,7 +14,7 @@ function verifyToken(req) {
   catch { return null; }
 }
 
-const VALID_TABLES = ["bahan_baku", "produk", "aset_usaha", "utang_piutang", "biaya_operasional", "stok_history", "supplier", "dompet"];
+const VALID_TABLES = ["bahan_baku", "produk", "aset_usaha", "utang_piutang", "biaya_operasional", "stok_history", "supplier", "dompet", "penjualan_items"];
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -31,6 +32,16 @@ export default async function handler(req, res) {
     return res.status(400).json({ success: false, message: `Table tidak valid. Pilih: ${VALID_TABLES.join(", ")}` });
   }
 
+  // Mode Kasir CUMA boleh GET produk (buat grid) & dompet (buat pilihan checkout) —
+  // nggak boleh liat/ubah bahan baku, aset, biaya, supplier, dst, dan nggak boleh
+  // POST/PUT/DELETE apapun lewat sini sama sekali (checkout lewat kasir-checkout.js).
+  if (isKasirRole(decoded)) {
+    const allowedGet = req.method === "GET" && (table === "produk" || table === "dompet");
+    if (!allowedGet) {
+      return res.status(403).json({ success: false, message: "Mode Kasir nggak punya akses ke fitur ini." });
+    }
+  }
+
   try {
     // ── GET ──────────────────────────────────────────────────────────────────
     if (req.method === "GET") {
@@ -40,9 +51,13 @@ export default async function handler(req, res) {
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
-      // Riwayat stok difilter per bahan tertentu (buat halaman detail bahan baku)
+      // Riwayat stok difilter per bahan ATAU per produk (buat halaman detail bahan baku,
+      // atau nanti histori stok jadi per produk).
       if (table === "stok_history" && req.query.bahanId) {
         query = query.eq("bahan_id", req.query.bahanId);
+      }
+      if (table === "stok_history" && req.query.produkId) {
+        query = query.eq("produk_id", req.query.produkId);
       }
 
       const { data, error } = await query;
@@ -151,6 +166,39 @@ function buildPayload(body, table, userId, isUpdate = false) {
     } else if (body.hargaOnline !== undefined) {
       payload.harga_online = body.hargaOnline;
     }
+    // online_fee_rows — rincian potongan (nama, tipe %/Rp, nilai) yang dipakai buat ngitung
+    // harga_online. Sama kayak harga_online, cuma ditulis kalau dikirim eksplisit, biar nggak
+    // ke-reset kalau produk diedit dari tempat lain yang nggak nyentuh bagian online sama sekali.
+    if (!isUpdate) {
+      payload.online_fee_rows = body.onlineFeeRows ?? [];
+    } else if (body.onlineFeeRows !== undefined) {
+      payload.online_fee_rows = body.onlineFeeRows;
+    }
+    // tipe_produk cuma ditulis pas BIKIN BARU — sengaja nggak dibiarin ganti pas edit
+    // (lihat catatan di KalkulatorHarga.jsx: ganti tipe produk yang udah ada bisa bikin
+    // data stok/resep nggak konsisten, jadi UI-nya emang nggak ngasih opsi ganti tipe).
+    if (!isUpdate) {
+      payload.tipe_produk = body.tipeProduk || "racikan";
+    }
+    // pakai_stok cuma relevan buat tipe "racikan" (nentuin produksi nambah stok_jadi
+    // apa nggak) — tapi tetep ditulis apa adanya kalau dikirim, biar konsisten.
+    if (body.pakaiStok !== undefined) {
+      payload.pakai_stok = body.pakaiStok;
+    }
+    // stok_jadi & harga_modal SENGAJA nggak ditulis fallback 0 pas update biasa dari
+    // form Kalkulator Harga (form itu nggak ngirim field ini) — biar nggak ke-reset ke 0
+    // tiap kali resep/harga diedit. Cuma ditulis kalau eksplisit dikirim (dari aksi
+    // Produksi/Restock di Fase 2, atau checkout Kasir yang ngurangin stok_jadi).
+    if (!isUpdate) {
+      payload.stok_jadi = body.stokJadi ?? 0;
+    } else if (body.stokJadi !== undefined) {
+      payload.stok_jadi = body.stokJadi;
+    }
+    if (!isUpdate) {
+      payload.harga_modal = body.hargaModal ?? 0;
+    } else if (body.hargaModal !== undefined) {
+      payload.harga_modal = body.hargaModal;
+    }
     return payload;
   }
 
@@ -165,14 +213,31 @@ function buildPayload(body, table, userId, isUpdate = false) {
   if (table === "stok_history") {
     return {
       ...base,
-      bahan_id:     body.bahanId,
+      bahan_id:     body.bahanId || null,
+      produk_id:    body.produkId || null,
       tipe:         body.tipe,          // "tambah" | "kurang"
-      sumber:       body.sumber,        // "manual_tambah" | "manual_kurang_rusak" | "manual_kurang_sample" | "manual_kurang_lain" | "transaksi"
+      sumber:       body.sumber,        // "manual_tambah" | "manual_kurang_rusak" | "manual_kurang_sample" | "manual_kurang_lain" | "transaksi" | "produksi" | "manual_tambah_jadi" | "penjualan"
       jumlah:       body.jumlah,
       satuan_label: body.satuanLabel,
       alasan:       body.alasan || null,
       transaksi_id: body.transaksiId || null,
       supplier_id:  body.supplierId || null,
+    };
+  }
+
+  // penjualan_items — breakdown per item yang kejual dari Kasir (Fase 2), disimpen
+  // di sini duluan (Fase 1) biar skemanya siap. ref_id nyambungin ke transaksi
+  // pemasukan yang otomatis kebentuk pas checkout.
+  if (table === "penjualan_items") {
+    return {
+      ...base,
+      ref_id:       body.refId,
+      produk_id:    body.produkId || null,
+      produk_nama:  body.produkNama,
+      tipe_produk:  body.tipeProduk,
+      qty:          body.qty,
+      harga_satuan: body.hargaSatuan,
+      subtotal:     body.subtotal,
     };
   }
 
@@ -232,7 +297,7 @@ function normalize(row, table) {
   }
 
   if (table === "produk") {
-    return { ...base, nama: row.nama, items: row.items || [], biayaOperasionalItems: row.ops_items || [], biayaOperasional: row.biaya_operasional, targetUntung: row.target_untung, biayaBahan: row.biaya_bahan, totalBiaya: row.total_biaya, hargaJual: row.harga_jual, hargaOnline: row.harga_online || 0 };
+    return { ...base, nama: row.nama, items: row.items || [], biayaOperasionalItems: row.ops_items || [], biayaOperasional: row.biaya_operasional, targetUntung: row.target_untung, biayaBahan: row.biaya_bahan, totalBiaya: row.total_biaya, hargaJual: row.harga_jual, hargaOnline: row.harga_online || 0, onlineFeeRows: row.online_fee_rows || [], tipeProduk: row.tipe_produk || "racikan", pakaiStok: row.pakai_stok || false, stokJadi: row.stok_jadi || 0, hargaModal: row.harga_modal || 0 };
   }
 
   if (table === "biaya_operasional") {
@@ -243,6 +308,7 @@ function normalize(row, table) {
     return {
       ...base,
       bahanId:     row.bahan_id,
+      produkId:    row.produk_id,
       tipe:        row.tipe,
       sumber:      row.sumber,
       jumlah:      row.jumlah,
@@ -250,6 +316,19 @@ function normalize(row, table) {
       alasan:      row.alasan,
       transaksiId: row.transaksi_id,
       supplierId:  row.supplier_id,
+    };
+  }
+
+  if (table === "penjualan_items") {
+    return {
+      ...base,
+      refId:       row.ref_id,
+      produkId:    row.produk_id,
+      produkNama:  row.produk_nama,
+      tipeProduk:  row.tipe_produk,
+      qty:         row.qty,
+      hargaSatuan: row.harga_satuan,
+      subtotal:    row.subtotal,
     };
   }
 

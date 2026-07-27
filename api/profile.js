@@ -28,6 +28,16 @@ function getUserId(req) {
   }
 }
 
+// Mode Kasir (PIN login) sama sekali nggak boleh nyentuh Profile — di situ ada
+// display name, foto, dan (kalau ada) API key pribadi.
+function isKasirToken(req) {
+  const auth = req.headers.authorization || "";
+  const token = auth.replace("Bearer ", "");
+  if (!token) return false;
+  try { return jwt.verify(token, JWT_SECRET)?.role === "kasir"; }
+  catch { return false; }
+}
+
 // Parse multipart/form-data secara manual (tanpa multer, ringan utk Vercel)
 async function parseMultipart(req) {
   const buffers = [];
@@ -66,6 +76,9 @@ export default async function handler(req, res) {
   const userId = getUserId(req);
   if (!userId) {
     return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+  if (isKasirToken(req)) {
+    return res.status(403).json({ success: false, message: "Mode Kasir nggak punya akses ke fitur ini." });
   }
 
   const { action } = req.query;

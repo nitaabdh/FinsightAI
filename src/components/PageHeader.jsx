@@ -6,13 +6,14 @@ import "./PageHeader.css";
 import { LogOut, Pencil, Repeat, ChevronDown } from "lucide-react";
 import AccountSwitcherList from "./AccountSwitcherList";
 export default function PageHeader({ title, subtitle }) {
-  const { user, profile, logout } = useAuth();
+  const { user, profile, logout, logoutKasir } = useAuth();
   const navigate  = useNavigate();
   const [open, setOpen]               = useState(false);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const dropdownRef                   = useRef(null);
 
   const isUMKM   = user?.mode === "umkm";
+  const isKasir  = user?.role === "kasir";
   const accent   = isUMKM ? "umkm" : "personal";
   const profPath = `/dashboard/${user?.mode}/profile`;
 
@@ -39,13 +40,13 @@ export default function PageHeader({ title, subtitle }) {
   const handleLogout = () => {
     setOpen(false);
     try {
-      logout();
+      if (isKasir) logoutKasir(); else logout();
     } catch (err) {
       console.error("Logout error:", err);
     }
     // Full reload (bukan cuma navigate) — mastiin semua state kebersihan,
     // gak ada sisa data lama yang nyangkut di komponen yang masih ke-mount.
-    window.location.href = "/";
+    window.location.href = isKasir ? "/kasir-login" : "/";
   };
 
   const handleProfile = () => {
@@ -66,7 +67,7 @@ export default function PageHeader({ title, subtitle }) {
       {/* Kanan: mode badge (desktop) + avatar dropdown */}
       <div className="page-header__right">
         <div className={`page-header__badge page-header__badge--${accent}`}>
-          {isUMKM ? "Mode UMKM" : "Mode Pribadi"}
+          {isKasir ? "Mode Kasir" : isUMKM ? "Mode UMKM" : "Mode Pribadi"}
         </div>
 
         <div className="page-header__avatar-wrap" ref={dropdownRef}>
@@ -100,6 +101,8 @@ export default function PageHeader({ title, subtitle }) {
 
               <div className="page-header__dropdown-divider" />
 
+              {!isKasir && (
+              <>
               <button
                 className={`page-header__dropdown-item ${switcherOpen ? "page-header__dropdown-item--active" : ""}`}
                 onClick={() => setSwitcherOpen((v) => !v)}
@@ -120,6 +123,8 @@ export default function PageHeader({ title, subtitle }) {
                 <span><Pencil size={14} /></span>
                 <span>{hasProfile ? "Edit Profil" : "Isi Profil"}</span>
               </button>
+              </>
+              )}
 
               <button className="page-header__dropdown-item page-header__dropdown-item--danger" onClick={handleLogout}>
                 <span><LogOut size={14} /></span>

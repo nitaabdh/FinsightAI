@@ -17,6 +17,8 @@ export default function KalkulatorOnline() {
   const [platformKey, setPlatformKey] = useState("shopee");
   const [feeRows, setFeeRows]         = useState(buatFeeRowsDariPreset("shopee"));
   const [mode, setMode]               = useState("maju"); // "maju" | "mundur"
+  const [savingFull, setSavingFull]   = useState(false);
+  const [savedFull, setSavedFull]     = useState(false);
 
   // Mode maju: harga jual diketahui
   const [hargaJual, setHargaJual] = useState("");
@@ -40,19 +42,30 @@ export default function KalkulatorOnline() {
   const produk = produkList.find(p => p.id === selProdukId);
   const hpp = produk?.totalBiaya || 0;
 
+  // Pas pilih produk yang UDAH punya rincian potongan tersimpen, muat balik ke kalkulator —
+  // biar user langsung liat/lanjutin dari yang terakhir diatur, bukan mulai dari preset lagi.
+  useEffect(() => {
+    if (produk && produk.onlineFeeRows && produk.onlineFeeRows.length > 0) {
+      setFeeRows(produk.onlineFeeRows);
+    }
+    // Produk tanpa rincian tersimpen -> biarin feeRows apa adanya (preset platform terakhir),
+    // biar nggak kereset paksa pas gonta-ganti pilihan produk buat eksplor angka.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selProdukId]);
+
   const handlePilihPlatform = (key) => {
     setPlatformKey(key);
     setFeeRows(buatFeeRowsDariPreset(key));
   };
 
-  // Simpen harga jual online per produk — kirim SEMUA field produk yang udah ada
-  // (bukan cuma hargaOnline), soalnya backend nulis ulang seluruh row pas PUT.
-  const saveHargaOnline = async (produk, hargaBaru) => {
+  // Simpen harga jual online + rincian potongannya sekaligus per produk — kirim SEMUA field
+  // produk yang udah ada (bukan cuma hargaOnline), soalnya backend nulis ulang seluruh row pas PUT.
+  const saveHargaOnline = async (produk, hargaBaru, feeRowsBaru) => {
     const token = localStorage.getItem("finsight_token");
     const r = await fetch(`/api/umkm?table=produk`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ id: produk.id, ...produk, hargaOnline: hargaBaru }),
+      body: JSON.stringify({ id: produk.id, ...produk, hargaOnline: hargaBaru, onlineFeeRows: feeRowsBaru ?? produk.onlineFeeRows ?? [] }),
     }).then(res => res.json());
     if (r.success) {
       setProdukList(list => list.map(p => p.id === produk.id ? r.data : p));
@@ -167,6 +180,18 @@ export default function KalkulatorOnline() {
                   <div className={"komarket__sum-row komarket__sum-row--final" + (untungBersihMaju < 0 ? " komarket__sum-row--neg" : "")}>
                     <span>Untung Bersih</span><span>{formatRupiah(untungBersihMaju)} ({marginBersihMaju.toFixed(1)}%)</span>
                   </div>
+                  <button
+                    className="komarket__save-full"
+                    disabled={!hargaJual || savingFull}
+                    onClick={async () => {
+                      setSavingFull(true);
+                      const ok = await saveHargaOnline(produk, +hargaJual || 0, feeRows);
+                      setSavingFull(false);
+                      if (ok) { setSavedFull(true); setTimeout(() => setSavedFull(false), 1500); }
+                    }}
+                  >
+                    {savingFull ? "Menyimpan..." : savedFull ? "✓ Tersimpan (harga + potongan)" : `Simpan buat "${produk.nama}" (harga + potongan)`}
+                  </button>
                 </>
               )}
             </div>
@@ -219,7 +244,9 @@ export default function KalkulatorOnline() {
           <h3 className="komarket__form-title">Daftar Harga Jual Online</h3>
           <p className="komarket__hint">
             Simpen harga jual listing per produk di sini sekali aja. Nanti pas centang "Ini penjualan online?"
-            di form Transaksi dan pilih produknya, harga ini otomatis keisi sendiri — nggak perlu ngetik ulang tiap kali.
+            di form Transaksi dan pilih produknya, harga DAN rincian potongan ini otomatis keisi sendiri —
+            nggak perlu ngetik ulang tiap kali. Pakai tombol "Simpan (harga + potongan)" di kalkulator atas
+            biar rincian potongannya ikut kesimpen; kolom cepat di bawah ini cuma buat update angka harganya aja.
           </p>
           <div className="komarket__online-list stagger-list">
             {produkList.map(p => (
@@ -254,6 +281,9 @@ function HargaOnlineRow({ produk, onSave }) {
       <div className="komarket__online-row-info">
         <span className="komarket__online-row-nama">{produk.nama}</span>
         <span className="komarket__online-row-hpp">HPP {formatRupiah(produk.totalBiaya)} · Harga Normal {formatRupiah(produk.hargaJual)}</span>
+        <span className="komarket__online-row-hpp">
+          {produk.onlineFeeRows?.length > 0 ? `✓ ${produk.onlineFeeRows.length} rincian potongan tersimpan` : "Belum ada rincian potongan tersimpan"}
+        </span>
       </div>
       <RupiahInput className="komarket__input komarket__online-row-input" placeholder="Harga listing online"
         value={val} onChange={setVal} />

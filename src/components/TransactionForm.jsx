@@ -86,6 +86,25 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
   const [kasTujuanQuery, setKasTujuanQuery] = useState(editData?.kasTujuan || "");
   const [kasTujuanOpen,  setKasTujuanOpen]  = useState(false);
 
+  // Klik di luar area input+dropdown -> tutup dropdown itu. Sebelumnya cuma nutup
+  // pas suatu opsi dipilih, jadi kalau user klik ke tempat lain tanpa milih apa-apa,
+  // dropdown-nya nyangkut kebuka terus (dan ikut nongol lagi begitu balik fokus ke situ).
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (catInputRef.current && !catInputRef.current.contains(e.target) && (!catDropdownRef.current || !catDropdownRef.current.contains(e.target))) {
+        setCatOpen(false);
+      }
+      if (kasInputRef.current && !kasInputRef.current.contains(e.target) && (!kasDropdownRef.current || !kasDropdownRef.current.contains(e.target))) {
+        setKasOpen(false);
+      }
+      if (kasTujuanInputRef.current && !kasTujuanInputRef.current.contains(e.target) && (!kasTujuanDropdownRef.current || !kasTujuanDropdownRef.current.contains(e.target))) {
+        setKasTujuanOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const [produkList,  setProdukList]  = useState([]);
   const [selProdukId, setSelProdukId] = useState(editData?.produkId || "");
   const [jumlahUnit,  setJumlahUnit]  = useState(editData?.jumlahUnit ? String(editData.jumlahUnit) : "1");
@@ -288,6 +307,12 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
     const nilai = isSampleFlow
       ? (produk.totalBiaya || 0)
       : (isOnlineSale && produk.hargaOnline ? produk.hargaOnline : produk.hargaJual);
+    // Kalau produk ini punya rincian potongan yang udah kesimpen (dari Kalkulator Online),
+    // muat itu — bukan preset platform default — biar deduksi biaya admin yang kecatat
+    // sesuai persis sama yang udah diatur user, bukan angka generik yang beda.
+    if (isOnlineSale && produk.onlineFeeRows && produk.onlineFeeRows.length > 0) {
+      setOnlineFeeRows(produk.onlineFeeRows);
+    }
     // Math.round jaga-jaga kalau hargaJual/totalBiaya tersimpan desimal (dari hasil bagi/kali
     // di Kalkulator Harga) — desimal bikin titik ribuan salah kalkulasi kalau lolos mentah.
     setForm(prev => ({
@@ -379,6 +404,9 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
               onClick={() => {
                 setForm(p => ({ ...p, type: t, category: t === "transfer" ? KATEGORI_TRANSFER : "" }));
                 setCatQuery(t === "transfer" ? KATEGORI_TRANSFER : "");
+                setCatOpen(false);
+                setKasOpen(false);
+                setKasTujuanOpen(false);
                 if (t !== "pemasukan") { setSelProdukId(""); setSelItems(null); setJumlahUnit("1"); setIsOnlineSale(false); }
               }}
             >
@@ -501,6 +529,11 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
                         ? (produk.totalBiaya || 0)
                         : (checked && produk.hargaOnline ? produk.hargaOnline : produk.hargaJual);
                       setForm(prev => ({ ...prev, amount: String(Math.round(nilai * qty)) }));
+                      // Sama kayak pas pilih produk: muat rincian potongan yang udah kesimpen
+                      // buat produk ini, bukan preset platform generik.
+                      if (checked && produk.onlineFeeRows && produk.onlineFeeRows.length > 0) {
+                        setOnlineFeeRows(produk.onlineFeeRows);
+                      }
                     }
                   }
                 }} />

@@ -1,0 +1,175 @@
+.kasir { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.kasir__searchbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0.7rem 1rem;
+  color: var(--text-secondary);
+}
+.kasir__searchbar input {
+  border: none;
+  outline: none;
+  background: transparent;
+  flex: 1;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.kasir__layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1.25rem;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .kasir__layout { grid-template-columns: 1fr; }
+}
+
+.kasir__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.kasir__card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0.9rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  align-items: flex-start;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, transform 0.1s;
+}
+.kasir__card:hover { border-color: var(--accent-umkm); transform: translateY(-1px); }
+.kasir__card:active { transform: scale(0.98); }
+.kasir__card--habis { opacity: 0.45; cursor: not-allowed; }
+.kasir__card--habis:hover { border-color: var(--border); transform: none; }
+
+.kasir__card-nama { font-weight: 700; font-size: 14px; }
+.kasir__card-harga { color: var(--accent-umkm); font-weight: 700; font-size: 13px; }
+.kasir__card-stok { font-size: 11px; color: var(--text-secondary); }
+.kasir__card-stok--habis { color: #e5484d; font-weight: 700; }
+
+.kasir__empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.kasir__cart {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  position: sticky;
+  top: 1rem;
+}
+.kasir__cart-title { display: flex; align-items: center; gap: 0.4rem; font-size: 14px; font-weight: 700; }
+.kasir__cart-empty { font-size: 12px; color: var(--text-secondary); }
+
+.kasir__cart-items { display: flex; flex-direction: column; gap: 0.6rem; max-height: 50vh; overflow-y: auto; }
+.kasir__cart-item { border-bottom: 1px solid var(--border); padding-bottom: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.kasir__cart-item-top { display: flex; justify-content: space-between; align-items: center; }
+.kasir__cart-item-nama { font-size: 13px; font-weight: 600; }
+.kasir__cart-item-remove { background: none; border: none; color: #e5484d; cursor: pointer; padding: 0.2rem; }
+.kasir__cart-item-row { display: flex; justify-content: space-between; align-items: center; }
+.kasir__cart-item-subtotal { font-size: 13px; font-weight: 700; }
+
+.kasir__qty-control { display: flex; align-items: center; gap: 0.5rem; }
+.kasir__qty-control button {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.kasir__qty-control span { min-width: 1.2rem; text-align: center; font-size: 13px; font-weight: 700; }
+
+.kasir__cart-item-modal { display: flex; flex-direction: column; gap: 0.3rem; }
+.kasir__cart-item-modal label { font-size: 11px; color: var(--text-secondary); }
+
+.kasir__cart-total {
+  display: flex; justify-content: space-between; align-items: center;
+  font-weight: 800; font-size: 15px;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.kasir__checkout-btn {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--accent-umkm);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Modal (checkout & sukses) — samain gaya sama modal Dompet */
+.kasir__modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+.kasir__modal {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  max-width: 400px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.kasir__modal-title { font-size: 16px; font-weight: 700; }
+.kasir__modal-sub { font-size: 13px; color: var(--text-secondary); }
+.kasir__field { display: flex; flex-direction: column; gap: 0.3rem; }
+.kasir__field label { font-size: 12px; color: var(--text-secondary); }
+.kasir__field select {
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+.kasir__error { color: #e5484d; font-size: 13px; }
+.kasir__modal-actions { display: flex; justify-content: flex-end; gap: 0.6rem; }
+.kasir__btn-sec {
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 13px;
+}
+.kasir__btn-primary {
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--accent-umkm);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 13px;
+}
+.kasir__btn-primary:disabled, .kasir__btn-sec:disabled { opacity: 0.5; cursor: default; }

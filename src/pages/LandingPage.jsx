@@ -4,15 +4,17 @@ import { useTheme } from "../context/ThemeContext";
 import { useEffect } from "react";
 import "./LandingPage.css";
 
-import { Store, User, Moon, Sun } from "lucide-react";
+import { Store, User, Moon, Sun, ShoppingCart } from "lucide-react";
 export default function LandingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
-  // Kalau sudah login, redirect langsung ke dashboard
+  // Kalau sudah login, redirect langsung ke dashboard — Mode Kasir langsung
+  // ke halaman Kasir aja, bukan dashboard penuh (dia emang nggak punya akses ke situ).
   useEffect(() => {
-    if (user) navigate(`/dashboard/${user.mode}`, { replace: true });
+    if (user?.role === "kasir") navigate("/dashboard/umkm/kasir", { replace: true });
+    else if (user) navigate(`/dashboard/${user.mode}`, { replace: true });
   }, [user, navigate]);
 
   return (
@@ -91,6 +93,15 @@ export default function LandingPage() {
             <span key={f} className="landing__feature-pill">{f}</span>
           ))}
         </div>
+
+        {/* Mode Kasir — buat karyawan/kasir, login pakai PIN 6 digit yang di-setup owner */}
+        <button
+          className="landing__kasir-link animate-fadeUp"
+          style={{ animationDelay: "0.5s" }}
+          onClick={() => navigate("/kasir-login")}
+        >
+          <ShoppingCart size={14} /> Mode Kasir
+        </button>
       </main>
     </div>
   );

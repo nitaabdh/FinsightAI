@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import { rejectIfKasir } from "./_lib/auth-guard.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -40,6 +41,7 @@ export default async function handler(req, res) {
   if (!auth || !auth.startsWith("Bearer ")) return res.status(401).json({ success: false, message: "Unauthorized." });
   const sourceDecoded = verifyAny(auth.slice(7));
   if (!sourceDecoded) return res.status(401).json({ success: false, message: "Sesi kamu udah expired, login ulang dulu ya." });
+  if (rejectIfKasir(sourceDecoded, res)) return;
 
   const { targetToken, arah, amount, kasAsal, kasTujuan, tanggal } = req.body;
 

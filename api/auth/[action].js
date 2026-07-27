@@ -14,6 +14,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { createClient } from "@supabase/supabase-js";
+import { rejectIfKasir } from "../_lib/auth-guard.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -136,6 +137,7 @@ export default async function handler(req, res) {
       if (action === "updateName") {
         const decoded = verifyToken(req);
         if (!decoded) return res.status(401).json({ success: false, message: "Token tidak valid atau sudah expired." });
+        if (rejectIfKasir(decoded, res)) return;
 
         const { newName } = req.body;
         if (!newName || !newName.trim()) {
@@ -190,6 +192,7 @@ export default async function handler(req, res) {
       if (action === "deleteAccount") {
         const decoded = verifyToken(req);
         if (!decoded) return res.status(401).json({ success: false, message: "Token tidak valid atau sudah expired." });
+        if (rejectIfKasir(decoded, res)) return;
 
         const { password } = req.body;
         if (!password) return res.status(400).json({ success: false, message: "Password wajib diisi buat konfirmasi." });

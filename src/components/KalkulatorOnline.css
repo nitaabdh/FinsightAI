@@ -204,3 +204,17 @@
   white-space: nowrap;
 }
 .komarket__online-row-save:disabled { opacity: 0.45; cursor: default; }
+
+.komarket__save-full {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--accent-umkm);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.komarket__save-full:disabled { opacity: 0.45; cursor: default; }

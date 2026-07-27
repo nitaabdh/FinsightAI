@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard, Receipt, Factory, TrendingUp, ClipboardList, Bot,
-  CreditCard, Target, Plus, X, Wallet, HandCoins,
+  CreditCard, Target, Plus, X, Wallet, HandCoins, ShoppingCart,
 } from "lucide-react";
 import "./BottomNav.css";
 
@@ -17,6 +17,7 @@ const primaryUMKM = [
   { path: "/dashboard/umkm/laporan",   icon: TrendingUp,      label: "Laporan" },
 ];
 const moreUMKM = [
+  { path: "/dashboard/umkm/kasir",         icon: ShoppingCart,   label: "Kasir" },
   { path: "/dashboard/umkm/dompet",        icon: Wallet,          label: "Dompet" },
   { path: "/dashboard/umkm/utang-piutang", icon: HandCoins,       label: "Utang-Piutang" },
   { path: "/dashboard/umkm/catatan",       icon: ClipboardList,   label: "Catatan" },

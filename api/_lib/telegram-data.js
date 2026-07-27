@@ -208,6 +208,90 @@ export async function getHargaText(userId) {
   return out;
 }
 
+// ── ESTIMASI PRODUKSI (umkm) ──────────────────────────────────────────────────
+// Hitung dari data ASLI (stok bahan baku ÷ kebutuhan resep per unit), BUKAN nebak
+// pakai AI — biar angkanya presisi, bukan karangan. Logic konversi satuan disalin
+// dari src/utils/umkmCalc.js (toBase/toBaseWithHasil), sengaja disalin bukan
+// di-import, ngikutin pola file ini (lihat catatan computeKasStats di atas).
+function toBaseUnit(value, unit, isiPerPack = 1) {
+  const v = parseFloat(value) || 0;
+  if (unit === "kg" || unit === "liter") return v * 1000;
+  if (["pack", "box", "dus", "karton", "rim", "krat", "lusin", "kodi", "gross"].includes(unit)) {
+    return v * (parseFloat(isiPerPack) || 1);
+  }
+  return v;
+}
+function toBaseUnitWithHasil(value, unit, bahan) {
+  const hasil = parseFloat(bahan?.hasil_per_unit) || 0;
+  const v = parseFloat(value) || 0;
+  if (hasil > 1) {
+    if (unit === (bahan.hasil_label || "hasil")) return v;
+    return toBaseUnit(v, unit, bahan?.isi_per_pack || 1) * hasil;
+  }
+  return toBaseUnit(v, unit, bahan?.isi_per_pack || 1);
+}
+
+export async function getEstimasiProduksiText(userId, namaProdukQuery) {
+  const query = (namaProdukQuery || "").toLowerCase().trim();
+  const { data: produkList, error: pErr } = await supabase.from("produk").select("*").eq("user_id", userId);
+  if (pErr) throw pErr;
+  if (!produkList || produkList.length === 0) return "Belum ada produk yang tercatat di Kalkulator Harga.";
+
+  let matches = produkList;
+  if (query) {
+    matches = produkList.filter(p => p.nama.toLowerCase().includes(query));
+    if (matches.length === 0) {
+      return `Produk "${namaProdukQuery}" nggak ketemu. Coba cek nama persisnya di halaman Kalkulator Harga ya.`;
+    }
+  }
+  if (matches.length > 1) {
+    const daftar = matches.map(p => p.nama).join(", ");
+    return `Ada ${matches.length} produk yang cocok: ${daftar}. Sebutin nama yang lebih spesifik ya.`;
+  }
+
+  const produk = matches[0];
+  const items = produk.items || [];
+  if (items.length === 0) {
+    return `Produk *${produk.nama}* belum punya resep bahan baku tercatat di Kalkulator Harga, jadi nggak bisa dihitung estimasinya.`;
+  }
+
+  const { data: bahanList, error: bErr } = await supabase.from("bahan_baku").select("*").eq("user_id", userId);
+  if (bErr) throw bErr;
+  const bahanMap = Object.fromEntries((bahanList || []).map(b => [b.id, b]));
+
+  let estimasiMaksimal = Infinity;
+  let bottleneck = null;
+  const detail = [];
+  let adaBahanHilang = false;
+
+  for (const it of items) {
+    const b = bahanMap[it.bahanId];
+    if (!b) { adaBahanHilang = true; continue; }
+    const perUnitBase = toBaseUnitWithHasil(it.jumlahPakai, it.satuanPakai, b);
+    if (perUnitBase <= 0) continue; // hindari bagi-nol, item ini nggak ngebatesin
+    const stokBase = parseFloat(b.stok) || 0;
+    const label = b.hasil_label || b.satuan_beli || "";
+    const bisaBerapa = Math.floor(stokBase / perUnitBase);
+    detail.push({ nama: b.nama, stokBase, perUnitBase, bisaBerapa, label });
+    if (bisaBerapa < estimasiMaksimal) { estimasiMaksimal = bisaBerapa; bottleneck = b.nama; }
+  }
+
+  if (estimasiMaksimal === Infinity) {
+    return `Nggak bisa dihitung — semua bahan di resep *${produk.nama}* nggak punya data pemakaian yang valid.`;
+  }
+
+  let out = `🧮 *Estimasi Produksi: ${produk.nama}*\n\n`;
+  out += `Dari stok bahan baku sekarang, kamu bisa bikin maksimal *${estimasiMaksimal} unit*`;
+  if (bottleneck) out += ` (dibatesin sama stok "${bottleneck}")`;
+  out += `.\n\nRinciannya:\n`;
+  detail.forEach(d => {
+    out += `• ${d.nama}: stok ${d.stokBase} ${d.label}, butuh ${d.perUnitBase} ${d.label}/unit → cukup buat ${d.bisaBerapa} unit\n`;
+  });
+  if (adaBahanHilang) out += `\n⚠️ Ada bahan di resep yang udah dihapus dari daftar Bahan Baku, jadi nggak ikut dihitung — hasil di atas belum tentu akurat.`;
+  if (estimasiMaksimal === 0) out += `\n⚠️ Stok nggak cukup buat produksi sama sekali — cek bahan yang jadi pembatas di atas.`;
+  return out;
+}
+
 // ── UTANG/PIUTANG USAHA (umkm) — beda dari debts Personal, ini lump-sum + jatuh tempo tanggal pasti ──
 export async function getUtangPiutangText(userId) {
   const { data, error } = await supabase.from("utang_piutang").select("*").eq("user_id", userId).eq("lunas", false).order("jatuh_tempo");
