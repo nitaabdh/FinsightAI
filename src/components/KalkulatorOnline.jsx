@@ -50,7 +50,6 @@ export default function KalkulatorOnline() {
     }
     // Produk tanpa rincian tersimpen -> biarin feeRows apa adanya (preset platform terakhir),
     // biar nggak kereset paksa pas gonta-ganti pilihan produk buat eksplor angka.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selProdukId]);
 
   const handlePilihPlatform = (key) => {
