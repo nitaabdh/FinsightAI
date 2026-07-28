@@ -19,6 +19,7 @@ export default function LaporanPage() {
   const [asetUsaha, setAsetUsaha]       = useState([]);
   const [bahanBaku, setBahanBaku]       = useState([]);
   const [utangPiutang, setUtangPiutang] = useState([]);
+  const [penjualanItems, setPenjualanItems] = useState([]);
   const [filterMonth, setFilterMonth]   = useState("semua");
   const [loading, setLoading]           = useState(true);
 
@@ -35,11 +36,13 @@ export default function LaporanPage() {
       fetch(`/api/umkm?table=aset_usaha`, { headers: h }).then(r => r.json()),
       fetch(`/api/umkm?table=bahan_baku`, { headers: h }).then(r => r.json()),
       fetch(`/api/umkm?table=utang_piutang`, { headers: h }).then(r => r.json()),
-    ]).then(([txData, asetRes, bahanRes, upRes]) => {
+      fetch(`/api/umkm?table=penjualan_items`, { headers: h }).then(r => r.json()),
+    ]).then(([txData, asetRes, bahanRes, upRes, piRes]) => {
       setTransactions(txData);
       if (asetRes.success)  setAsetUsaha(asetRes.data);
       if (bahanRes.success) setBahanBaku(bahanRes.data);
       if (upRes.success)    setUtangPiutang(upRes.data);
+      if (piRes.success)    setPenjualanItems(piRes.data);
     }).finally(() => setLoading(false));
   }, [user]);
 
@@ -63,6 +66,22 @@ export default function LaporanPage() {
     : priveTx.filter((t) => (t.date || t.createdAt || "").slice(0, 7) === filterMonth);
   const totalPrive    = priveFiltered.reduce((s, t) => s + Number(t.amount || 0), 0);
   const totalNilaiAset = asetUsaha.reduce((s, it) => s + Number(it.hargaBeli || 0), 0);
+
+  // ── Produk Terlaris — agregasi dari penjualan_items (breakdown per item pas
+  // checkout di Kasir), ikut filter periode yang sama kayak Laba-Rugi. Dikelompokin
+  // per produkId (fallback ke nama kalau produkId null, misal produknya udah dihapus).
+  const penjualanFiltered = filterMonth === "semua"
+    ? penjualanItems
+    : penjualanItems.filter((it) => (it.createdAt || "").slice(0, 7) === filterMonth);
+  const produkTerlarisMap = {};
+  penjualanFiltered.forEach((it) => {
+    const key = it.produkId || `nama:${it.produkNama}`;
+    if (!produkTerlarisMap[key]) produkTerlarisMap[key] = { nama: it.produkNama, qty: 0, omzet: 0 };
+    produkTerlarisMap[key].qty   += Number(it.qty) || 0;
+    produkTerlarisMap[key].omzet += Number(it.subtotal) || 0;
+  });
+  const produkTerlaris = Object.values(produkTerlarisMap).sort((a, b) => b.qty - a.qty);
+  const maxQtyTerlaris = produkTerlaris.length > 0 ? produkTerlaris[0].qty : 0;
 
   // ── Saldo per Kas — posisi kas SAAT INI, sengaja TIDAK ikut filter periode ───
   // (sama prinsipnya kayak Total Aset Usaha: ini snapshot hari ini, bukan pergerakan per bulan)
@@ -220,6 +239,22 @@ export default function LaporanPage() {
           formatRupiah(amt),
           `${summary.pengeluaran > 0 ? ((amt / summary.pengeluaran) * 100).toFixed(0) : 0}%`,
         ]),
+        theme: "grid",
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: AMBER, textColor: 255, fontStyle: "bold" },
+        columnStyles: { 1: { halign: "right" }, 2: { halign: "right" } },
+        margin: { left: 14, right: 14 },
+      });
+      y = doc.lastAutoTable.finalY + 10;
+    }
+
+    // ── Produk Terlaris ──
+    if (produkTerlaris.length > 0) {
+      if (y > 230) { doc.addPage(); y = 18; }
+      autoTable(doc, {
+        startY: y,
+        head: [["Produk Terlaris", "Unit Terjual", "Omzet"]],
+        body: produkTerlaris.slice(0, 10).map((p) => [p.nama, `${p.qty} unit`, formatRupiah(p.omzet)]),
         theme: "grid",
         styles: { fontSize: 9, cellPadding: 3 },
         headStyles: { fillColor: AMBER, textColor: 255, fontStyle: "bold" },
@@ -540,6 +575,32 @@ export default function LaporanPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Produk Terlaris — dari breakdown penjualan Kasir, ikut filter periode di atas */}
+                {produkTerlaris.length > 0 && (
+                  <div className="laporanpage__section">
+                    <h3 className="laporanpage__section-title">Produk Terlaris</h3>
+                    <p className="laporanpage__pl-hint" style={{ marginBottom: "0.75rem" }}>
+                      Diurutin dari jumlah unit terjual (lewat Kasir), {filterMonth === "semua" ? "total keseluruhan" : `periode ${monthLabel(filterMonth)}`}.
+                    </p>
+                    <div className="laporanpage__categories">
+                      {produkTerlaris.slice(0, 10).map((p) => {
+                        const persen = maxQtyTerlaris > 0 ? ((p.qty / maxQtyTerlaris) * 100).toFixed(0) : 0;
+                        return (
+                          <div key={p.nama} className="laporanpage__cat-item">
+                            <div className="laporanpage__cat-top">
+                              <span className="laporanpage__cat-name">{p.nama}</span>
+                              <span className="laporanpage__cat-amount">{p.qty} unit · {formatRupiah(p.omzet)}</span>
+                            </div>
+                            <div className="laporanpage__cat-bar">
+                              <div className="laporanpage__cat-fill" style={{ width: persen + "%" }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Saldo per Kas — posisi saat ini, tidak ikut filter periode di atas */}
                 {kasStats.length > 0 && (
