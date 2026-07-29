@@ -6,7 +6,7 @@ import PageHeader from "../components/PageHeader";
 import ThemeToggle from "../components/ThemeToggle";
 import "./ProfilePage.css";
 
-import { Bot, Pencil } from "lucide-react";
+import { Bot, Pencil, Store, Receipt } from "lucide-react";
 const PROFESI_OPTIONS = {
   personal: ["Mahasiswa","Mahasiswa Rantau / Ngekos","Fresh Graduate","Karyawan Swasta","PNS / ASN","Freelancer","Ibu Rumah Tangga","Lainnya"],
   umkm:     ["Pemilik Warung / Toko","Pedagang Pasar","Penjual Online","Usaha Kuliner","Usaha Jasa","Distributor / Reseller","Lainnya"],
@@ -613,7 +613,7 @@ export default function ProfilePage() {
           {mode === "umkm" && (
           <div className="profilepage__telegram">
             <div className="profilepage__telegram-header">
-              <span className="profilepage__telegram-icon">🧾</span>
+              <span className="profilepage__telegram-icon"><Store size={20} /></span>
               <div>
                 <h3>Mode Kasir</h3>
                 <p>Atur PIN 6 digit biar karyawan bisa login Kasir dari halaman awal tanpa pakai akun kamu langsung.</p>
@@ -653,7 +653,7 @@ export default function ProfilePage() {
           {mode === "umkm" && (
           <div className="profilepage__telegram">
             <div className="profilepage__telegram-header">
-              <span className="profilepage__telegram-icon">🧾</span>
+              <span className="profilepage__telegram-icon"><Receipt size={20} /></span>
               <div>
                 <h3>Template Struk</h3>
                 <p>Diisi di sini bakal langsung kepake pas cetak struk dari halaman Kasir.</p>

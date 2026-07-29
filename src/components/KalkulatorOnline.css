@@ -216,5 +216,9 @@
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
 }
 .komarket__save-full:disabled { opacity: 0.45; cursor: default; }

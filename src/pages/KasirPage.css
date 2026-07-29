@@ -18,6 +18,22 @@
   font-size: 14px;
   color: var(--text-primary);
 }
+.kasir__rekap-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  padding: 0.5rem 0.8rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.kasir__rekap-btn:disabled { opacity: 0.5; cursor: default; }
 
 .kasir__layout {
   display: grid;
@@ -189,7 +205,7 @@
   flex-direction: column;
   gap: 0.75rem;
 }
-.kasir__modal-title { font-size: 16px; font-weight: 700; }
+.kasir__modal-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 0.4rem; }
 .kasir__modal-sub { font-size: 13px; color: var(--text-secondary); }
 .kasir__field { display: flex; flex-direction: column; gap: 0.3rem; }
 .kasir__field label { font-size: 12px; color: var(--text-secondary); }
@@ -221,5 +237,9 @@
   font-weight: 700;
   cursor: pointer;
   font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
 }
 .kasir__btn-primary:disabled, .kasir__btn-sec:disabled { opacity: 0.5; cursor: default; }

@@ -288,6 +288,14 @@
 .kalkharga__produk-thumb span { font-size: 12px; font-weight: 800; color: #fff; font-family: var(--font-display); }
 .kalkharga__produk-nama { font-size: 14px; font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kalkharga__produk-actions { display: flex; gap: 0.2rem; flex-shrink: 0; }
+.kalkharga__produk-badge {
+  align-self: flex-start;
+  font-size: 10px; font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(148,163,184,0.15);
+  color: var(--text-muted);
+}
 
 .kalkharga__produk-edit, .kalkharga__produk-del {
   background: none;
@@ -318,7 +326,7 @@
   padding-top: 0.5rem;
 }
 
-.kalkharga__produk-resep { font-size: 10px; color: var(--text-muted); opacity: 0.8; }
+.kalkharga__produk-resep { font-size: 10px; color: var(--text-muted); opacity: 0.8; display: flex; align-items: center; gap: 0.3rem; }
 
 /* Modal */
 .kalkharga__modal-overlay {

@@ -69,6 +69,7 @@ function wrapText(str, width = 32) {
 // biar 2 jalur print itu selalu nampilin info yang sama.
 export function buildReceiptData({ strukSettings, items, totalPemasukan, tanggal, refId }) {
   return {
+    judul: "Struk Transaksi",
     namaToko: strukSettings?.namaToko || "Toko Saya",
     alamat: strukSettings?.alamat || "",
     footerText: strukSettings?.footerText || "Terima kasih telah berbelanja!",
@@ -79,12 +80,37 @@ export function buildReceiptData({ strukSettings, items, totalPemasukan, tanggal
   };
 }
 
+// Rekap harian Kasir — dicetak pas tutup toko, nunjukin total SEMUA penjualan
+// hari itu (bukan 1 transaksi doang). Dipetain ke bentuk data yang SAMA kayak
+// buildReceiptData di atas biar bisa langsung dipake bareng StrukModal &
+// buildReceiptBytes yang udah ada, cuma nambahin jumlahTransaksi & perKas.
+export function buildRekapReceiptData({ strukSettings, perProduk, perKas, totalPemasukan, jumlahTransaksi, tanggal }) {
+  return {
+    judul: "Rekap Penjualan Harian",
+    namaToko: strukSettings?.namaToko || "Toko Saya",
+    alamat: strukSettings?.alamat || "",
+    footerText: strukSettings?.footerText || "Terima kasih telah berbelanja!",
+    items: (perProduk || []).map(p => ({
+      produkNama: p.nama,
+      qty: p.qty,
+      hargaSatuan: p.qty > 0 ? Math.round(p.subtotal / p.qty) : 0,
+      subtotal: p.subtotal,
+    })),
+    total: totalPemasukan || 0,
+    tanggal: tanggal || new Date().toISOString().slice(0, 10),
+    jumlahTransaksi: jumlahTransaksi || 0,
+    perKas: perKas || [],
+  };
+}
+
 export function buildReceiptBytes(receipt, width = 32) {
   const b = new ReceiptBuilder();
   b.init().align("center");
   b.doubleSize(true).bold(true).line(receipt.namaToko).doubleSize(false).bold(false);
   if (receipt.alamat) wrapText(receipt.alamat, width).forEach(l => b.line(l));
+  if (receipt.judul && receipt.judul !== "Struk Transaksi") b.bold(true).line(receipt.judul).bold(false);
   b.line(receipt.tanggal);
+  if (receipt.jumlahTransaksi) b.line(`${receipt.jumlahTransaksi} transaksi`);
   b.line("-".repeat(width));
   b.align("left");
   receipt.items.forEach(it => {
@@ -94,6 +120,10 @@ export function buildReceiptBytes(receipt, width = 32) {
   });
   b.line("-".repeat(width));
   b.bold(true).line(padLine("TOTAL", formatRupiahPlain(receipt.total), width)).bold(false);
+  if (receipt.perKas && receipt.perKas.length > 0) {
+    b.feed(1).line("Rincian per Kas:");
+    receipt.perKas.forEach(k => b.line(padLine(k.kas, formatRupiahPlain(k.total), width)));
+  }
   b.feed(1).align("center");
   if (receipt.footerText) wrapText(receipt.footerText, width).forEach(l => b.line(l));
   b.feed(3).cut();

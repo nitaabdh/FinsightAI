@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import TransactionForm from "../components/TransactionForm";
-import { getTransactions, addTransaction, deleteTransaction, editTransaction, calcSummary, formatRupiah, formatDate } from "../utils/storage";
+import { getTransactions, addTransaction, deleteTransaction, editTransaction, getTransactionsByRef, calcSummary, formatRupiah, formatDate } from "../utils/storage";
 import CountUp from "../components/CountUp";
 import { applyStokDelta, genId, baseUnitLabel } from "../utils/umkmCalc";
 import "./TransaksiPage.css";
@@ -93,10 +93,12 @@ export default function TransaksiPage() {
 
   const handleAdd = async (data) => {
     const { _adminFee, ...txData } = data;
-    await addTransaction(user.id, mode, txData);
+    const savedTx = await addTransaction(user.id, mode, txData);
     // Penjualan online: bikin transaksi pengeluaran terpisah buat potongan admin
     // marketplace, pakai dompet yang SAMA biar saldo dompet itu otomatis kepotong
     // (persis kayak kenyataannya — uang yang cair emang udah bersih dari platform).
+    // "Ditempelin" ke transaksi utama lewat refId/refType, biar kalau nanti transaksi
+    // ini diedit, sistem tau harus UPDATE biaya admin yang ini, bukan bikin baru lagi.
     if (_adminFee && _adminFee.amount > 0) {
       await addTransaction(user.id, mode, {
         type: "pengeluaran",
@@ -108,6 +110,8 @@ export default function TransaksiPage() {
         items: [],
         jumlahUnit: null,
         produkId: null,
+        refId: savedTx.id,
+        refType: "online_admin_fee",
       });
     }
     if (data.items?.length) await applyStokUntukTransaksi(data, -1);
@@ -115,15 +119,60 @@ export default function TransaksiPage() {
   };
 
   const handleEdit = async (updatedTx) => {
+    const { _adminFee, ...txData } = updatedTx;
     if (editData?.items?.length) await applyStokUntukTransaksi(editData, +1);
-    await editTransaction(user.id, mode, updatedTx);
-    if (updatedTx.items?.length) await applyStokUntukTransaksi(updatedTx, -1);
+    await editTransaction(user.id, mode, txData);
+
+    // Cari transaksi biaya admin yang udah nempel ke transaksi ini (kalau ada) —
+    // biar di-UPDATE aja, bukan bikin transaksi baru tiap kali disimpen ulang.
+    const existingFeeTx = (await getTransactionsByRef(mode, "online_admin_fee", txData.id))[0] || null;
+
+    if (_adminFee && _adminFee.amount > 0) {
+      if (existingFeeTx) {
+        await editTransaction(user.id, mode, {
+          id: existingFeeTx.id,
+          type: "pengeluaran",
+          amount: _adminFee.amount,
+          category: "Biaya Admin Marketplace",
+          description: _adminFee.description,
+          date: txData.date,
+          kas: txData.kas,
+          items: [],
+          jumlahUnit: null,
+          produkId: null,
+        });
+      } else {
+        await addTransaction(user.id, mode, {
+          type: "pengeluaran",
+          amount: _adminFee.amount,
+          category: "Biaya Admin Marketplace",
+          description: _adminFee.description,
+          date: txData.date,
+          kas: txData.kas,
+          items: [],
+          jumlahUnit: null,
+          produkId: null,
+          refId: txData.id,
+          refType: "online_admin_fee",
+        });
+      }
+    } else if (existingFeeTx) {
+      // Online-sale-nya dimatiin, atau potongannya dihapus/dinolin — biaya admin
+      // yang lama udah nggak relevan lagi, jadi ikut dihapus.
+      await deleteTransaction(user.id, mode, existingFeeTx.id);
+    }
+
+    if (txData.items?.length) await applyStokUntukTransaksi(txData, -1);
     load(false);
   };
 
   const handleDelete = async (id) => {
     const tx = transactions.find(t => t.id === id);
     if (tx?.items?.length) await applyStokUntukTransaksi(tx, +1);
+    // Kalau transaksi ini punya biaya admin yang nempel, hapus juga barengan —
+    // biar nggak nyisa transaksi pengeluaran "yatim" yang harga aslinya udah nggak ada.
+    const linkedFeeTx = (await getTransactionsByRef(mode, "online_admin_fee", id))[0];
+    if (linkedFeeTx) await deleteTransaction(user.id, mode, linkedFeeTx.id);
     await deleteTransaction(user.id, mode, id);
     setDeleteConfirm(null);
     load(false);

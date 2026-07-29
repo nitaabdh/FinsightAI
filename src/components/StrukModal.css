@@ -35,6 +35,7 @@
 }
 .struk-receipt__toko { text-align: center; font-weight: 800; font-size: 15px; margin: 0 0 0.2rem; }
 .struk-receipt__alamat, .struk-receipt__tanggal { text-align: center; font-size: 11px; margin: 0.1rem 0; }
+.struk-receipt__judul { text-align: center; font-size: 12px; font-weight: 700; margin: 0.2rem 0; }
 .struk-receipt__divider { border-top: 1px dashed #999; margin: 0.5rem 0; }
 .struk-receipt__item { margin-bottom: 0.3rem; }
 .struk-receipt__item-nama { margin: 0; font-weight: 600; }

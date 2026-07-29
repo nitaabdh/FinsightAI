@@ -110,6 +110,7 @@
     { "source": "/api/transfer-lintas-akun",  "destination": "/api/data?resource=transfer-lintas-akun" },
     { "source": "/api/kasir-login",           "destination": "/api/kasir?action=login" },
     { "source": "/api/kasir-pin",             "destination": "/api/kasir?action=pin" },
-    { "source": "/api/kasir-checkout",        "destination": "/api/kasir?action=checkout" }
+    { "source": "/api/kasir-checkout",        "destination": "/api/kasir?action=checkout" },
+    { "source": "/api/kasir-rekap",           "destination": "/api/kasir?action=rekap" }
   ]
 }

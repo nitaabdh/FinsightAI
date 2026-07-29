@@ -5,6 +5,7 @@ import BahanBaku from "../components/BahanBaku";
 import BiayaOperasional from "../components/BiayaOperasional";
 import KalkulatorHarga from "../components/KalkulatorHarga";
 import KalkulatorOnline from "../components/KalkulatorOnline";
+import DaftarProduk from "../components/DaftarProduk";
 import AsetUsaha from "../components/AsetUsaha";
 import Supplier from "../components/Supplier";
 import "./ProduksiPage.css";
@@ -14,12 +15,18 @@ const TABS = [
   { id: "operasional", icon: "", label: "Biaya Operasional" },
   { id: "kalkulator",  icon: "", label: "Kalkulator Harga Jual" },
   { id: "online",      icon: "", label: "Kalkulator Online" },
+  { id: "produk",      icon: "", label: "Daftar Produk" },
   { id: "aset",        icon: "", label: "Aset Usaha" },
   { id: "supplier",    icon: "", label: "Supplier" },
 ];
 
 export default function ProduksiPage() {
   const [activeTab, setActiveTab] = useState("bahan");
+
+  // Dipakai buat "loncat" dari tab Daftar Produk ke tab kalkulator yang sesuai
+  // sambil bawa produk yang mau diedit / diatur harga online-nya.
+  const [editRequestProduk, setEditRequestProduk] = useState(null);
+  const [onlineJumpProdukId, setOnlineJumpProdukId] = useState(null);
 
   return (
     <DashboardLayout>
@@ -48,16 +55,28 @@ export default function ProduksiPage() {
             waktu pindah-pindah tab. */}
         <div className="produksipage__content">
           <div style={{ display: activeTab === "bahan" ? "block" : "none" }}>
-            <BahanBaku />
+            <BahanBaku onLihatProduk={(p) => { setEditRequestProduk(p); setActiveTab("kalkulator"); }} />
           </div>
           <div style={{ display: activeTab === "operasional" ? "block" : "none" }}>
             <BiayaOperasional />
           </div>
           <div style={{ display: activeTab === "kalkulator" ? "block" : "none" }}>
-            <KalkulatorHarga />
+            <KalkulatorHarga
+              editRequestProduk={editRequestProduk}
+              onEditRequestConsumed={() => setEditRequestProduk(null)}
+            />
           </div>
           <div style={{ display: activeTab === "online" ? "block" : "none" }}>
-            <KalkulatorOnline />
+            <KalkulatorOnline
+              jumpProdukId={onlineJumpProdukId}
+              onJumpConsumed={() => setOnlineJumpProdukId(null)}
+            />
+          </div>
+          <div style={{ display: activeTab === "produk" ? "block" : "none" }}>
+            <DaftarProduk
+              onEditProduk={(p) => { setEditRequestProduk(p); setActiveTab("kalkulator"); }}
+              onAturHargaOnline={(p) => { setOnlineJumpProdukId(p.id); setActiveTab("online"); }}
+            />
           </div>
           <div style={{ display: activeTab === "aset" ? "block" : "none" }}>
             <AsetUsaha />

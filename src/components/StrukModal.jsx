@@ -43,7 +43,13 @@ export default function StrukModal({ receipt, onClose }) {
         <div id="struk-print-area" className="struk-receipt">
           <p className="struk-receipt__toko">{receipt.namaToko}</p>
           {receipt.alamat && <p className="struk-receipt__alamat">{receipt.alamat}</p>}
+          {receipt.judul && receipt.judul !== "Struk Transaksi" && (
+            <p className="struk-receipt__judul">{receipt.judul}</p>
+          )}
           <p className="struk-receipt__tanggal">{receipt.tanggal}</p>
+          {receipt.jumlahTransaksi > 0 && (
+            <p className="struk-receipt__tanggal">{receipt.jumlahTransaksi} transaksi</p>
+          )}
           <div className="struk-receipt__divider" />
           {receipt.items.map((it, idx) => (
             <div key={idx} className="struk-receipt__item">
@@ -59,6 +65,18 @@ export default function StrukModal({ receipt, onClose }) {
             <span>TOTAL</span>
             <span>{formatRupiah(receipt.total)}</span>
           </div>
+          {receipt.perKas && receipt.perKas.length > 0 && (
+            <>
+              <div className="struk-receipt__divider" />
+              <p className="struk-receipt__item-nama">Rincian per Kas:</p>
+              {receipt.perKas.map((k, idx) => (
+                <div key={idx} className="struk-receipt__item-row">
+                  <span>{k.kas}</span>
+                  <span>{formatRupiah(k.total)}</span>
+                </div>
+              ))}
+            </>
+          )}
           {receipt.footerText && <p className="struk-receipt__footer">{receipt.footerText}</p>}
         </div>
 

@@ -33,7 +33,7 @@ async function apiFetch(url, options = {}) {
   return res.json();
 }
 
-export default function BahanBaku() {
+export default function BahanBaku({ onLihatProduk }) {
   const { user } = useAuth();
   const [list,      setList]      = useState([]);
   const [form,      setForm]      = useState(emptyForm);
@@ -63,6 +63,7 @@ export default function BahanBaku() {
   const [restokSupplierId, setRestokSupplierId] = useState("");
   const [restokErr,   setRestokErr]   = useState("");
   const [supplierList, setSupplierList] = useState([]);
+  const [produkList, setProdukList] = useState([]); // buat ngecek bahan ini dipakai di produk apa aja
 
   // Modal − Kurangi Stok
   const [kurangiId,     setKurangiId]     = useState(null);
@@ -85,6 +86,17 @@ export default function BahanBaku() {
     apiFetch(`/api/umkm?table=dompet`).then(r => {
       if (r.success) setDompetList(r.data);
     });
+    apiFetch(`/api/umkm?table=produk`).then(r => {
+      if (r.success) setProdukList(r.data);
+    });
+  }, [user]);
+
+  // Produk bisa berubah dari tab Kalkulator Harga (bahan dalam resep ditambah/dihapus) —
+  // refetch tiap ada event ini biar link "dipakai di produk" selalu sinkron.
+  useEffect(() => {
+    const refresh = () => { if (user) apiFetch(`/api/umkm?table=produk`).then(r => { if (r.success) setProdukList(r.data); }); };
+    window.addEventListener("produkUpdated", refresh);
+    return () => window.removeEventListener("produkUpdated", refresh);
   }, [user]);
 
   // Supplier bisa ditambah dari tab "Supplier" di sebelah (tab lain nggak remount),
@@ -429,6 +441,13 @@ export default function BahanBaku() {
   const preview = previewHarga();
   const detailBahan = detailId ? list.find(b => b.id === detailId) : null;
 
+  // Produk apa aja yang resepnya "nyantol" ke bahan tertentu — dipake di halaman
+  // detail bahan (buat nampilin link-nya) & di modal hapus (buat warning spesifik).
+  const produkPakaiBahan = (bahanId) =>
+    produkList
+      .map(p => ({ produk: p, pakai: (p.items || []).find(it => it.bahanId === bahanId) }))
+      .filter(x => x.pakai);
+
   const historyBadgeLabel = (h) => {
     if (h.sumber === "transaksi") return "Otomatis";
     if (h.sumber === "manual_kurang_rusak") return "Rusak/Gagal";
@@ -474,6 +493,38 @@ export default function BahanBaku() {
                 <button className="bahanbaku__btn-danger" onClick={() => openDel(detailBahan.id)}>Hapus Bahan</button>
               </div>
             </div>
+
+            {(() => {
+              const dipakaiDi = produkPakaiBahan(detailBahan.id);
+              return (
+                <div className="bahanbaku__history stagger-list">
+                  <h4 className="bahanbaku__history-title stagger-list">Dipakai di Produk</h4>
+                  {dipakaiDi.length === 0 ? (
+                    <div className="bahanbaku__empty" style={{ padding: "1.25rem 1rem" }}>
+                      <p>Belum dipakai di resep produk manapun.</p>
+                    </div>
+                  ) : (
+                    <div className="bahanbaku__history-list stagger-list">
+                      {dipakaiDi.map(({ produk, pakai }) => (
+                        <div key={produk.id} className="bahanbaku__history-item">
+                          <div className="bahanbaku__history-info">
+                            <p className="bahanbaku__history-jumlah">{produk.nama}</p>
+                            <p className="bahanbaku__history-alasan">
+                              Pakai {pakai.jumlahPakai} {pakai.satuanPakai} per unit produk
+                            </p>
+                          </div>
+                          <div className="bahanbaku__history-meta">
+                            <button className="bahanbaku__btn-sec" onClick={() => onLihatProduk?.(produk)}>
+                              Lihat Produk →
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="bahanbaku__history stagger-list">
               <h4 className="bahanbaku__history-title stagger-list">Riwayat Keluar-Masuk Stok</h4>
@@ -655,12 +706,14 @@ export default function BahanBaku() {
           list.map(b => {
             const stokBase  = parseFloat(b.stok) || 0;
             const stokMinus = stokBase < 0;
+            const jumlahProdukPakai = produkPakaiBahan(b.id).length;
             return (
               <div key={b.id} className={"bahanbaku__item" + (stokMinus ? " bahanbaku__item--minus" : "")}>
                 <div className="bahanbaku__item-info">
                   <p className="bahanbaku__item-nama">{b.nama}</p>
                   <p className="bahanbaku__item-meta">
                     ≈ {formatRupiah(hargaPerBase(b))}/{unitLabel(b)}
+                    {jumlahProdukPakai > 0 && ` · dipakai di ${jumlahProdukPakai} produk`}
                   </p>
                 </div>
                 <div className="bahanbaku__item-stok">
@@ -817,13 +870,20 @@ export default function BahanBaku() {
       })()}
 
       {/* Konfirmasi hapus */}
-      {delId && (
+      {delId && (() => {
+        const dipakaiDi = produkPakaiBahan(delId);
+        return (
         <div className="bahanbaku__modal-overlay" onClick={() => setDelId(null)}>
           <div className="bahanbaku__modal" onClick={e => e.stopPropagation()}>
             <h4 className="bahanbaku__modal-title">Hapus bahan ini?</h4>
-            <p className="bahanbaku__modal-sub">
-              Produk yang sudah memakai bahan ini tidak terhapus, tapi perhitungan biayanya tidak akan ter-update.
-            </p>
+            {dipakaiDi.length > 0 ? (
+              <p className="bahanbaku__modal-sub">
+                Bahan ini masih dipakai di resep <strong>{dipakaiDi.length} produk</strong>: {dipakaiDi.map(x => x.produk.nama).join(", ")}.
+                Produknya nggak ikut kehapus, tapi perhitungan biayanya jadi nggak akurat lagi (bahan ini bakal dianggap Rp0).
+              </p>
+            ) : (
+              <p className="bahanbaku__modal-sub">Nggak dipakai di resep produk manapun, aman dihapus.</p>
+            )}
             {delTxLoading ? (
               <p className="bahanbaku__modal-sub">Mengecek transaksi terkait...</p>
             ) : delTxList.length > 0 ? (
@@ -843,7 +903,8 @@ export default function BahanBaku() {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

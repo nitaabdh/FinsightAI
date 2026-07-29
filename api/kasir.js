@@ -15,15 +15,18 @@
 //   /api/kasir?action=login
 //   /api/kasir?action=pin
 //   /api/kasir?action=checkout
+//   /api/kasir?action=rekap
 
 import loginHandler from "./_handlers/kasir-login.js";
 import pinHandler from "./_handlers/kasir-pin.js";
 import checkoutHandler from "./_handlers/kasir-checkout.js";
+import rekapHandler from "./_handlers/kasir-rekap.js";
 
 const HANDLERS = {
   login: loginHandler,
   pin: pinHandler,
   checkout: checkoutHandler,
+  rekap: rekapHandler,
 };
 
 export default async function handler(req, res) {

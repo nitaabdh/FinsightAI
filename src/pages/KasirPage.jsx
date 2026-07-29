@@ -4,11 +4,11 @@ import DashboardLayout from "../components/DashboardLayout";
 import PageHeader from "../components/PageHeader";
 import RupiahInput from "../components/RupiahInput";
 import { formatRupiah, colorFromName } from "../utils/umkmCalc";
-import { buildReceiptData } from "../utils/thermalPrint";
+import { buildReceiptData, buildRekapReceiptData } from "../utils/thermalPrint";
 import StrukModal from "../components/StrukModal";
 import "./KasirPage.css";
 
-import { ShoppingCart, Plus, Minus, Trash2, Search, X } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2, Search, X, Receipt, CheckCircle2 } from "lucide-react";
 
 async function apiFetch(url, options = {}) {
   const token = localStorage.getItem("finsight_token");
@@ -37,6 +37,10 @@ export default function KasirPage() {
   const [successInfo, setSuccessInfo] = useState(null); // { totalPemasukan, itemCount }
   const [receipt, setReceipt] = useState(null); // data struk siap-print, dari response checkout
   const [showStruk, setShowStruk] = useState(false);
+  const [rekapReceipt, setRekapReceipt] = useState(null); // data struk rekap harian, dari /api/kasir-rekap
+  const [showRekap, setShowRekap] = useState(false);
+  const [rekapLoading, setRekapLoading] = useState(false);
+  const [rekapError, setRekapError] = useState("");
 
   const loadData = () => {
     setLoading(true);
@@ -53,7 +57,9 @@ export default function KasirPage() {
 
   const filteredProduk = useMemo(() => {
     const q = search.toLowerCase().trim();
-    return produkList.filter(p => !q || p.nama.toLowerCase().includes(q));
+    return produkList
+      .filter(p => p.tampilDiKasir !== false)
+      .filter(p => !q || p.nama.toLowerCase().includes(q));
   }, [produkList, search]);
 
   // Stok yang tersisa buat produk ini, dikurangin sama yang UDAH ada di keranjang —
@@ -134,6 +140,29 @@ export default function KasirPage() {
     }
   };
 
+  const handleLihatRekap = async () => {
+    if (rekapLoading) return;
+    setRekapLoading(true);
+    setRekapError("");
+    try {
+      const r = await apiFetch(`/api/kasir-rekap`);
+      if (!r.success) { setRekapError(r.message || "Gagal mengambil rekap harian."); return; }
+      setRekapReceipt(buildRekapReceiptData({
+        strukSettings: r.strukSettings,
+        perProduk: r.perProduk,
+        perKas: r.perKas,
+        totalPemasukan: r.totalPemasukan,
+        jumlahTransaksi: r.jumlahTransaksi,
+        tanggal: r.tanggal,
+      }));
+      setShowRekap(true);
+    } catch {
+      setRekapError("Gagal menghubungi server, coba lagi ya.");
+    } finally {
+      setRekapLoading(false);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="kasir">
@@ -142,7 +171,11 @@ export default function KasirPage() {
         <div className="kasir__searchbar">
           <Search size={16} />
           <input type="text" placeholder="Cari produk..." value={search} onChange={e => setSearch(e.target.value)} />
+          <button className="kasir__rekap-btn" onClick={handleLihatRekap} disabled={rekapLoading} title="Cek pemasukan hari ini">
+            <Receipt size={15} /> {rekapLoading ? "Memuat..." : "Rekap Harian"}
+          </button>
         </div>
+        {rekapError && <p className="kasir__error">{rekapError}</p>}
 
         <div className="kasir__layout">
           <div className="kasir__grid stagger-list">
@@ -254,7 +287,7 @@ export default function KasirPage() {
       {successInfo && (
         <div className="kasir__modal-overlay" onClick={() => setSuccessInfo(null)}>
           <div className="kasir__modal" onClick={e => e.stopPropagation()}>
-            <h4 className="kasir__modal-title">✅ Transaksi Berhasil</h4>
+            <h4 className="kasir__modal-title"><CheckCircle2 size={16} /> Transaksi Berhasil</h4>
             <p className="kasir__modal-sub">
               {successInfo.itemCount} item terjual, total {formatRupiah(successInfo.totalPemasukan)}.
               Transaksinya udah otomatis kecatet di Transaksi &amp; Laporan.
@@ -263,7 +296,7 @@ export default function KasirPage() {
               <button className="kasir__btn-sec" onClick={() => setSuccessInfo(null)}>Tutup</button>
               {receipt && (
                 <button className="kasir__btn-primary" onClick={() => { setSuccessInfo(null); setShowStruk(true); }}>
-                  🧾 Lihat &amp; Cetak Struk
+                  <Receipt size={14} /> Lihat &amp; Cetak Struk
                 </button>
               )}
             </div>
@@ -273,6 +306,10 @@ export default function KasirPage() {
 
       {showStruk && receipt && (
         <StrukModal receipt={receipt} onClose={() => setShowStruk(false)} />
+      )}
+
+      {showRekap && rekapReceipt && (
+        <StrukModal receipt={rekapReceipt} onClose={() => setShowRekap(false)} />
       )}
     </DashboardLayout>
   );

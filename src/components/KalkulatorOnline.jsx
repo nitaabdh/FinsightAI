@@ -9,8 +9,8 @@ import {
 } from "../utils/marketplaceCalc";
 import "./KalkulatorOnline.css";
 
-import { X } from "lucide-react";
-export default function KalkulatorOnline() {
+import { X, Check } from "lucide-react";
+export default function KalkulatorOnline({ jumpProdukId, onJumpConsumed }) {
   const { user } = useAuth();
   const [produkList, setProdukList]   = useState([]);
   const [selProdukId, setSelProdukId] = useState("");
@@ -41,6 +41,15 @@ export default function KalkulatorOnline() {
 
   const produk = produkList.find(p => p.id === selProdukId);
   const hpp = produk?.totalBiaya || 0;
+
+  // Dipicu dari tab "Daftar Produk" pas tombol "Atur Harga Online" ditekan.
+  useEffect(() => {
+    if (jumpProdukId) {
+      setSelProdukId(jumpProdukId);
+      onJumpConsumed?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jumpProdukId]);
 
   // Pas pilih produk yang UDAH punya rincian potongan tersimpen, muat balik ke kalkulator —
   // biar user langsung liat/lanjutin dari yang terakhir diatur, bukan mulai dari preset lagi.
@@ -189,7 +198,7 @@ export default function KalkulatorOnline() {
                       if (ok) { setSavedFull(true); setTimeout(() => setSavedFull(false), 1500); }
                     }}
                   >
-                    {savingFull ? "Menyimpan..." : savedFull ? "✓ Tersimpan (harga + potongan)" : `Simpan buat "${produk.nama}" (harga + potongan)`}
+                    {savingFull ? "Menyimpan..." : savedFull ? <><Check size={14} /> Tersimpan (harga + potongan)</> : `Simpan buat "${produk.nama}" (harga + potongan)`}
                   </button>
                 </>
               )}
@@ -237,62 +246,6 @@ export default function KalkulatorOnline() {
           </>
         )}
       </div>
-
-      {produkList.length > 0 && (
-        <div className="komarket__form komarket__list-card stagger-list">
-          <h3 className="komarket__form-title">Daftar Harga Jual Online</h3>
-          <p className="komarket__hint">
-            Simpen harga jual listing per produk di sini sekali aja. Nanti pas centang "Ini penjualan online?"
-            di form Transaksi dan pilih produknya, harga DAN rincian potongan ini otomatis keisi sendiri —
-            nggak perlu ngetik ulang tiap kali. Pakai tombol "Simpan (harga + potongan)" di kalkulator atas
-            biar rincian potongannya ikut kesimpen; kolom cepat di bawah ini cuma buat update angka harganya aja.
-          </p>
-          <div className="komarket__online-list stagger-list">
-            {produkList.map(p => (
-              <HargaOnlineRow key={p.id} produk={p} onSave={saveHargaOnline} />
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Baris kecil per produk di "Daftar Harga Jual Online" ─────────────────────
-// Dipisah jadi komponen sendiri biar state edit tiap baris nggak numpuk di parent
-// (tiap baris punya input & status simpannya sendiri-sendiri).
-function HargaOnlineRow({ produk, onSave }) {
-  const [val, setVal]         = useState(produk.hargaOnline ? String(produk.hargaOnline) : "");
-  const [saving, setSaving]   = useState(false);
-  const [saved, setSaved]     = useState(false);
-
-  const dirty = val !== (produk.hargaOnline ? String(produk.hargaOnline) : "");
-
-  const handleSave = async () => {
-    setSaving(true);
-    const ok = await onSave(produk, +val || 0);
-    setSaving(false);
-    if (ok) { setSaved(true); setTimeout(() => setSaved(false), 1500); }
-  };
-
-  return (
-    <div className="komarket__online-row">
-      <div className="komarket__online-row-info">
-        <span className="komarket__online-row-nama">{produk.nama}</span>
-        <span className="komarket__online-row-hpp">HPP {formatRupiah(produk.totalBiaya)} · Harga Normal {formatRupiah(produk.hargaJual)}</span>
-        <span className="komarket__online-row-hpp">
-          {produk.onlineFeeRows?.length > 0 ? `✓ ${produk.onlineFeeRows.length} rincian potongan tersimpan` : "Belum ada rincian potongan tersimpan"}
-        </span>
-      </div>
-      <RupiahInput className="komarket__input komarket__online-row-input" placeholder="Harga listing online"
-        value={val} onChange={setVal} />
-      <button
-        className="komarket__online-row-save"
-        disabled={!dirty || saving}
-        onClick={handleSave}
-      >
-        {saving ? "..." : saved ? "Kesimpen" : "Simpan"}
-      </button>
     </div>
   );
 }

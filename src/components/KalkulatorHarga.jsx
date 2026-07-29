@@ -2,13 +2,13 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import {
   genId, formatRupiah, biayaItem, totalBiayaBahan, validUsageUnits,
-  biayaOpsItem, totalBiayaOperasional, cekKecukupanStok, applyStokDelta, baseUnitLabel, colorFromName,
+  biayaOpsItem, totalBiayaOperasional, colorFromName,
 } from "../utils/umkmCalc";
 import RupiahInput from "./RupiahInput";
 import CountUp from "./CountUp";
 import "./KalkulatorHarga.css";
 
-import { Pencil, Search, Trash2, X, Factory, PackagePlus } from "lucide-react";
+import { X } from "lucide-react";
 const TIPE_PRODUK_OPTIONS = [
   { value: "racikan",       label: "Racikan Sendiri",  desc: "Dibikin dari resep bahan baku" },
   { value: "jadi_stok",     label: "Beli Jadi (Nyetok)", desc: "Beli dari supplier, nyetok fisik" },
@@ -19,6 +19,7 @@ const emptyForm = {
   biayaOperasionalItems: [],
   targetUntung: "", targetUntungPct: "",
   tipeProduk: "racikan", pakaiStok: false, hargaModalManual: "",
+  tampilDiKasir: true,
 };
 
 async function apiFetch(url, options = {}) {
@@ -30,16 +31,14 @@ async function apiFetch(url, options = {}) {
   return res.json();
 }
 
-export default function KalkulatorHarga() {
+export default function KalkulatorHarga({ editRequestProduk, onEditRequestConsumed }) {
   const { user } = useAuth();
   const formRef = useRef(null);
 
   const [bahanList,  setBahanList]  = useState([]);
-  const [produkList, setProdukList] = useState([]);
   const [form,    setForm]    = useState(emptyForm);
   const [editId,  setEditId]  = useState(null);
   const [error,   setError]   = useState("");
-  const [delId,   setDelId]   = useState(null);
   const [selBahan,  setSelBahan]  = useState("");
   const [selJumlah, setSelJumlah] = useState("");
   const [selSatuan, setSelSatuan] = useState("");
@@ -51,7 +50,6 @@ export default function KalkulatorHarga() {
 
   const [showForm, setShowForm] = useState(false);
   const [pilihTipeDulu, setPilihTipeDulu] = useState(true); // true = lagi milih tipe produk dulu (cuma buat produk BARU)
-  const [search,   setSearch]   = useState("");
 
   // ── Foto produk ──────────────────────────────────────────────────────────
   const [fotoFile,      setFotoFile]      = useState(null); // File yang lagi nunggu di-upload (belum ke-submit)
@@ -60,29 +58,9 @@ export default function KalkulatorHarga() {
   const [fotoError,     setFotoError]     = useState("");
   const fotoInputRef = useRef(null);
 
-  // ── Produksi (racikan+pakaiStok) & Restock (jadi_stok) — dua-duanya nambah stok_jadi,
-  // bedanya Produksi NGURANGIN bahan baku dulu (sesuai resep), Restock nggak.
-  const [produksiTarget, setProduksiTarget] = useState(null); // produk yang lagi diproduksi
-  const [produksiJumlah, setProduksiJumlah] = useState("1");
-  const [produksiError, setProduksiError] = useState("");
-  const [produksiSubmitting, setProduksiSubmitting] = useState(false);
-
-  const [restockTarget, setRestockTarget] = useState(null); // produk yang lagi di-restock
-  const [restockJumlah, setRestockJumlah] = useState("1");
-  const [restockError, setRestockError] = useState("");
-  const [restockSubmitting, setRestockSubmitting] = useState(false);
-
-  // AI Saran Harga
-  const [aiOpen,    setAiOpen]    = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiResult,  setAiResult]  = useState("");
-  const [aiError,   setAiError]   = useState("");
-  const [aiProduk,  setAiProduk]  = useState(null); // produk yang sedang dianalisis
-
   useEffect(() => {
     if (!user) return;
     apiFetch(`/api/umkm?table=bahan_baku`).then(r => { if (r.success) setBahanList(r.data); });
-    apiFetch(`/api/umkm?table=produk`).then(r => { if (r.success) setProdukList(r.data); });
     apiFetch(`/api/umkm?table=biaya_operasional`).then(r => { if (r.success) setOpsList(r.data); });
   }, [user]);
 
@@ -102,6 +80,16 @@ export default function KalkulatorHarga() {
     return () => window.removeEventListener("biayaOperasionalUpdated", refresh);
   }, [user]);
 
+  // Dipicu dari tab "Daftar Produk" pas tombol Edit produk ditekan — buka form
+  // ini dan langsung isi datanya, sekalian pindah tab (itu diatur di ProduksiPage).
+  useEffect(() => {
+    if (editRequestProduk) {
+      openEdit(editRequestProduk);
+      onEditRequestConsumed?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editRequestProduk]);
+
   const bahanMap = Object.fromEntries(bahanList.map(b => [b.id, b]));
   const opsMap   = Object.fromEntries(opsList.map(o => [o.id, o]));
 
@@ -116,10 +104,6 @@ export default function KalkulatorHarga() {
   const hargaJual   = totalBiaya + targetNum;
 
   const targetPct   = totalBiaya > 0 ? ((targetNum / totalBiaya) * 100).toFixed(1) : "";
-
-  const filteredProdukList = produkList.filter(p =>
-    p.nama.toLowerCase().includes(search.trim().toLowerCase())
-  );
 
   // ── Handler field Rp/% target untung ──────────────────────────────────────
   const handleTargetRp = (val) => {
@@ -159,6 +143,7 @@ export default function KalkulatorHarga() {
       tipeProduk: tipe,
       pakaiStok: p.pakaiStok || false,
       hargaModalManual: tipe !== "racikan" ? String(p.hargaModal || "") : "",
+      tampilDiKasir: p.tampilDiKasir !== false,
     });
     setEditId(p.id); setError(""); setPilihTipeDulu(false);
     setSelBahan(""); setSelJumlah(""); setSelSatuan("");
@@ -208,7 +193,7 @@ export default function KalkulatorHarga() {
     await apiFetch(`/api/upload-image?target=produk&id=${editId}`, { method: "DELETE" });
     setFotoFile(null); setFotoPreview(null);
     if (fotoInputRef.current) fotoInputRef.current.value = "";
-    setProdukList(p => p.map(x => x.id === editId ? { ...x, fotoUrl: null } : x));
+    window.dispatchEvent(new CustomEvent("produkUpdated"));
   };
 
   // Dipanggil SETELAH produk berhasil disimpen (create/update) — upload foto yang
@@ -286,6 +271,7 @@ export default function KalkulatorHarga() {
       totalBiaya: Math.round(totalBiaya),
       hargaJual: Math.round(hargaJual),
       hargaModal: Math.round(isRacikan ? 0 : biayaBahan),
+      tampilDiKasir: form.tampilDiKasir,
     };
     if (!editId) {
       // tipeProduk cuma dikirim pas BIKIN BARU — nggak bisa diganti pas edit (lihat
@@ -305,8 +291,6 @@ export default function KalkulatorHarga() {
         });
         if (r.success) {
           const fotoUrl = await uploadPendingFoto(editId);
-          const savedProduk = fotoUrl ? { ...r.data, fotoUrl } : r.data;
-          setProdukList(p => p.map(x => x.id === editId ? savedProduk : x));
           window.dispatchEvent(new CustomEvent("produkUpdated"));
         } else {
           return setError(r.message || "Gagal menyimpan perubahan produk. Coba lagi.");
@@ -318,9 +302,7 @@ export default function KalkulatorHarga() {
           body: JSON.stringify({ id: newId, ...payload, createdAt: Date.now() }),
         });
         if (r.success) {
-          const fotoUrl = await uploadPendingFoto(newId);
-          const savedProduk = fotoUrl ? { ...r.data, fotoUrl } : r.data;
-          setProdukList(p => [savedProduk, ...p]);
+          await uploadPendingFoto(newId);
           window.dispatchEvent(new CustomEvent("produkUpdated"));
         } else {
           return setError(r.message || "Gagal menyimpan produk. Coba lagi.");
@@ -330,166 +312,6 @@ export default function KalkulatorHarga() {
       return setError("Gagal menghubungi server: " + (err.message || "Coba lagi."));
     }
     resetForm();
-  };
-
-  const handleDel = async (id) => {
-    await apiFetch(`/api/umkm?table=produk&id=${id}`, { method: "DELETE" });
-    setProdukList(p => p.filter(x => x.id !== id));
-    setDelId(null);
-    if (editId === id) resetForm();
-    window.dispatchEvent(new CustomEvent("produkUpdated"));
-  };
-
-  // ── Produksi: konsumsi bahan baku sesuai resep × jumlah, nambah stok_jadi produk ──
-  const handleProduksi = async () => {
-    if (produksiSubmitting || !produksiTarget) return;
-    const jumlah = +produksiJumlah || 0;
-    if (jumlah <= 0) return setProduksiError("Jumlah produksi tidak valid.");
-
-    setProduksiSubmitting(true);
-    setProduksiError("");
-    try {
-      // Ambil bahan baku TERBARU dari server (bukan cache lokal) biar validasinya akurat
-      const bahanRes = await apiFetch(`/api/umkm?table=bahan_baku`);
-      if (!bahanRes.success) { setProduksiError("Gagal ambil data bahan baku."); return; }
-
-      const cek = cekKecukupanStok(produksiTarget.items, bahanRes.data, jumlah);
-      const kurang = cek.filter(c => !c.cukup);
-      if (kurang.length > 0) {
-        setProduksiError(`Stok nggak cukup: ${kurang.map(k => `${k.nama} (butuh ${k.butuh}, sisa ${k.stokAda})`).join(", ")}`);
-        return;
-      }
-
-      const updated = applyStokDelta(bahanRes.data, produksiTarget.items, jumlah, -1);
-      const changed = updated
-        .map((b, i) => ({ b, before: bahanRes.data[i] }))
-        .filter(({ b, before }) => b.stok !== before?.stok);
-
-      await Promise.all(changed.map(({ b }) => apiFetch(`/api/umkm?table=bahan_baku`, { method: "PUT", body: JSON.stringify(b) })));
-      await Promise.all(changed.map(({ b, before }) => {
-        const delta = Math.abs((parseFloat(b.stok) || 0) - (parseFloat(before?.stok) || 0));
-        return apiFetch(`/api/umkm?table=stok_history`, {
-          method: "POST",
-          body: JSON.stringify({
-            id: genId(), bahanId: b.id, tipe: "kurang", sumber: "produksi",
-            jumlah: delta, satuanLabel: baseUnitLabel(b),
-          }),
-        });
-      }));
-
-      const stokJadiBaru = (produksiTarget.stokJadi || 0) + jumlah;
-      const r = await apiFetch(`/api/umkm?table=produk`, {
-        method: "PUT",
-        body: JSON.stringify({ id: produksiTarget.id, ...produksiTarget, stokJadi: stokJadiBaru }),
-      });
-      if (r.success) {
-        setProdukList(p => p.map(x => x.id === produksiTarget.id ? r.data : x));
-        window.dispatchEvent(new CustomEvent("produkUpdated"));
-      }
-      await apiFetch(`/api/umkm?table=stok_history`, {
-        method: "POST",
-        body: JSON.stringify({ id: genId(), produkId: produksiTarget.id, tipe: "tambah", sumber: "produksi", jumlah, satuanLabel: "unit" }),
-      });
-
-      setProduksiTarget(null);
-      setProduksiJumlah("1");
-    } catch {
-      setProduksiError("Gagal menghubungi server, coba lagi ya.");
-    } finally {
-      setProduksiSubmitting(false);
-    }
-  };
-
-  // ── Restock: langsung nambah stok_jadi (nggak ngutak-atik bahan baku, karena beli jadi) ──
-  const handleRestock = async () => {
-    if (restockSubmitting || !restockTarget) return;
-    const jumlah = +restockJumlah || 0;
-    if (jumlah <= 0) return setRestockError("Jumlah restock tidak valid.");
-
-    setRestockSubmitting(true);
-    setRestockError("");
-    try {
-      const stokJadiBaru = (restockTarget.stokJadi || 0) + jumlah;
-      const r = await apiFetch(`/api/umkm?table=produk`, {
-        method: "PUT",
-        body: JSON.stringify({ id: restockTarget.id, ...restockTarget, stokJadi: stokJadiBaru }),
-      });
-      if (r.success) {
-        setProdukList(p => p.map(x => x.id === restockTarget.id ? r.data : x));
-        window.dispatchEvent(new CustomEvent("produkUpdated"));
-      }
-      await apiFetch(`/api/umkm?table=stok_history`, {
-        method: "POST",
-        body: JSON.stringify({ id: genId(), produkId: restockTarget.id, tipe: "tambah", sumber: "manual_tambah_jadi", jumlah, satuanLabel: "unit" }),
-      });
-
-      setRestockTarget(null);
-      setRestockJumlah("1");
-    } catch {
-      setRestockError("Gagal menghubungi server, coba lagi ya.");
-    } finally {
-      setRestockSubmitting(false);
-    }
-  };
-
-  // ── AI Saran Harga ─────────────────────────────────────────────────────────
-  const handleAiAnalisis = async (produk) => {
-    setAiProduk(produk);
-    setAiOpen(true);
-    setAiResult("");
-    setAiError("");
-    setAiLoading(true);
-
-    const bahan = produk.items.length > 0
-      ? produk.items.map(it => {
-          const b = bahanMap[it.bahanId];
-          return `${b?.nama || "bahan"} (${it.jumlahPakai} ${it.satuanPakai})`;
-        }).join(", ")
-      : (produk.tipeProduk === "jadi_dropship" ? "beli dari supplier dropship, nggak nyetok" : "beli jadi dari supplier, nyetok stok fisik");
-
-    const prompt = `Kamu adalah konsultan bisnis UMKM Indonesia yang berpengalaman.
-
-Saya memiliki produk bernama "${produk.nama}" dengan detail biaya:
-- Bahan baku: ${formatRupiah(produk.biayaBahan)} (${bahan})
-- Biaya operasional: ${formatRupiah(produk.biayaOperasional)}
-- Total modal per unit: ${formatRupiah(produk.totalBiaya)}
-- Harga jual saya saat ini: ${formatRupiah(produk.hargaJual)} (target untung ${formatRupiah(produk.targetUntung)})
-
-Tolong analisis:
-1. Apakah harga jual saya kompetitif untuk produk sejenis di pasaran Indonesia?
-2. Berapa kisaran harga produk serupa yang biasa dijual UMKM/warung/online shop?
-3. Apakah margin keuntungan saya (${totalBiaya > 0 ? ((produk.targetUntung/produk.totalBiaya)*100).toFixed(0) : 0}%) sudah wajar untuk UMKM?
-4. Saran konkret untuk strategi penetapan harga yang lebih optimal.
-
-Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke poin. Format dengan poin-poin yang jelas.`;
-
-    try {
-      // Lewat backend (/api/ai-chat) — key Groq diambil server-side dari Supabase,
-      // konsisten sama arsitektur AI Agent (nggak ada lagi key di localStorage browser).
-      const r = await apiFetch(`/api/ai-chat`, {
-        method: "POST",
-        body: JSON.stringify({
-          messages: [{ role: "user", content: prompt }],
-          mode: "umkm",
-          summary: { pemasukan: 0, pengeluaran: 0, saldo: 0 },
-        }),
-      });
-
-      if (!r.success) {
-        if (r.needsApiKey) {
-          setAiError("API Key Groq belum diset. Isi dulu di halaman AI Agent.");
-        } else {
-          throw new Error(r.message || "Gagal menghubungi AI.");
-        }
-        return;
-      }
-
-      setAiResult(r.data?.content || "");
-    } catch (err) {
-      setAiError("Gagal menghubungi AI: " + (err.message || "Coba lagi."));
-    } finally {
-      setAiLoading(false);
-    }
   };
 
   return (
@@ -666,6 +488,14 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
         </div>
         )}
 
+        <div className="kalkharga__field" style={{ flexDirection: "row", alignItems: "center", gap: "0.5rem", display: "flex" }}>
+          <input type="checkbox" id="tampilDiKasir" checked={form.tampilDiKasir}
+            onChange={e => setForm(p => ({ ...p, tampilDiKasir: e.target.checked }))} />
+          <label htmlFor="tampilDiKasir" className="kalkharga__label" style={{ margin: 0 }}>
+            Tampilkan produk ini di Kasir
+          </label>
+        </div>
+
         {/* Target Untung — Rp + % berdampingan */}
         <div className="kalkharga__costs">
           <div className="kalkharga__field">
@@ -712,182 +542,6 @@ Berikan jawaban dalam Bahasa Indonesia yang singkat, praktis, dan langsung ke po
       </div>
       )}
 
-      {/* Daftar Produk */}
-      <div className="kalkharga__list">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
-          <h3 className="kalkharga__list-title stagger-list" style={{ margin: 0 }}>Daftar Produk</h3>
-          {produkList.length > 0 && (
-            <input className="kalkharga__input" type="text" placeholder="Cari produk..."
-              style={{ maxWidth: "240px" }}
-              value={search} onChange={e => setSearch(e.target.value)} />
-          )}
-        </div>
-        {produkList.length === 0 ? (
-          <div className="kalkharga__empty">
-            <p></p>
-            <p>Belum ada produk dihitung.</p>
-            <p>Gunakan form di atas untuk menghitung harga jual pertama kamu.</p>
-          </div>
-        ) : filteredProdukList.length === 0 ? (
-          <div className="kalkharga__empty"><p><Search size={15} /></p><p>Tidak ada produk yang cocok dengan pencarian.</p></div>
-        ) : (
-          <div className="kalkharga__produk-grid stagger-list">
-            {filteredProdukList.map(p => (
-              <div key={p.id} className="kalkharga__produk-card">
-                <div className="kalkharga__produk-header">
-                  <div className="kalkharga__produk-titlewrap">
-                    <div className="kalkharga__produk-thumb" style={!p.fotoUrl ? { background: colorFromName(p.nama) } : undefined}>
-                      {p.fotoUrl ? <img src={p.fotoUrl} alt={p.nama} /> : <span>{p.nama.charAt(0).toUpperCase()}</span>}
-                    </div>
-                    <span className="kalkharga__produk-nama">{p.nama}</span>
-                  </div>
-                  <div className="kalkharga__produk-actions">
-                    <button className="kalkharga__produk-edit" onClick={() => openEdit(p)} title="Edit"><Pencil size={14} /></button>
-                    <button className="kalkharga__produk-del" onClick={() => setDelId(p.id)} title="Hapus"><Trash2 size={14} /></button>
-                  </div>
-                </div>
-                <div className="kalkharga__produk-body">
-                  <span className="kalkharga__produk-label">Harga Jual</span>
-                  <span className="kalkharga__produk-harga">{formatRupiah(p.hargaJual)}</span>
-                </div>
-                <div className="kalkharga__produk-detail">
-                  <span>Modal: {formatRupiah(p.totalBiaya)}</span>
-                  <span>Untung: {formatRupiah(p.targetUntung)}</span>
-                </div>
-                <div className="kalkharga__produk-margin">
-                  Margin: {p.totalBiaya > 0 ? ((p.targetUntung / p.totalBiaya) * 100).toFixed(0) : 0}%
-                </div>
-                <div className="kalkharga__produk-resep">
-                  {p.tipeProduk === "jadi_dropship" ? "🚚 Dropship — modal bisa diubah pas jual"
-                    : p.tipeProduk === "jadi_stok" ? `📦 Beli Jadi — Stok: ${p.stokJadi || 0}`
-                    : p.pakaiStok ? `📖 Racikan — Stok Jadi: ${p.stokJadi || 0}`
-                    : `📖 Racikan — ${p.items.length} bahan dalam resep (dibikin pas ada pesanan)`}
-                </div>
-                {p.tipeProduk === "racikan" && p.pakaiStok && (
-                  <button className="kalkharga__ai-btn" onClick={() => { setProduksiTarget(p); setProduksiJumlah("1"); setProduksiError(""); }}>
-                    <Factory size={13} /> + Produksi
-                  </button>
-                )}
-                {p.tipeProduk === "jadi_stok" && (
-                  <button className="kalkharga__ai-btn" onClick={() => { setRestockTarget(p); setRestockJumlah("1"); setRestockError(""); }}>
-                    <PackagePlus size={13} /> + Restock
-                  </button>
-                )}
-                {/* Tombol AI Analisis */}
-                <button className="kalkharga__ai-btn" onClick={() => handleAiAnalisis(p)}>
-                  Analisis Harga AI
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Modal AI Saran Harga */}
-      {aiOpen && (
-        <div className="kalkharga__modal-overlay" onClick={() => { setAiOpen(false); setAiResult(""); }}>
-          <div className="kalkharga__modal kalkharga__modal--ai" onClick={e => e.stopPropagation()}>
-            <div className="kalkharga__ai-header">
-              <div>
-                <h4 className="kalkharga__modal-title">Analisis Harga AI</h4>
-                {aiProduk && <p className="kalkharga__ai-produk-name">{aiProduk.nama} · {formatRupiah(aiProduk.hargaJual)}</p>}
-              </div>
-              <button className="kalkharga__ai-close" onClick={() => { setAiOpen(false); setAiResult(""); }}><X size={14} /></button>
-            </div>
-
-            {aiLoading && (
-              <div className="kalkharga__ai-loading">
-                <div className="kalkharga__ai-spinner" />
-                <p>AI sedang menganalisis produk serupa di pasaran...</p>
-              </div>
-            )}
-
-            {aiError && !aiLoading && (
-              <div className="kalkharga__ai-error">
-                <p>{aiError}</p>
-                {aiError.includes("API Key") && (
-                  <p className="kalkharga__ai-hint">Isi API Key Groq di halaman <strong>AI Agent</strong> terlebih dahulu.</p>
-                )}
-              </div>
-            )}
-
-            {aiResult && !aiLoading && (
-              <div className="kalkharga__ai-result">
-                {aiResult.split("\n").map((line, i) => (
-                  line.trim() ? <p key={i} className={line.startsWith("#") ? "kalkharga__ai-heading" : "kalkharga__ai-line"}>{line.replace(/^#+\s*/, "")}</p> : null
-                ))}
-              </div>
-            )}
-
-            <div className="kalkharga__modal-actions">
-              <button className="kalkharga__btn-sec" onClick={() => { setAiOpen(false); setAiResult(""); }}>Tutup</button>
-              {!aiLoading && aiProduk && (
-                <button className="kalkharga__btn-primary" onClick={() => handleAiAnalisis(aiProduk)}>
-                  Analisis Ulang
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Hapus Produk */}
-      {delId && (
-        <div className="kalkharga__modal-overlay" onClick={() => setDelId(null)}>
-          <div className="kalkharga__modal" onClick={e => e.stopPropagation()}>
-            <h4 className="kalkharga__modal-title">Hapus produk ini?</h4>
-            <p className="kalkharga__modal-sub">Produk tidak akan lagi muncul sebagai pilihan saat mencatat transaksi pemasukan.</p>
-            <div className="kalkharga__modal-actions">
-              <button className="kalkharga__btn-sec" onClick={() => setDelId(null)}>Batal</button>
-              <button className="kalkharga__btn-danger" onClick={() => handleDel(delId)}>Hapus</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Produksi — konsumsi bahan baku sesuai resep, nambah stok jadi */}
-      {produksiTarget && (
-        <div className="kalkharga__modal-overlay" onClick={() => !produksiSubmitting && setProduksiTarget(null)}>
-          <div className="kalkharga__modal" onClick={e => e.stopPropagation()}>
-            <h4 className="kalkharga__modal-title">+ Produksi: {produksiTarget.nama}</h4>
-            <p className="kalkharga__modal-sub">Bahan baku sesuai resep bakal dikurangin otomatis, stok jadi produk ini nambah.</p>
-            <div className="kalkharga__field">
-              <label className="kalkharga__label">Mau produksi berapa unit?</label>
-              <input className="kalkharga__input" type="number" min="1" value={produksiJumlah}
-                onChange={e => { setProduksiJumlah(e.target.value); setProduksiError(""); }} />
-            </div>
-            {produksiError && <p className="kalkharga__error">{produksiError}</p>}
-            <div className="kalkharga__modal-actions">
-              <button className="kalkharga__btn-sec" onClick={() => setProduksiTarget(null)} disabled={produksiSubmitting}>Batal</button>
-              <button className="kalkharga__btn-primary" onClick={handleProduksi} disabled={produksiSubmitting}>
-                {produksiSubmitting ? "Memproses..." : "Produksi"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Restock — langsung nambah stok jadi, nggak nyentuh bahan baku */}
-      {restockTarget && (
-        <div className="kalkharga__modal-overlay" onClick={() => !restockSubmitting && setRestockTarget(null)}>
-          <div className="kalkharga__modal" onClick={e => e.stopPropagation()}>
-            <h4 className="kalkharga__modal-title">+ Restock: {restockTarget.nama}</h4>
-            <p className="kalkharga__modal-sub">Nambah stok fisik yang baru dibeli dari supplier.</p>
-            <div className="kalkharga__field">
-              <label className="kalkharga__label">Nambah berapa unit?</label>
-              <input className="kalkharga__input" type="number" min="1" value={restockJumlah}
-                onChange={e => { setRestockJumlah(e.target.value); setRestockError(""); }} />
-            </div>
-            {restockError && <p className="kalkharga__error">{restockError}</p>}
-            <div className="kalkharga__modal-actions">
-              <button className="kalkharga__btn-sec" onClick={() => setRestockTarget(null)} disabled={restockSubmitting}>Batal</button>
-              <button className="kalkharga__btn-primary" onClick={handleRestock} disabled={restockSubmitting}>
-                {restockSubmitting ? "Memproses..." : "Restock"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
