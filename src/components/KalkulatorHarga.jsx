@@ -87,7 +87,6 @@ export default function KalkulatorHarga({ editRequestProduk, onEditRequestConsum
       openEdit(editRequestProduk);
       onEditRequestConsumed?.();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editRequestProduk]);
 
   const bahanMap = Object.fromEntries(bahanList.map(b => [b.id, b]));

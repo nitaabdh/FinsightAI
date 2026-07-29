@@ -48,7 +48,6 @@ export default function KalkulatorOnline({ jumpProdukId, onJumpConsumed }) {
       setSelProdukId(jumpProdukId);
       onJumpConsumed?.();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jumpProdukId]);
 
   // Pas pilih produk yang UDAH punya rincian potongan tersimpen, muat balik ke kalkulator —
