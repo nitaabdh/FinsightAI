@@ -232,6 +232,23 @@
   align-items: flex-start;
   gap: 0.75rem;
 }
+.profilepage__telegram-header--toggle {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+.profilepage__telegram-chevron {
+  flex-shrink: 0;
+  margin-left: auto;
+  align-self: center;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+.profilepage__telegram-chevron--open { transform: rotate(180deg); }
 .profilepage__telegram-icon { font-size: 24px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .profilepage__telegram-header h3 {
   font-family: var(--font-display);

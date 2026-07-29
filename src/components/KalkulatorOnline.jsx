@@ -19,6 +19,7 @@ export default function KalkulatorOnline({ jumpProdukId, onJumpConsumed }) {
   const [mode, setMode]               = useState("maju"); // "maju" | "mundur"
   const [savingFull, setSavingFull]   = useState(false);
   const [savedFull, setSavedFull]     = useState(false);
+  const [showCalc, setShowCalc]       = useState(false);
 
   // Mode maju: harga jual diketahui
   const [hargaJual, setHargaJual] = useState("");
@@ -46,6 +47,7 @@ export default function KalkulatorOnline({ jumpProdukId, onJumpConsumed }) {
   useEffect(() => {
     if (jumpProdukId) {
       setSelProdukId(jumpProdukId);
+      setShowCalc(true);
       onJumpConsumed?.();
     }
   }, [jumpProdukId]);
@@ -98,8 +100,16 @@ export default function KalkulatorOnline({ jumpProdukId, onJumpConsumed }) {
 
   return (
     <div className="komarket">
+      {!showCalc ? (
+        <button className="komarket__btn-open" onClick={() => setShowCalc(true)}>
+          + Hitung Harga Jual Online
+        </button>
+      ) : (
       <div className="komarket__form">
-        <h3 className="komarket__form-title">Kalkulator Jual Online / Marketplace</h3>
+        <div className="komarket__form-header">
+          <h3 className="komarket__form-title">Kalkulator Jual Online / Marketplace</h3>
+          <button className="komarket__btn-close" onClick={() => setShowCalc(false)}>Tutup</button>
+        </div>
         <p className="komarket__hint">
           Hitung dana bersih yang beneran kamu terima setelah potongan komisi, biaya layanan, dan biaya
           pembayaran platform — atau sebaliknya, cari harga jual yang harus dipasang biar untungnya tetap sesuai target.
@@ -239,12 +249,27 @@ export default function KalkulatorOnline({ jumpProdukId, onJumpConsumed }) {
                   <div className="komarket__sum-row komarket__sum-row--sub">
                     <span>Dana Bersih (cek ulang)</span><span>{formatRupiah(hasilMundurDetail.danaBersih)}</span>
                   </div>
+                  {produk && (
+                    <button
+                      className="komarket__save-full"
+                      disabled={savingFull}
+                      onClick={async () => {
+                        setSavingFull(true);
+                        const ok = await saveHargaOnline(produk, Math.round(hargaJualHasil), feeRows);
+                        setSavingFull(false);
+                        if (ok) { setSavedFull(true); setTimeout(() => setSavedFull(false), 1500); }
+                      }}
+                    >
+                      {savingFull ? "Menyimpan..." : savedFull ? <><Check size={14} /> Tersimpan (harga + potongan)</> : `Simpan buat "${produk.nama}" (harga + potongan)`}
+                    </button>
+                  )}
                 </>
               )}
             </div>
           </>
         )}
       </div>
+      )}
     </div>
   );
 }

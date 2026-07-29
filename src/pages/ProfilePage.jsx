@@ -6,7 +6,7 @@ import PageHeader from "../components/PageHeader";
 import ThemeToggle from "../components/ThemeToggle";
 import "./ProfilePage.css";
 
-import { Bot, Pencil, Store, Receipt } from "lucide-react";
+import { Bot, Pencil, Store, Receipt, ChevronDown } from "lucide-react";
 const PROFESI_OPTIONS = {
   personal: ["Mahasiswa","Mahasiswa Rantau / Ngekos","Fresh Graduate","Karyawan Swasta","PNS / ASN","Freelancer","Ibu Rumah Tangga","Lainnya"],
   umkm:     ["Pemilik Warung / Toko","Pedagang Pasar","Penjual Online","Usaha Kuliner","Usaha Jasa","Distributor / Reseller","Lainnya"],
@@ -51,6 +51,8 @@ export default function ProfilePage() {
 
   // ── Hapus Akun ────────────────────────────────────
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [kasirSectionOpen, setKasirSectionOpen] = useState(false);
+  const [strukSectionOpen, setStrukSectionOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deletePassword, setDeletePassword]       = useState("");
 
@@ -612,14 +614,17 @@ export default function ProfilePage() {
 
           {mode === "umkm" && (
           <div className="profilepage__telegram">
-            <div className="profilepage__telegram-header">
+            <button className="profilepage__telegram-header profilepage__telegram-header--toggle" onClick={() => setKasirSectionOpen(p => !p)}>
               <span className="profilepage__telegram-icon"><Store size={20} /></span>
               <div>
                 <h3>Mode Kasir</h3>
                 <p>Atur PIN 6 digit biar karyawan bisa login Kasir dari halaman awal tanpa pakai akun kamu langsung.</p>
               </div>
-            </div>
+              <ChevronDown size={18} className={"profilepage__telegram-chevron" + (kasirSectionOpen ? " profilepage__telegram-chevron--open" : "")} />
+            </button>
 
+            {kasirSectionOpen && (
+            <>
             <div className="profilepage__field">
               <label className="profilepage__label">PIN Baru (6 digit)</label>
               <input className="profilepage__input" type="password" inputMode="numeric" maxLength={6}
@@ -647,19 +652,24 @@ export default function ProfilePage() {
             <p className="profilepage__telegram-since">
               Login Kasir cuma bisa akses halaman Kasir doang (jualan &amp; checkout) — nggak bisa liat Laporan, Dompet, atau data lain.
             </p>
+            </>
+            )}
           </div>
           )}
 
           {mode === "umkm" && (
           <div className="profilepage__telegram">
-            <div className="profilepage__telegram-header">
+            <button className="profilepage__telegram-header profilepage__telegram-header--toggle" onClick={() => setStrukSectionOpen(p => !p)}>
               <span className="profilepage__telegram-icon"><Receipt size={20} /></span>
               <div>
                 <h3>Template Struk</h3>
                 <p>Diisi di sini bakal langsung kepake pas cetak struk dari halaman Kasir.</p>
               </div>
-            </div>
+              <ChevronDown size={18} className={"profilepage__telegram-chevron" + (strukSectionOpen ? " profilepage__telegram-chevron--open" : "")} />
+            </button>
 
+            {strukSectionOpen && (
+            <>
             <div className="profilepage__field">
               <label className="profilepage__label">Nama Toko</label>
               <input className="profilepage__input" type="text" placeholder="Misal: Toko Berkah Jaya"
@@ -686,6 +696,8 @@ export default function ProfilePage() {
                 {strukSaving ? "Menyimpan..." : "Simpan Template Struk"}
               </button>
             </div>
+            </>
+            )}
           </div>
           )}
 

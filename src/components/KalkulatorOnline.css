@@ -17,6 +17,36 @@
   color: var(--text-primary);
 }
 
+.komarket__form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.komarket__btn-open {
+  align-self: flex-start;
+  padding: 0.7rem 1.1rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--accent-umkm);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.komarket__btn-close {
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 .komarket__hint { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
 .komarket__hint--tight { margin-top: -0.4rem; font-style: italic; }
 
