@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { getProfile, buildProfileContext } from "../utils/profile";
+import { buildProfileContext } from "../utils/profile";
 
 async function apiFetch(url, options = {}) {
   const token = localStorage.getItem("finsight_token");
@@ -21,11 +21,15 @@ export function useAIAgent(mode, summary, userId, financeContext = "") {
   // balik ke browser; yang kita tau cuma "sudah ada atau belum".
   const [hasApiKey, setHasApiKey]           = useState(false);
   const [checkingApiKey, setCheckingApiKey] = useState(true);
+  // Data profil (profesi, deskripsi, tujuan keuangan, dll) buat dikasih tau ke AI,
+  // diambil dari fetch /api/profile yang SAMA kayak dipake buat cek hasApiKey —
+  // bukan dari localStorage terpisah yang nggak pernah keisi.
+  const [profileData, setProfileData] = useState(null);
 
   useEffect(() => {
     if (!userId) { setCheckingApiKey(false); return; }
     apiFetch("/api/profile")
-      .then(r => { if (r.success) setHasApiKey(!!r.data?.hasApiKey); })
+      .then(r => { if (r.success) { setHasApiKey(!!r.data?.hasApiKey); setProfileData(r.data); } })
       .finally(() => setCheckingApiKey(false));
   }, [userId]);
 
@@ -92,8 +96,7 @@ export function useAIAgent(mode, summary, userId, financeContext = "") {
     setError("");
 
     try {
-      const profile = userId ? getProfile(userId) : null;
-      const profileContext = buildProfileContext(profile);
+      const profileContext = buildProfileContext(profileData);
 
       // Panggilan ke Groq lewat backend (/api/ai-chat) — key Groq diambil
       // server-side dari Supabase, nggak pernah lewat browser.
@@ -121,7 +124,7 @@ export function useAIAgent(mode, summary, userId, financeContext = "") {
     } finally {
       setLoading(false);
     }
-  }, [messages, apiMessages, loading, mode, summary, userId, financeContext, saveHistory]);
+  }, [messages, apiMessages, loading, mode, summary, userId, financeContext, profileData, saveHistory]);
 
   const clearChat = useCallback(() => {
     setMessages([]);

@@ -356,9 +356,10 @@ export default function DashboardPersonal() {
           </div>
         </div>
 
-        {/* ── INCOME TRACKER + TARGET TABUNGAN AKTIF sebelahan ── */}
+        {/* ── INCOME TRACKER + (TARGET TABUNGAN & CICILAN AKTIF) sebelahan ── */}
         <div className="dp2__row2 dp2__row2--stretch">
-          {/* Income Tracker */}
+          {/* Kolom kiri: Income Tracker */}
+          <div className="dp2__col">
           <div className="dp2__income">
             <div className="dp2__section-header">
               <span className="dp2__section-title"><TrendingUp size={14} /> Income Tracker</span>
@@ -411,7 +412,10 @@ export default function DashboardPersonal() {
               </div>
             )}
           </div>
+          </div>
 
+          {/* Kolom kanan: Target Tabungan + Cicilan Aktif ditumpuk */}
+          <div className="dp2__col">
           {/* Target Tabungan Aktif */}
           <div className="dp2__card-section">
             <div className="dp2__section-header">
@@ -480,6 +484,7 @@ export default function DashboardPersonal() {
             <button className="dp2__see-all" onClick={() => navigate("/dashboard/personal/target?tab=utang")}>
               Lihat semua cicilan →
             </button>
+          </div>
           </div>
         </div>
 

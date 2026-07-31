@@ -201,7 +201,13 @@ export default function TransaksiPage() {
         const q = search.toLowerCase();
         return (t.description || "").toLowerCase().includes(q) || (t.category || "").toLowerCase().includes(q);
       })
-      .sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
+      .sort((a, b) => {
+        // Urut utama: tanggal transaksi, terbaru di atas.
+        const dateDiff = new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt);
+        if (dateDiff !== 0) return dateDiff;
+        // Kalau tanggalnya sama, tiebreak pakai waktu input — yang paling baru dicatat tetap di atas.
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      });
   }, [transactions, filterType, filterCat, filterMonth, search]);
 
   const summary = calcSummary(filtered);

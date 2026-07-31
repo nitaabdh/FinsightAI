@@ -236,6 +236,7 @@
   max-width: 140px;
 }
 .dp2__wallet-select:focus { outline: none; border-color: #0ea56f; }
+.dp2__wallet-select option { background: #1a1d24; color: #edeff3; }
 .dp2__hero-saldo-row {
   display: flex;
   align-items: center;
@@ -566,6 +567,11 @@
 .dp2__row2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+.dp2__col {
+  display: flex;
+  flex-direction: column;
   gap: 0.75rem;
 }
 .dp2__card-section {

@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { getProfile, getPhoto } from "../utils/profile";
 import "./ChatUI.css";
 
 import { Bot, Send } from "lucide-react";
@@ -40,12 +39,23 @@ export default function ChatUI({ messages, loading, onSend, accent, suggestions 
     (window.SpeechRecognition || window.webkitSpeechRecognition);
   const voiceSupported = !!SpeechRecognitionAPI;
 
-  // Load foto & nama dari profil
+  // Load foto & nama dari profil — ambil dari server (/api/profile), BUKAN dari
+  // localStorage. Field ini sebelumnya kebaca dari localStorage lewat getProfile()/
+  // getPhoto(), tapi nggak ada satupun tempat yang nulis ke situ (ProfilePage.jsx
+  // nyimpennya ke server doang), jadi selalu kosong. Sekarang fetch langsung.
   useEffect(() => {
     if (!user) return;
-    const profile = getProfile(user.id);
-    setUserDisplayName(profile?.displayName || user.name || "");
-    setUserPhoto(getPhoto(user.id));
+    let cancelled = false;
+    const token = localStorage.getItem("finsight_token");
+    fetch("/api/profile", { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(r => {
+        if (cancelled || !r.success) return;
+        setUserDisplayName(r.data?.display_name || user.name || "");
+        setUserPhoto(r.data?.avatar_url || null);
+      })
+      .catch(() => { if (!cancelled) setUserDisplayName(user.name || ""); });
+    return () => { cancelled = true; };
   }, [user]);
 
   useEffect(() => {
