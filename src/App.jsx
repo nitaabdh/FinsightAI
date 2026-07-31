@@ -3,6 +3,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { useState, useEffect } from "react";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 import LandingPage        from "./pages/LandingPage";
 import AuthPage           from "./pages/AuthPage";
@@ -41,6 +42,7 @@ export default function App() {
     <ThemeProvider>
       <BrowserRouter>
         <AuthProvider>
+          <ErrorBoundary>
           <Routes>
             <Route path="/"           element={<LandingPage />} />
             <Route path="/kasir-login" element={<KasirLoginPage />} />
@@ -73,6 +75,7 @@ export default function App() {
 
           {/* Floating Calculator — global, persist lintas halaman */}
           {showFloat && <FloatingCalcWrapper onClose={() => setShowFloat(false)} />}
+          </ErrorBoundary>
 
         </AuthProvider>
       </BrowserRouter>

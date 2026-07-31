@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import PageHeader from "../components/PageHeader";
@@ -52,7 +53,8 @@ function nextDueDate(tanggalJatuhTempo) {
 
 export default function TargetPage() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState("tabungan"); // "tabungan" | "utang"
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") === "utang" ? "utang" : "tabungan"); // "tabungan" | "utang"
 
   const [targets, setTargets]   = useState([]);
   const [loading, setLoading]   = useState(true);

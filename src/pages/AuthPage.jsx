@@ -4,6 +4,11 @@ import { useAuth } from "../context/AuthContext";
 import { Eye, EyeOff } from "lucide-react";
 import "./AuthPage.css";
 
+// Regex simpel tapi cukup buat nolak input yang jelas-jelas bukan format email
+// (nggak ada @, nggak ada domain, dst). Nggak nge-cek email-nya beneran eksis
+// apa nggak — itu butuh fitur verifikasi (kirim link konfirmasi), beda cerita.
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function AuthPage() {
   const { mode } = useParams();
   const { register, login, checkEmailExists, resetPassword } = useAuth();
@@ -44,6 +49,9 @@ export default function AuthPage() {
       if (!form.name || !form.email || !form.password || !form.confirmPassword) {
         setError("Semua field wajib diisi."); setLoading(false); return;
       }
+      if (!EMAIL_REGEX.test(form.email.trim())) {
+        setError("Format email nggak valid."); setLoading(false); return;
+      }
       if (form.password !== form.confirmPassword) {
         setError("Password tidak cocok."); setLoading(false); return;
       }
@@ -67,6 +75,7 @@ export default function AuthPage() {
   // ── Lupa Password Logic ───────────────────
   const handleForgotStep1 = async () => {
     if (!forgotEmail) { setError("Masukkan email kamu."); return; }
+    if (!EMAIL_REGEX.test(forgotEmail.trim())) { setError("Format email nggak valid."); return; }
     setError("");
     setLoading(true);
     const result = await checkEmailExists(forgotEmail.trim(), mode);

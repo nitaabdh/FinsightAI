@@ -80,6 +80,7 @@ export default function DashboardPersonal() {
 
   const [transactions, setTransactions] = useState([]);
   const [targets,      setTargets]      = useState([]);
+  const [debts,        setDebts]        = useState([]);
   const [events,       setEvents]       = useState([]);
   const [profile,      setProfile]      = useState(null);
   const [loading,      setLoading]      = useState(true);
@@ -105,11 +106,13 @@ export default function DashboardPersonal() {
       // dengan benar buat transaksi Transfer Antar Dompet.
       getTransactions(user.id, "personal"),
       fetch(`/api/targets`, { headers: h }).then(r => r.json()).catch(() => ({ success: false, data: [] })),
+      fetch(`/api/debts`, { headers: h }).then(r => r.json()).catch(() => ({ success: false, data: [] })),
       fetch(`/api/notes?table=cal_notes&mode=personal`, { headers: h }).then(r => r.json()).catch(() => ({ success: false, data: [] })),
       fetch(`/api/profile`, { headers: h }).then(r => r.json()).catch(() => ({ success: false, data: null })),
-    ]).then(([txData, targetRes, evRes, profRes]) => {
+    ]).then(([txData, targetRes, debtRes, evRes, profRes]) => {
       setTransactions(txData);
       if (targetRes.success) setTargets(targetRes.data);
+      if (debtRes.success)   setDebts(debtRes.data);
       if (evRes.success)     setEvents(evRes.data.map(ev => ({ id: ev.id, tanggal: ev.date, judul: ev.title || "Acara" })));
       if (profRes.success)   setProfile(profRes.data);
     }).finally(() => setLoading(false));
@@ -132,6 +135,8 @@ export default function DashboardPersonal() {
   const totalTarget       = targets.reduce((s, t) => s + Number(t.target || 0), 0);
   const totalTerkumpul    = targets.reduce((s, t) => s + Number(t.terkumpul || 0), 0);
   const targetPersen      = totalTarget > 0 ? Math.min((totalTerkumpul / totalTarget) * 100, 100) : 0;
+  const activeDebts       = debts.filter(d => !d.lunas).slice(0, 2);
+  const totalCicilanBulan = debts.filter(d => !d.lunas).reduce((s, d) => s + Number(d.cicilanPerBulan || 0), 0);
 
   // Spark data
   const sparkPemasukan   = buildSparkData(transactions, "pemasukan");
@@ -253,6 +258,17 @@ export default function DashboardPersonal() {
             </div>
           </div>
         </div>
+
+        {budgetStatus !== "safe" && (
+          <div className={"dp2__budget-alert dp2__budget-alert--" + budgetStatus}>
+            <PieChartIcon size={16} />
+            <span>
+              {budgetStatus === "danger"
+                ? `Pengeluaran bulan ini udah lewat pemasukan (${budgetPersenLabel}%). Coba dicek lagi ya.`
+                : `Pengeluaran bulan ini udah ${budgetPersenLabel}% dari pemasukan — mendekati batas.`}
+            </span>
+          </div>
+        )}
 
         {/* ── HERO CARD SALDO ── */}
         <div className="dp2__hero">
@@ -426,6 +442,43 @@ export default function DashboardPersonal() {
             )}
             <button className="dp2__see-all" onClick={() => navigate("/dashboard/personal/target")}>
               Lihat semua target →
+            </button>
+          </div>
+
+          {/* Cicilan Aktif */}
+          <div className="dp2__card-section">
+            <div className="dp2__section-header">
+              <span className="dp2__section-title"><CreditCard size={14} /> Cicilan Aktif</span>
+              {totalCicilanBulan > 0 && <span className="dp2__debt-total">{formatRupiah(totalCicilanBulan)}/bln</span>}
+            </div>
+            {activeDebts.length === 0 ? (
+              <p className="dp2__empty">Belum ada utang/cicilan aktif</p>
+            ) : (
+              activeDebts.map(d => {
+                const persen = d.totalUtang ? Math.min((d.terbayar / d.totalUtang) * 100, 100) : null;
+                return (
+                  <div key={d.id} className="dp2__debt-item">
+                    <div className="dp2__debt-top">
+                      <p className="dp2__debt-nama">{d.nama}</p>
+                      {persen != null ? (
+                        <span className="dp2__debt-pct">{persen.toFixed(0)}%</span>
+                      ) : (
+                        <span className="dp2__debt-pct">{d.bulanTerbayar || 0}{d.tenor ? `/${d.tenor}` : ""}x</span>
+                      )}
+                    </div>
+                    {persen != null && (
+                      <div className="dp2__debt-bar"><div className="dp2__debt-fill" style={{ width: persen+"%" }} /></div>
+                    )}
+                    <div className="dp2__debt-info">
+                      <span>Cicilan {formatRupiah(d.cicilanPerBulan)}/bln</span>
+                      {d.tanggalJatuhTempo && <span>Jatuh tempo tgl {d.tanggalJatuhTempo}</span>}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <button className="dp2__see-all" onClick={() => navigate("/dashboard/personal/target?tab=utang")}>
+              Lihat semua cicilan →
             </button>
           </div>
         </div>

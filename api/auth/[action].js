@@ -17,6 +17,12 @@ import { createClient } from "@supabase/supabase-js";
 import { rejectIfKasir } from "../_lib/auth-guard.js";
 import kasirLoginHandler from "../_handlers/kasir-login.js";
 
+// Validasi format email di backend — INI yang beneran jadi pagar (validasi di
+// frontend gampang di-skip kalau orang manggil API-nya langsung, misal lewat
+// Postman/curl). Cuma nolak format yang jelas-jelas salah, bukan verifikasi
+// email-nya beneran eksis apa nggak.
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -88,6 +94,9 @@ export default async function handler(req, res) {
 
       if (!name || !email || !password || !mode) {
         return res.status(400).json({ success: false, message: "Semua field wajib diisi." });
+      }
+      if (!EMAIL_REGEX.test(email.trim())) {
+        return res.status(400).json({ success: false, message: "Format email nggak valid." });
       }
       if (!["personal", "umkm"].includes(mode)) {
         return res.status(400).json({ success: false, message: "Mode tidak valid." });

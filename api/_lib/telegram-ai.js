@@ -151,10 +151,10 @@ const QUERY_TYPES_PERSONAL = ["saldo", "laporan", "riwayat", "acara", "catatan",
 const QUERY_TYPES_UMKM = ["saldo", "laporan", "riwayat", "acara", "catatan", "stok", "harga", "aset", "utangpiutang", "biaya", "estimasi_produksi"];
 
 const SYSTEM_PROMPT = (mode, contextText) => `Kamu adalah asisten keuangan FinSight yang menerima pesan bebas dari Telegram.
-Tugas kamu: KLASIFIKASIKAN pesan user jadi salah satu dari ${mode === "umkm" ? "6" : "5"} intent, lalu balas HANYA dalam format JSON (tanpa markdown code fence, tanpa teks lain di luar JSON):
+Tugas kamu: KLASIFIKASIKAN pesan user jadi salah satu dari ${mode === "umkm" ? "6" : "7"} intent, lalu balas HANYA dalam format JSON (tanpa markdown code fence, tanpa teks lain di luar JSON):
 
 {
-  "intent": "transaction" | "note" | "event" | ${mode === "umkm" ? `"stock_adjust" | ` : ""}"query" | "chat",
+  "intent": "transaction" | "note" | "event" | ${mode === "umkm" ? `"stock_adjust" | ` : `"debt_create" | "target_create" | `}"query" | "chat",
   "confidence": "tinggi" atau "rendah" (WAJIB diisi buat SEMUA intent kecuali "chat"/"query" — pilih "rendah" kalau kalimatnya bisa ditafsirin lebih dari satu cara, ada bagian yang nggak jelas/kurang lengkap, atau kamu ragu ini beneran maksud user),
   "transaction": {
     "type": "pemasukan" atau "pengeluaran",
@@ -164,17 +164,18 @@ Tugas kamu: KLASIFIKASIKAN pesan user jadi salah satu dari ${mode === "umkm" ? "
   } (isi null kalau intent bukan "transaction"),
   "note": { "title": "<isi catatan, ringkas tapi jelas>" } (isi null kalau intent bukan "note"),
   "event": { "title": "<judul acara>", "date_text": "<teks tanggal APA ADANYA dari user, contoh: '25 juli', 'besok', '2026-07-25'>" } (isi null kalau intent bukan "event"),
-  ${mode === "umkm" ? `"stock_adjust": { "item": "<nama bahan baku>", "quantity": <angka>, "direction": "tambah" atau "kurang" } (isi null kalau intent bukan "stock_adjust"),\n  ` : ""}"query": { "type": "${(mode === "umkm" ? QUERY_TYPES_UMKM : QUERY_TYPES_PERSONAL).join('" | "')}", "period_text": "<khusus type 'laporan': nama bulan APA ADANYA dari user kalau disebut, contoh 'juni', 'bulan lalu', 'semua'; kosongin string kalau nggak disebut/mau bulan ini>"${mode === "umkm" ? `, "produk_text": "<khusus type 'estimasi_produksi': nama produk APA ADANYA dari user kalau disebut, contoh 'gantungan kunci pin'; kosongin string kalau user nggak sebut nama produk spesifik>"` : ""} } (isi null kalau intent bukan "query"),
+  ${mode === "umkm" ? `"stock_adjust": { "item": "<nama bahan baku>", "quantity": <angka>, "direction": "tambah" atau "kurang" } (isi null kalau intent bukan "stock_adjust"),\n  ` : `"debt_create": { "nama": "<nama utang/cicilan, contoh: 'KTA Bank Jago', 'Cicilan HP'>", "jenis": "utang" atau "kredit" atau "paylater" (tebak dari konteks, default \"utang\" kalau nggak jelas), "cicilan_per_bulan": <angka murni per bulan, WAJIB ada>, "total_utang": <angka total pokok utang kalau disebut, atau null>, "tenor": <jumlah bulan cicilan kalau disebut, atau null> } (isi null kalau intent bukan "debt_create"),\n  "target_create": { "nama": "<nama target tabungan, contoh: 'Dana Darurat', 'DP Motor'>", "target": <angka nominal target, WAJIB ada>, "terkumpul": <angka yang udah kekumpul kalau disebut, default 0> } (isi null kalau intent bukan "target_create"),\n  `}"query": { "type": "${(mode === "umkm" ? QUERY_TYPES_UMKM : QUERY_TYPES_PERSONAL).join('" | "')}", "period_text": "<khusus type 'laporan': nama bulan APA ADANYA dari user kalau disebut, contoh 'juni', 'bulan lalu', 'semua'; kosongin string kalau nggak disebut/mau bulan ini>"${mode === "umkm" ? `, "produk_text": "<khusus type 'estimasi_produksi': nama produk APA ADANYA dari user kalau disebut, contoh 'gantungan kunci pin'; kosongin string kalau user nggak sebut nama produk spesifik>"` : ""} } (isi null kalau intent bukan "query"),
   "reply": "<balasan singkat kamu ke user, ramah, pakai Bahasa Indonesia casual>"
 }
 
 Aturan klasifikasi:
+- PALING PENTING, DICEK PALING DULU: kalau pesan user itu PERTANYAAN soal KEMAMPUAN/CARA PAKAI bot atau app ini sendiri (bukan data yang mau dicatet) — contoh: "apakah aku bisa...?", "bisa nggak kalau...?", "gimana caranya...?", "maksudnya gimana?" — WAJIB "chat", walaupun kalimatnya ngandung kata kunci kayak "catat"/"stok"/"acara"/dll. Di reply-nya, jawab pertanyaannya dengan jelas (bilang caranya kalau emang bisa) — JANGAN nyimpen apapun sebagai note/transaction/event.
 - "transaction" kalau user cerita udah BELANJA/BAYAR/TERIMA UANG sesuatu dengan nominal jelas (boleh singkatan "20rb"=20000, "1jt"=1000000, "1,5jt"=1500000)
-- "note" kalau user minta DICATETIN sesuatu yang BUKAN soal uang/tanggal spesifik (pengingat umum, ide, to-do). Kata kunci: "catat", "inget", "jangan lupa" TANPA ada tanggal jelas
+- "note" kalau user minta DICATETIN sesuatu yang BUKAN soal uang/tanggal spesifik (pengingat umum, ide, to-do). Kata kunci: "catat", "inget", "jangan lupa" TANPA ada tanggal jelas — INI CUMA BERLAKU KALAU KALIMATNYA PERINTAH/PERNYATAAN, BUKAN PERTANYAAN (cek aturan paling atas dulu)
 - "event" kalau user nyebut acara/jadwal DENGAN tanggal/waktu spesifik (hari ini, besok, lusa, atau tanggal jelas) YANG MAU DITAMBAHIN BARU
-${mode === "umkm" ? `- "stock_adjust" kalau user bilang nambah/kurang STOK BAHAN BAKU (bukan uang). Kata kunci: "stok", "restock", "abis", "kurangin", "tambahin" + nama bahan + jumlah\n` : ""}- "query" kalau user cuma mau NGECEK/LIHAT data yang UDAH ADA, BUKAN nambah data baru. Kata kunci: "cek", "lihat", "ada apa aja", "berapa", "gimana", awalan tanya lainnya. Contoh: "ada acara apa aja minggu ini?" → query type "acara". "catatan aku apa aja ya?" → query type "catatan". "saldo aku berapa?" → query type "saldo". "laporan bulan juni gimana?" → query type "laporan", period_text "juni".${mode === "umkm" ? ` "dari stok yang ada bisa bikin berapa gantungan kunci?" atau "stok cukup buat produksi berapa unit?" → query type "estimasi_produksi", produk_text "gantungan kunci". Ini WAJIB pakai query type ini (BUKAN "chat") karena butuh hitungan pasti dari data stok+resep asli, jangan ditebak sendiri di reply.` : ""} Kalau nggak yakin query-nya soal apa dari daftar type yang tersedia, JANGAN pilih "query" — pilih "chat" aja
+${mode === "umkm" ? `- "stock_adjust" kalau user bilang nambah/kurang STOK BAHAN BAKU (bukan uang). Kata kunci: "stok", "restock", "abis", "kurangin", "tambahin" + nama bahan + jumlah\n` : `- "debt_create" kalau user bilang punya UTANG/CICILAN/KREDIT/PAYLATER BARU yang mau dicatet (BUKAN bayar cicilan yang udah ada, itu pakai command /bayar). Kata kunci: "punya utang", "punya cicilan", "ngutang", "kredit", "paylater" + nama + nominal cicilan per bulan. WAJIB ada nominal cicilan per bulan yang jelas, kalau nggak ada confidence "rendah"\n- "target_create" kalau user bilang mau NABUNG buat sesuatu dengan TARGET NOMINAL BARU yang mau dicatet (BUKAN nabung ke target yang udah ada, itu pakai command /nabung). Kata kunci: "mau nabung buat", "bikin target", "nabung target" + nama + nominal target. WAJIB ada nominal target yang jelas, kalau nggak ada confidence "rendah"\n`}- "query" kalau user cuma mau NGECEK/LIHAT data yang UDAH ADA, BUKAN nambah data baru. Kata kunci: "cek", "lihat", "ada apa aja", "berapa", "gimana", awalan tanya lainnya. Contoh: "ada acara apa aja minggu ini?" → query type "acara". "catatan aku apa aja ya?" → query type "catatan". "saldo aku berapa?" → query type "saldo". "laporan bulan juni gimana?" → query type "laporan", period_text "juni".${mode === "umkm" ? ` "dari stok yang ada bisa bikin berapa gantungan kunci?" atau "stok cukup buat produksi berapa unit?" → query type "estimasi_produksi", produk_text "gantungan kunci". Ini WAJIB pakai query type ini (BUKAN "chat") karena butuh hitungan pasti dari data stok+resep asli, jangan ditebak sendiri di reply.` : ` "utang aku apa aja?" → query type "utang". "target tabungan aku gimana?" → query type "target".`} Kalau nggak yakin query-nya soal apa dari daftar type yang tersedia, JANGAN pilih "query" — pilih "chat" aja
 - "chat" kalau user nanya sesuatu, curhat, minta saran, atau nggak jelas termasuk kategori mana SAMA SEKALI
-- Kalau kamu YAKIN termasuk salah satu kategori (transaction/note/event${mode === "umkm" ? "/stock_adjust" : ""}) tapi ada detail yang kurang jelas/lengkap (contoh: nominal kedengeran tapi bisa ke-mix sama angka lain, atau nama barang/bahan agak beda dari yang biasa dicatet), pilih intent yang sesuai TAPI kasih confidence "rendah" — JANGAN dialihkan ke "chat". Ini TIDAK berlaku buat "query" karena cuma nampilin data, bukan ubah data — "query" nggak butuh confidence
+- Kalau kamu YAKIN termasuk salah satu kategori (transaction/note/event${mode === "umkm" ? "/stock_adjust" : "/debt_create/target_create"}) tapi ada detail yang kurang jelas/lengkap (contoh: nominal kedengeran tapi bisa ke-mix sama angka lain, atau nama barang/bahan agak beda dari yang biasa dicatet), pilih intent yang sesuai TAPI kasih confidence "rendah" — JANGAN dialihkan ke "chat". Ini TIDAK berlaku buat "query" karena cuma nampilin data, bukan ubah data — "query" nggak butuh confidence
 - Kalau kamu bener-bener nggak tau ini masuk kategori mana (bisa "note" atau bisa "chat", dst), baru pilih "chat" dan di reply-nya tanya balik buat klarifikasi
 - Mode akun ini: ${mode === "umkm" ? "UMKM (bisnis)" : "Keuangan Pribadi"}
 
@@ -372,6 +373,14 @@ export async function handleFreeText(userId, mode, text) {
       const s = parsed.stock_adjust;
       payload = { item: s.item, quantity: Number(s.quantity), direction: s.direction === "kurang" ? "kurang" : "tambah" };
       previewText = `📦 Stok: ${payload.direction === "tambah" ? "+" : "-"}${payload.quantity} ${payload.item}`;
+    } else if (parsed.intent === "debt_create" && parsed.debt_create?.nama && parsed.debt_create?.cicilan_per_bulan) {
+      const d = parsed.debt_create;
+      payload = { nama: d.nama, jenis: ["utang", "kredit", "paylater"].includes(d.jenis) ? d.jenis : "utang", cicilanPerBulan: Number(d.cicilan_per_bulan), totalUtang: d.total_utang ? Number(d.total_utang) : null, tenor: d.tenor ? Number(d.tenor) : null };
+      previewText = `💳 Cicilan Baru: ${payload.nama}\n${formatRupiahTG(payload.cicilanPerBulan)}/bulan${payload.tenor ? ` × ${payload.tenor}x` : ""}`;
+    } else if (parsed.intent === "target_create" && parsed.target_create?.nama && parsed.target_create?.target) {
+      const tg = parsed.target_create;
+      payload = { nama: tg.nama, target: Number(tg.target), terkumpul: tg.terkumpul ? Number(tg.terkumpul) : 0 };
+      previewText = `🎯 Target Baru: ${payload.nama}\n${formatRupiahTG(payload.target)}${payload.terkumpul > 0 ? ` (udah kekumpul ${formatRupiahTG(payload.terkumpul)})` : ""}`;
     }
 
     if (payload) {
@@ -446,6 +455,54 @@ export async function handleFreeText(userId, mode, text) {
     } catch (err) {
       console.error("[telegram-ai] gagal adjust stok:", err);
       return { type: "error", message: "Aku ngerti maksudnya, tapi gagal update stoknya. Coba lagi ya." };
+    }
+  }
+
+  if (mode === "personal" && parsed.intent === "debt_create" && parsed.debt_create?.nama && parsed.debt_create?.cicilan_per_bulan) {
+    const d = parsed.debt_create;
+    try {
+      const { data: saved, error } = await supabase
+        .from("debts")
+        .insert({
+          user_id: userId,
+          jenis: ["utang", "kredit", "paylater"].includes(d.jenis) ? d.jenis : "utang",
+          nama: d.nama,
+          tenor: d.tenor ? Number(d.tenor) : null,
+          cicilan_per_bulan: Number(d.cicilan_per_bulan),
+          total_utang: d.total_utang ? Number(d.total_utang) : null,
+          terbayar: 0,
+          bulan_terbayar: 0,
+          keterangan: "",
+          lunas: false,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return { type: "debt_saved", data: saved, reply: parsed.reply };
+    } catch (err) {
+      console.error("[telegram-ai] gagal simpan cicilan/utang:", err);
+      return { type: "error", message: "Aku ngerti maksudnya, tapi gagal nyimpen cicilannya. Coba lagi ya." };
+    }
+  }
+
+  if (mode === "personal" && parsed.intent === "target_create" && parsed.target_create?.nama && parsed.target_create?.target) {
+    const tg = parsed.target_create;
+    try {
+      const { data: saved, error } = await supabase
+        .from("targets")
+        .insert({
+          user_id: userId,
+          nama: tg.nama,
+          target: Number(tg.target),
+          terkumpul: tg.terkumpul ? Number(tg.terkumpul) : 0,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return { type: "target_saved", data: saved, reply: parsed.reply };
+    } catch (err) {
+      console.error("[telegram-ai] gagal simpan target:", err);
+      return { type: "error", message: "Aku ngerti maksudnya, tapi gagal nyimpen targetnya. Coba lagi ya." };
     }
   }
 
@@ -553,6 +610,22 @@ export async function executePendingAction(pendingId) {
       const result = await adjustStok(userId, payload.item, payload.quantity, payload.direction);
       if (!result.success) return { success: false, message: result.message };
       return { success: true, type: "stock_adjusted", data: result };
+    }
+    if (action_type === "debt_create") {
+      const { data, error } = await supabase.from("debts").insert({
+        user_id: userId, jenis: payload.jenis, nama: payload.nama,
+        cicilan_per_bulan: payload.cicilanPerBulan, total_utang: payload.totalUtang, tenor: payload.tenor,
+        terbayar: 0, bulan_terbayar: 0, keterangan: "", lunas: false,
+      }).select().single();
+      if (error) throw error;
+      return { success: true, type: "debt_saved", data };
+    }
+    if (action_type === "target_create") {
+      const { data, error } = await supabase.from("targets").insert({
+        user_id: userId, nama: payload.nama, target: payload.target, terkumpul: payload.terkumpul,
+      }).select().single();
+      if (error) throw error;
+      return { success: true, type: "target_saved", data };
     }
   } catch (err) {
     console.error("[telegram-ai] gagal eksekusi pending action:", err);

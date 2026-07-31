@@ -69,6 +69,19 @@
 }
 .dp2__alert-dot--warning { background: #e08e0b; }
 .dp2__alert-dot--danger  { background: #e5484d; animation: dp2-pulse 1.2s infinite; }
+
+.dp2__budget-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+}
+.dp2__budget-alert--warning { background: var(--warning-dim); color: var(--warning); }
+.dp2__budget-alert--danger  { background: var(--danger-dim); color: var(--danger); }
+.dp2__budget-alert svg { flex-shrink: 0; }
 @keyframes dp2-pulse {
   0%,100% { opacity: 1; } 50% { opacity: 0.4; }
 }
@@ -649,6 +662,23 @@
 .dp2__target-bar { height: 5px; background: var(--bg-card); border-radius: 3px; overflow: hidden; }
 .dp2__target-fill { height: 100%; background: linear-gradient(90deg, #0c8f5f, #0ea56f); border-radius: 3px; transition: width 0.5s ease; }
 .dp2__target-info { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); }
+
+.dp2__debt-total { font-family: var(--font-display); font-size: 12px; font-weight: 700; color: var(--warning); }
+.dp2__debt-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.dp2__debt-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+.dp2__debt-nama { font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 0; }
+.dp2__debt-pct { font-family: var(--font-display); font-size: 14px; font-weight: 800; color: var(--warning); flex-shrink: 0; }
+.dp2__debt-bar { height: 5px; background: var(--bg-card); border-radius: 3px; overflow: hidden; }
+.dp2__debt-fill { height: 100%; background: linear-gradient(90deg, var(--warning), #f2ab3f); border-radius: 3px; transition: width 0.5s ease; }
+.dp2__debt-info { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); }
 
 /* ── Tren chart ── */
 .dp2__tren {

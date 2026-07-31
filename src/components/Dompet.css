@@ -210,13 +210,14 @@
 }
 
 .dompet__empty {
+  grid-column: 1 / -1;
   text-align: center;
   padding: 3rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 2;
 }
-.dompet__empty p:first-child { font-size: 2.5rem; }
+.dompet__empty p:first-child { font-size: 2.5rem; color: var(--text-muted); }
 
 .dompet__item-kategori {
   background: var(--accent-umkm-dim);

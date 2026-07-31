@@ -175,7 +175,78 @@ export default async function handler(req, res) {
       }
     }
 
-    return res.status(200).json({ ok: true, checkedDebts: (debts || []).length, checkedUtangPiutang: (utangPiutang || []).length, sent, skipped, errors, date: todayStr });
+    // ── Bagian 3: Reminder Batas Pengeluaran Bulanan (Personal) ──
+    // "Budget"-nya pinjem logic yang sama kayak indikator di Dashboard Personal:
+    // pengeluaran dibanding pemasukan bulan berjalan (bukan angka custom yang di-set
+    // user — emang belum ada fitur set limit sendiri). >=80% -> reminder "mendekati",
+    // >=100% -> reminder "udah lewat". Masing-masing status cuma dikirim SEKALI per
+    // bulan per user (dicek lewat telegram_reminders_sent, sent_for_date = tanggal 1
+    // bulan berjalan), biar nggak nyepam tiap hari cron ini jalan.
+    const monthPrefix   = todayStr.slice(0, 7); // YYYY-MM
+    const monthStartStr = `${monthPrefix}-01`;
+
+    const { data: allLinks, error: linksErr } = await supabase
+      .from("telegram_links")
+      .select("user_id, telegram_chat_id");
+    if (linksErr) throw linksErr;
+
+    let checkedBudget = 0;
+    for (const link of allLinks || []) {
+      try {
+        const { data: userRow } = await supabase.from("users").select("mode").eq("id", link.user_id).maybeSingle();
+        if (!userRow || userRow.mode !== "personal") { skipped++; continue; }
+        checkedBudget++;
+
+        const { data: txBulanIni, error: txErr } = await supabase
+          .from("transactions")
+          .select("type, amount")
+          .eq("user_id", link.user_id)
+          .eq("mode", "personal")
+          .gte("date", monthStartStr)
+          .lte("date", `${monthPrefix}-31`);
+        if (txErr) throw txErr;
+
+        const pemasukan   = (txBulanIni || []).filter(t => t.type === "pemasukan").reduce((s, t) => s + (Number(t.amount) || 0), 0);
+        const pengeluaran = (txBulanIni || []).filter(t => t.type === "pengeluaran").reduce((s, t) => s + (Number(t.amount) || 0), 0);
+        if (pemasukan <= 0) { skipped++; continue; } // sama kayak di dashboard, nggak ada pembanding kalau belum ada pemasukan
+
+        const persen = (pengeluaran / pemasukan) * 100;
+        const refType = persen >= 100 ? "budget_danger" : persen >= 80 ? "budget_warning" : null;
+        if (!refType) { skipped++; continue; }
+
+        const { data: already } = await supabase
+          .from("telegram_reminders_sent")
+          .select("id")
+          .eq("ref_type", refType)
+          .eq("ref_id", link.user_id)
+          .eq("sent_for_date", monthStartStr)
+          .maybeSingle();
+        if (already) { skipped++; continue; }
+
+        const text = refType === "budget_danger"
+          ? `🚨 *Pengeluaran Bulan Ini Sudah Lewat Pemasukan*\n\n` +
+            `Pengeluaran: ${formatRupiahTG(pengeluaran)}\nPemasukan: ${formatRupiahTG(pemasukan)} (${persen.toFixed(0)}%)\n\n` +
+            `Coba dicek lagi ya pengeluarannya, biar sisa bulan ini lebih terkontrol.`
+          : `⚠️ *Pengeluaran Bulan Ini Udah Mendekati Pemasukan*\n\n` +
+            `Pengeluaran: ${formatRupiahTG(pengeluaran)}\nPemasukan: ${formatRupiahTG(pemasukan)} (${persen.toFixed(0)}%)\n\n` +
+            `Sisa dikit lagi nih sebelum kepotong abis, jaga-jaga sampai akhir bulan ya.`;
+
+        const result = await sendTelegramMessageWithButtons(link.telegram_chat_id, text, APP_BUTTON);
+        if (result.ok) {
+          await supabase.from("telegram_reminders_sent").insert({
+            user_id: link.user_id, ref_type: refType, ref_id: link.user_id, sent_for_date: monthStartStr,
+          });
+          sent++;
+        } else {
+          errors++;
+        }
+      } catch (innerErr) {
+        console.error("[cron/reminder-check] gagal proses budget user", link.user_id, innerErr);
+        errors++;
+      }
+    }
+
+    return res.status(200).json({ ok: true, checkedDebts: (debts || []).length, checkedUtangPiutang: (utangPiutang || []).length, checkedBudget, sent, skipped, errors, date: todayStr });
   } catch (err) {
     console.error("[cron/reminder-check] error:", err);
     return res.status(500).json({ ok: false, message: err.message });

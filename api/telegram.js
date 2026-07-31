@@ -213,6 +213,8 @@ const HELP_TEXT_PERSONAL =
   `_"beli kopi 20rb"_ → langsung kecatet (nggak butuh API key)\n` +
   `_"inget rapat sama klien besok"_ → otomatis jadi acara (butuh API key)\n` +
   `_"catat jangan lupa isi ulang token listrik"_ → otomatis jadi catatan (butuh API key)\n` +
+  `_"aku punya cicilan HP 300rb per bulan 12x"_ → otomatis jadi cicilan/utang baru (butuh API key)\n` +
+  `_"mau nabung buat dana darurat target 5 juta"_ → otomatis jadi target tabungan baru (butuh API key)\n` +
   `_"gimana cara nabung yang efektif?"_ → tanya AI Agent (butuh API key Groq di Profil)\n` +
   `_"ada acara apa aja minggu ini?"_ / _"catatan aku apa aja?"_ / _"saldo aku berapa?"_ → langsung dijawab pakai data asli, nggak perlu buka web (butuh API key)\n\n` +
   `📸 Kirim *foto struk belanja* juga bisa — otomatis kebaca & kecatet (butuh API key Groq juga)\n\n` +
@@ -277,6 +279,16 @@ async function displayFreeTextResult(chatId, result) {
     const s = result.data;
     const arrow = s.stokBaru >= s.stokLama ? "📈" : "📉";
     await sendTelegramMessage(chatId, `${arrow} *Stok ${s.nama} diperbarui!* 🤖\n${s.stokLama} → *${s.stokBaru}* ${s.satuan}\n\n${result.reply || ""}`);
+  } else if (result.type === "debt_saved") {
+    const d = result.data;
+    await sendTelegramMessage(chatId,
+      `💳 *Cicilan/Utang baru tersimpan!* 🤖\n${d.nama}\n${formatRupiahTG(d.cicilan_per_bulan)}/bulan${d.tenor ? ` × ${d.tenor}x` : ""}\n\n${result.reply || ""}`
+    );
+  } else if (result.type === "target_saved") {
+    const tg = result.data;
+    await sendTelegramMessage(chatId,
+      `🎯 *Target tabungan baru tersimpan!* 🤖\n${tg.nama} — target ${formatRupiahTG(tg.target)}${tg.terkumpul > 0 ? ` (udah kekumpul ${formatRupiahTG(tg.terkumpul)})` : ""}\n\n${result.reply || ""}`
+    );
   } else if (result.type === "query_result") {
     await sendTelegramMessage(chatId, result.text);
   } else if (result.type === "needs_confirmation") {
@@ -338,6 +350,12 @@ async function handleTelegramWebhook(req, res) {
           const s = result.data;
           const arrow = s.stokBaru >= s.stokLama ? "📈" : "📉";
           await sendTelegramMessage(cqChatId, `${arrow} *Stok ${s.nama} diperbarui!*\n${s.stokLama} → *${s.stokBaru}* ${s.satuan}`);
+        } else if (result.type === "debt_saved") {
+          const d = result.data;
+          await sendTelegramMessage(cqChatId, `💳 *Cicilan/Utang baru tersimpan!*\n${d.nama}\n${formatRupiahTG(d.cicilan_per_bulan)}/bulan${d.tenor ? ` × ${d.tenor}x` : ""}`);
+        } else if (result.type === "target_saved") {
+          const tg = result.data;
+          await sendTelegramMessage(cqChatId, `🎯 *Target tabungan baru tersimpan!*\n${tg.nama} — target ${formatRupiahTG(tg.target)}`);
         }
         return res.status(200).json({ ok: true });
       }
