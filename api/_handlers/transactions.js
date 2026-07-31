@@ -132,6 +132,12 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, message: "Method tidak diizinkan." });
   } catch (err) {
     console.error("[transactions] error:", err);
-    return res.status(500).json({ success: false, message: "Terjadi kesalahan server." });
+    // Sementara dimunculin detail errornya (pesan dari Supabase) biar ketauan akar
+    // masalahnya persis apa, bukan cuma "Terjadi kesalahan server" doang.
+    return res.status(500).json({
+      success: false,
+      message: err?.message || "Terjadi kesalahan server.",
+      detail: err?.details || err?.hint || null,
+    });
   }
 }
