@@ -51,20 +51,6 @@ const getCountdown = (dateKey) => {
   return { label: `${diff} hari lagi`, past: false };
 };
 
-// ─── Recurring date helper ───────────────────────────────────────────────────
-// Tambahin N interval (hari/minggu/bulan) ke sebuah dateKey, hasilnya dateKey baru.
-const addInterval = (dateKey, unit, amount) => {
-  const [y, m, d] = dateKey.split("-").map(Number);
-  const date = new Date(y, m - 1, d);
-  if (unit === "week")       date.setDate(date.getDate() + amount * 7);
-  else if (unit === "month") date.setMonth(date.getMonth() + amount);
-  else                       date.setDate(date.getDate() + amount); // "day"
-  return fmtDateKey(date.getFullYear(), date.getMonth(), date.getDate());
-};
-
-// Batas aman biar gak nyipta ratusan acara sekaligus kalau user salah input.
-const MAX_REPEAT_COUNT = 60;
-
 const getToken = () => localStorage.getItem("finsight_token");
 const apiFetch = async (url, options = {}) => {
   const res = await fetch(url, {
@@ -95,7 +81,7 @@ export default function CatatanPage() {
   // Popup kalender
   const [popupDate,    setPopupDate]    = useState(null);
   const [showForm,     setShowForm]     = useState(false);
-  const [calForm,      setCalForm]      = useState({ title:"", body:"", category:"umum", repeat:false, repeatUnit:"day", repeatCount:7 });
+  const [calForm,      setCalForm]      = useState({ title:"", body:"", category:"umum" });
   const [editCalId,    setEditCalId]    = useState(null);
   const [deleteCalConfirm, setDeleteCalConfirm] = useState(null);
 
@@ -166,7 +152,7 @@ export default function CatatanPage() {
   const handleDayClick = (dk) => {
     setPopupDate(dk);
     setShowForm(false);
-    setCalForm({ title:"", body:"", category:"umum", repeat:false, repeatUnit:"day", repeatCount:7 });
+    setCalForm({ title:"", body:"", category:"umum" });
     setEditCalId(null);
   };
 
@@ -185,63 +171,35 @@ export default function CatatanPage() {
   const closePopup = () => { setPopupDate(null); setShowForm(false); setEditCalId(null); };
 
   const openEditCal = (note) => {
-    setCalForm({ title:note.title, body:note.body||"", category:note.category, repeat:false, repeatUnit:"day", repeatCount:7 });
+    setCalForm({ title:note.title, body:note.body||"", category:note.category });
     setEditCalId(note.id);
     setShowForm(true);
   };
 
-  const persistCalNote = async (data, dateOverride) => {
-    const targetDate = dateOverride || popupDate;
-    const existing = calNotes.filter(n => n.date === targetDate);
+  const persistCalNote = async (data) => {
+    const existing = calNotes.filter(n => n.date === popupDate);
     if (!editCalId && existing.length >= 3) return false;
     if (editCalId) {
       const r = await apiFetch(`/api/notes?table=cal_notes`, {
         method: "PUT",
-        body: JSON.stringify({ id: editCalId, ...data, date: targetDate }),
+        body: JSON.stringify({ id: editCalId, ...data, date: popupDate }),
       });
       if (r.success) setCalNotes(p => p.map(n => n.id === editCalId ? r.data : n));
       return r.success;
     } else {
       const r = await apiFetch(`/api/notes?table=cal_notes`, {
         method: "POST",
-        body: JSON.stringify({ id: genId(), mode, date: targetDate, ...data }),
+        body: JSON.stringify({ id: genId(), mode, date: popupDate, ...data }),
       });
       if (r.success) { setCalNotes(p => [...p, r.data]); setEditCalId(r.data.id); }
       return r.success;
     }
   };
 
-  const EMPTY_CAL_FORM = { title:"", body:"", category:"umum", repeat:false, repeatUnit:"day", repeatCount:7 };
-
   const saveCalNote = async () => {
     if (!calForm.title.trim()) return;
-
-    // Acara berulang: hanya berlaku pas bikin baru (bukan edit), biar gak dobel logic.
-    if (!editCalId && calForm.repeat) {
-      const count = Math.min(Math.max(parseInt(calForm.repeatCount) || 1, 1), MAX_REPEAT_COUNT);
-      const dates = Array.from({ length: count }, (_, i) => addInterval(popupDate, calForm.repeatUnit, i));
-      const noteData = { title: calForm.title, body: calForm.body, category: calForm.category };
-
-      let created = 0, skipped = 0;
-      for (const dk of dates) {
-        // eslint-disable-next-line no-await-in-loop
-        const ok = await persistCalNote(noteData, dk);
-        if (ok) created++; else skipped++;
-      }
-
-      setShowForm(false);
-      setEditCalId(null);
-      setCalForm(EMPTY_CAL_FORM);
-      setDraftToastMsg(
-        skipped > 0
-          ? `${created} acara berulang dibuat, ${skipped} tanggal dilewati (sudah penuh)`
-          : `${created} acara berulang berhasil dibuat`
-      );
-      return;
-    }
-
     const ok = await persistCalNote(calForm);
-    if (ok !== false) { setShowForm(false); setEditCalId(null); setCalForm(EMPTY_CAL_FORM); }
+    if (ok !== false) { setShowForm(false); setEditCalId(null); setCalForm({ title:"", body:"", category:"umum" }); }
   };
 
   // Klik overlay / pas lagi ngisi form acara = kemungkinan besar nggak sengaja.
@@ -475,7 +433,7 @@ const updateOpenNoteMeta = async (field, value) => {
                     </span>
                     <div className="cal-card__actions">
                       <button className="cal-card__btn" onClick={() => { setPopupDate(note.date); openEditCal(note); }} title="Edit"><Pencil size={14} /></button>
-                      <button className="cal-card__btn cal-card__btn--danger" onClick={() => setDeleteCalConfirm(note.id)} title="Hapus"><Trash2 size={14} /></button>
+                      <button className="cal-card__btn" onClick={() => setDeleteCalConfirm(note.id)} title="Hapus"><Trash2 size={14} /></button>
                     </div>
                   </div>
                 </div>
@@ -694,7 +652,7 @@ const updateOpenNoteMeta = async (field, value) => {
                     <span className="cn-existing-title">{n.title}</span>
                     <span className={`cn-existing-cd${cd.past?" past":cd.today?" today":""}`}>{cd.label}</span>
                     <button className="cn-item-btn" onClick={()=>openEditCal(n)} title="Edit"><Pencil size={14} /></button>
-                    <button className="cn-item-btn cn-item-btn--danger" onClick={()=>setDeleteCalConfirm(n.id)} title="Hapus"><Trash2 size={14} /></button>
+                    <button className="cn-item-btn" onClick={()=>setDeleteCalConfirm(n.id)} title="Hapus"><Trash2 size={14} /></button>
                   </div>
                 );
               })}
@@ -743,59 +701,8 @@ const updateOpenNoteMeta = async (field, value) => {
                 <textarea className="cn-textarea" placeholder="Detail tambahan..." rows={3}
                   value={calForm.body} onChange={e=>setCalForm(f=>({...f,body:e.target.value}))} />
               </div>
-
-              {/* Acara berulang — cuma muncul pas bikin acara baru, bukan edit */}
-              {!editCalId && (
-                <div className="cn-field cn-repeat-field">
-                  <label className="cn-repeat-toggle">
-                    <input
-                      type="checkbox"
-                      checked={calForm.repeat}
-                      onChange={e=>setCalForm(f=>({...f,repeat:e.target.checked}))}
-                    />
-                    <span>Ulangi acara ini ke depan</span>
-                  </label>
-
-                  {calForm.repeat && (
-                    <div className="cn-repeat-options">
-                      <div className="cn-repeat-row">
-                        <span>Setiap</span>
-                        <select
-                          className="cn-repeat-select"
-                          value={calForm.repeatUnit}
-                          onChange={e=>setCalForm(f=>({...f,repeatUnit:e.target.value}))}
-                        >
-                          <option value="day">Hari</option>
-                          <option value="week">Minggu</option>
-                          <option value="month">Bulan</option>
-                        </select>
-                        <span>sebanyak</span>
-                        <input
-                          type="number"
-                          min={1}
-                          max={MAX_REPEAT_COUNT}
-                          className="cn-repeat-count"
-                          value={calForm.repeatCount}
-                          onChange={e=>setCalForm(f=>({...f,repeatCount:e.target.value}))}
-                        />
-                        <span>kali</span>
-                      </div>
-                      <p className="cn-repeat-hint">
-                        {(() => {
-                          const n = Math.min(Math.max(parseInt(calForm.repeatCount)||1,1), MAX_REPEAT_COUNT);
-                          const unitLabel = calForm.repeatUnit==="day" ? "hari" : calForm.repeatUnit==="week" ? "minggu" : "bulan";
-                          const lastDate = addInterval(popupDate, calForm.repeatUnit, n-1);
-                          const [ly,lm,ld] = lastDate.split("-");
-                          return `Akan dibuat ${n} acara, tiap ${unitLabel}, sampai ${parseInt(ld)} ${MONTHS[parseInt(lm)-1]} ${ly}.`;
-                        })()}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-
               <div className="cn-actions">
-                <button className="cn-btn-sec" onClick={()=>{setShowForm(false);setEditCalId(null);setCalForm(EMPTY_CAL_FORM);}}>Batal</button>
+                <button className="cn-btn-sec" onClick={()=>{setShowForm(false);setEditCalId(null);setCalForm({title:"",body:"",category:"umum"});}}>Batal</button>
                 <button className="cn-btn-primary" onClick={saveCalNote} disabled={!calForm.title.trim()}>
                   {editCalId ? "Simpan Perubahan" : "Tambah Acara"}
                 </button>

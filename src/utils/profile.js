@@ -35,7 +35,10 @@ export const deletePhoto = (userId) => {
 export const buildProfileContext = (profile) => {
   if (!profile) return "";
   const parts = [];
-  if (profile.displayName) parts.push(`Nama: ${profile.displayName}`);
+  // Dukung dua bentuk: camelCase (lama, localStorage) dan snake_case
+  // (bentuk asli dari /api/profile — Supabase kolomnya snake_case).
+  const displayName = profile.displayName || profile.display_name;
+  if (displayName)          parts.push(`Nama: ${displayName}`);
   if (profile.profesi)     parts.push(`Profesi/Status: ${profile.profesi}`);
   if (profile.deskripsi)   parts.push(`Tentang saya: ${profile.deskripsi}`);
   if (profile.pendapatan)  parts.push(`Kisaran pendapatan: ${profile.pendapatan}`);

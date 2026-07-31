@@ -87,10 +87,7 @@ export default function DashboardUMKM() {
   const modalUsaha      = modalTx.reduce((s, t) => s + Number(t.amount || 0), 0);
   const summary        = calcSummary(usahaTx);
   const topCategories = groupByCategory(usahaTx.filter(tx => tx.type === "pengeluaran")).slice(0, 5);
-  const recentTx      = [...transactions].sort((a,b) => {
-    const dateDiff = new Date(b.date||b.createdAt) - new Date(a.date||a.createdAt);
-    return dateDiff !== 0 ? dateDiff : new Date(b.createdAt||0) - new Date(a.createdAt||0);
-  }).slice(0, 5);
+  const recentTx      = [...transactions].sort((a,b) => new Date(b.date||b.createdAt) - new Date(a.date||a.createdAt)).slice(0, 5);
 
   const monthKeyOf    = (tx) => (tx.date || tx.createdAt || "").slice(0, 7);
   const now           = new Date();

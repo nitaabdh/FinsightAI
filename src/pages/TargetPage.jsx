@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import PageHeader from "../components/PageHeader";
@@ -19,12 +19,6 @@ const apiFetch = async (url, options = {}) => {
   return res.json();
 };
 
-// Preset dasar — SAMA PERSIS dengan KAS_PRESET di TransactionForm.jsx, supaya nama
-// dompet yang muncul di sini konsisten dengan yang dipakai pas catat transaksi.
-// Daftar ASLI yang ditampilkan ke user nanti digabung lagi sama dompet yang udah
-// terdaftar di halaman Dompet + nama kas yang pernah dipakai di transaksi (live data),
-// jadi user nggak perlu ketik ulang nama yang beda-beda buat wadah yang sama.
-const DEFAULT_WALLET_PRESET = ["Kas Tunai", "Rekening Bank", "E-Wallet"];
 const PENEMPATAN_CUSTOM = "__custom__";
 
 const QUICK_AMOUNTS = [50000, 100000, 200000, 500000, 1000000];
@@ -53,6 +47,7 @@ function nextDueDate(tanggalJatuhTempo) {
 
 export default function TargetPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") === "utang" ? "utang" : "tabungan"); // "tabungan" | "utang"
 
@@ -74,10 +69,12 @@ export default function TargetPage() {
   const [editingDebtId, setEditingDebtId] = useState(null); // null = tambah baru, isi id = lagi edit utang itu
   const [customDompetDebt, setCustomDompetDebt] = useState(false); // toggle ketik-bebas utk dompet di form utang
 
-  // Daftar nama dompet yang konsisten dipakai di 3 tempat: Transaksi, Penempatan
-  // Target, dan Dompet Sumber Bayar Utang — digabung dari dompet terdaftar +
-  // histori kas transaksi + preset dasar, biar nggak kepecah jadi nama yang beda-beda.
+  // Daftar nama dompet yang konsisten dipakai di 3 tempat: Penempatan Target,
+  // Dompet Sumber Bayar Utang, dan "Ambil dari dompet mana" — HARUS persis
+  // dompet yang beneran terdaftar di halaman Dompet, biar nggak ada opsi yang
+  // nunjuk ke dompet yang sebenarnya nggak ada.
   const [walletOptions, setWalletOptions] = useState([]);
+  const hasWallets = walletOptions.length > 0;
 
   // Form state dengan field baru
   const [form, setForm] = useState({
@@ -100,17 +97,13 @@ export default function TargetPage() {
     Promise.all([
       apiFetch("/api/targets"),
       apiFetch("/api/debts"),
-      apiFetch("/api/transactions?mode=personal"),
       apiFetch("/api/umkm?table=dompet"),
-    ]).then(([targetRes, debtRes, txRes, dompetRes]) => {
+    ]).then(([targetRes, debtRes, dompetRes]) => {
       if (targetRes.success) setTargets(targetRes.data);
       if (debtRes.success)   setDebts(debtRes.data);
 
       const dompetTerdaftar = dompetRes.success ? dompetRes.data.map(d => d.nama) : [];
-      const kasHist         = txRes.success ? txRes.data.map(tx => tx.kas).filter(Boolean) : [];
-      const penempatanLama  = (targetRes.success ? targetRes.data : []).map(t => t.penempatan).filter(Boolean);
-      const dompetUtangLama = (debtRes.success ? debtRes.data : []).map(d => d.dompet).filter(Boolean);
-      setWalletOptions([...new Set([...DEFAULT_WALLET_PRESET, ...dompetTerdaftar, ...kasHist, ...penempatanLama, ...dompetUtangLama])]);
+      setWalletOptions([...new Set(dompetTerdaftar)]);
     }).finally(() => setLoading(false));
   }, [user]);
 
@@ -211,7 +204,8 @@ export default function TargetPage() {
   if (result.success) {
     setTargets((p) => p.map((t) => t.id === id ? result.data : t));
     setCustomAmount((p) => ({ ...p, [id]: "" }));
-    const sumber = sumberDompet || "Kas Tunai";
+    const sumber = sumberDompet;
+    if (!sumber) return;
     if (t.penempatan && t.penempatan.trim().toLowerCase() !== sumber.trim().toLowerCase()) {
       await apiFetch("/api/transactions", {
         method: "POST",
@@ -382,6 +376,11 @@ export default function TargetPage() {
     setPayingId(id);
     try {
       const amount = Number(d.cicilanPerBulan);
+      const kasBayar = d.dompet || walletOptions[0];
+      if (!kasBayar) {
+        setDebtError("Belum ada dompet terdaftar. Tambah dompet dulu di halaman Dompet sebelum bayar cicilan.");
+        return;
+      }
 
       const txResult = await apiFetch("/api/transactions", {
         method: "POST",
@@ -392,7 +391,7 @@ export default function TargetPage() {
           category: `Cicilan ${jenisLabel(d.jenis)}`,
           description: `Cicilan ${d.nama}`,
           date: new Date().toISOString().slice(0, 10),
-          kas: d.dompet || "Kas Tunai",
+          kas: kasBayar,
         }),
       });
       // Kalau transaksinya gagal kesimpen, jangan lanjut update progress utang —
@@ -562,7 +561,7 @@ export default function TargetPage() {
                           <button
                             key={n}
                             className="targetpage__quick-btn"
-                            onClick={() => setConfirmTabung({ id: t.id, nama: t.nama, penempatan: t.penempatan || "", amount: n, sumber: "Kas Tunai" })}
+                            onClick={() => setConfirmTabung({ id: t.id, nama: t.nama, penempatan: t.penempatan || "", amount: n, sumber: walletOptions[0] || "" })}
                           >
                             +{n >= 1000000 ? (n/1000000)+"jt" : (n/1000)+"rb"}
                           </button>
@@ -579,7 +578,7 @@ export default function TargetPage() {
                         />
                         <button
                           className="targetpage__custom-btn"
-                          onClick={() => setConfirmTabung({ id: t.id, nama: t.nama, penempatan: t.penempatan || "", amount: Number(customAmount[t.id]), sumber: "Kas Tunai" })}
+                          onClick={() => setConfirmTabung({ id: t.id, nama: t.nama, penempatan: t.penempatan || "", amount: Number(customAmount[t.id]), sumber: walletOptions[0] || "" })}
                           disabled={!customAmount[t.id] || Number(customAmount[t.id]) <= 0}
                         >
                           + Tambah
@@ -677,30 +676,45 @@ export default function TargetPage() {
               </p>
               <div className="targetpage__field">
                 <label>Ambil dari dompet mana?</label>
-                <select
-                  value={confirmTabung.sumber}
-                  onChange={e => setConfirmTabung(p => ({ ...p, sumber: e.target.value }))}
-                >
-                  {[...new Set([confirmTabung.sumber, ...walletOptions])].map(o => (
-                    <option key={o} value={o}>{o}</option>
-                  ))}
-                </select>
+                {hasWallets ? (
+                  <select
+                    value={confirmTabung.sumber}
+                    onChange={e => setConfirmTabung(p => ({ ...p, sumber: e.target.value }))}
+                  >
+                    {walletOptions.map(o => (
+                      <option key={o} value={o}>{o}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="targetpage__error" style={{ margin: 0 }}>
+                    Belum ada dompet terdaftar. Tambah dompet dulu di halaman Dompet sebelum menabung.
+                  </p>
+                )}
               </div>
               <div className="targetpage__confirm-actions">
                 <button onClick={() => setConfirmTabung(null)} disabled={tabungBusy}>Tidak</button>
-                <button
-                  className="targetpage__confirm-delete targetpage__confirm-delete--positive"
-                  disabled={tabungBusy}
-                  onClick={async () => {
-                    if (tabungBusy) return;
-                    setTabungBusy(true);
-                    await handleTabung(confirmTabung.id, confirmTabung.amount, confirmTabung.sumber);
-                    setTabungBusy(false);
-                    setConfirmTabung(null);
-                  }}
-                >
-                  {tabungBusy ? "Memproses..." : "Ya, Lanjutkan"}
-                </button>
+                {hasWallets ? (
+                  <button
+                    className="targetpage__confirm-delete targetpage__confirm-delete--positive"
+                    disabled={tabungBusy || !confirmTabung.sumber}
+                    onClick={async () => {
+                      if (tabungBusy) return;
+                      setTabungBusy(true);
+                      await handleTabung(confirmTabung.id, confirmTabung.amount, confirmTabung.sumber);
+                      setTabungBusy(false);
+                      setConfirmTabung(null);
+                    }}
+                  >
+                    {tabungBusy ? "Memproses..." : "Ya, Lanjutkan"}
+                  </button>
+                ) : (
+                  <button
+                    className="targetpage__confirm-delete targetpage__confirm-delete--positive"
+                    onClick={() => navigate("/dashboard/personal/dompet")}
+                  >
+                    Tambah Dompet
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -779,33 +793,42 @@ export default function TargetPage() {
               </div>
               <div className="targetpage__field">
                 <label>Dompet Sumber Bayar <span className="targetpage__label-opt">(opsional)</span></label>
-                {!customDompetDebt ? (
+                {!hasWallets ? (
+                  <p className="targetpage__error" style={{ margin: 0 }}>
+                    Belum ada dompet terdaftar.{" "}
+                    <button
+                      type="button"
+                      className="targetpage__custom-penempatan-back"
+                      style={{ display: "inline" }}
+                      onClick={() => navigate("/dashboard/personal/dompet")}
+                    >
+                      Tambah dompet dulu di halaman Dompet
+                    </button>
+                  </p>
+                ) : !customDompetDebt ? (
                   <select
                     value={walletOptions.includes(debtForm.dompet) ? debtForm.dompet : ""}
-                    onChange={e => {
-                      if (e.target.value === PENEMPATAN_CUSTOM) { setCustomDompetDebt(true); setDebtForm(p => ({ ...p, dompet: "" })); }
-                      else setDebtForm(p => ({ ...p, dompet: e.target.value }));
-                    }}
+                    onChange={e => setDebtForm(p => ({ ...p, dompet: e.target.value }))}
                   >
                     <option value="">-- Pilih dompet --</option>
                     {walletOptions.map((o) => <option key={o} value={o}>{o}</option>)}
-                    <option value={PENEMPATAN_CUSTOM}>Lainnya (ketik sendiri)</option>
                   </select>
                 ) : (
+                  // Dompet lama (custom, dari sebelum aturan ini berlaku) yang udah
+                  // kepasang di data — biarkan tetap kebaca, tapi arahkan balik ke
+                  // daftar dompet yang beneran ada.
                   <div className="targetpage__custom-penempatan-wrap">
                     <input
-                      autoFocus
-                      placeholder="Misal: Bank Syariah Indonesia"
                       value={debtForm.dompet}
-                      onChange={e => setDebtForm(p => ({ ...p, dompet: e.target.value }))}
+                      disabled
                     />
                     <button
                       type="button"
                       className="targetpage__custom-penempatan-back"
                       onClick={() => { setCustomDompetDebt(false); setDebtForm(p => ({ ...p, dompet: "" })); }}
-                      title="Kembali ke daftar pilihan"
+                      title="Ganti ke dompet yang terdaftar"
                     >
-                      ↺ Pilih dari daftar
+                      ↺ Pilih dompet terdaftar
                     </button>
                   </div>
                 )}

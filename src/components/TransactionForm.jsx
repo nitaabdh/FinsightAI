@@ -16,9 +16,8 @@ const KATEGORI_SAMPLE = "Sample & Marketing";
 // cuma perpindahan uang antar kas (misal saldo QRIS dicairkan ke rekening bank).
 const KATEGORI_TRANSFER = "Transfer Antar Dompet";
 
-// Dompet TIDAK ADA preset bawaan lagi — dropdown murni dari dompet yang udah
-// didaftarin/dipakai user sendiri (halaman Dompet / histori transaksi). Field-nya
-// juga tetap kosong sampai user beneran ketik atau pilih.
+// Preset kas/wadah uang bawaan — selalu muncul di dropdown, bisa ditambah custom sendiri
+const KAS_PRESET = ["Kas Tunai", "Rekening Bank", "E-Wallet"];
 
 const CATEGORY_EMOJI = {
   "makan": "", "makanan": "", "transportasi": "", "transport": "",
@@ -111,9 +110,6 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
   const [jumlahUnit,  setJumlahUnit]  = useState(editData?.jumlahUnit ? String(editData.jumlahUnit) : "1");
   const [selItems,    setSelItems]    = useState(editData?.items || null);
 
-  // Simpen transaksi mentah buat validasi "pengeluaran gak boleh lebih dari pemasukan"
-  const [allTx, setAllTx] = useState([]);
-
   const showProdukPicker = mode === "umkm" && (form.type === "pemasukan" || (form.type === "pengeluaran" && form.category === KATEGORI_SAMPLE));
   const isSampleFlow = form.type === "pengeluaran" && form.category === KATEGORI_SAMPLE;
   const isTransferFlow = form.type === "transfer";
@@ -145,7 +141,6 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
         showKas ? fetch(`/api/umkm?table=dompet`, { headers }).then(r => r.json()) : Promise.resolve({ success: false }),
       ]).then(([txRes, dompetRes]) => {
         if (txRes.success) {
-          setAllTx(txRes.data);
           const cats = [...new Set(txRes.data.map(tx => tx.category).filter(Boolean))];
           setUsedCategories(cats);
           if (showKas) {
@@ -168,7 +163,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
       if (kasDropdownRef.current && !kasDropdownRef.current.contains(e.target) &&
           kasInputRef.current && !kasInputRef.current.contains(e.target)) {
         setKasOpen(false);
-        setKasQuery(form.kas || ""); // buang teks pencarian yang belum dipilih, tetep kosong kalau belum diisi
+        setKasQuery(form.kas || "Kas Tunai"); // buang teks pencarian yang belum dipilih
       }
       if (kasTujuanDropdownRef.current && !kasTujuanDropdownRef.current.contains(e.target) &&
           kasTujuanInputRef.current && !kasTujuanInputRef.current.contains(e.target)) {
@@ -218,11 +213,11 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
   const isExistingCat = categories.some(c => c.toLowerCase() === catQuery.toLowerCase().trim());
   const isCustomInput = catQuery.trim() !== "" && !isExistingCat;
 
-  // Kas: cuma histori dompet yang pernah dipakai/didaftarin, dedup case-insensitive
+  // Kas: preset + histori pemakaian sebelumnya, dedup case-insensitive
   // ("BCA" & "bca" dianggap sama, yang dipakai casing yang pertama kali muncul)
   const kasOptions = (() => {
     const map = {};
-    usedKas.forEach(k => {
+    [...KAS_PRESET, ...usedKas].forEach(k => {
       const key = k.toLowerCase().trim();
       if (!(key in map)) map[key] = k;
     });
@@ -268,9 +263,9 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
     setSelProdukId(""); setSelItems(null);
   };
 
-  // Handler kas — sekarang bisa ketik manual (bikin nama dompet baru langsung di sini)
-  // ATAU pilih dari dropdown dompet yang udah pernah dipakai. Ngetik langsung
-  // ngeupdate form.kas, mirip pola kategori.
+  // Handler kas — SEKARANG BUKAN combobox-bisa-bikin-baru lagi. Ngetik cuma buat nyari/filter
+  // di antara dompet yang udah ada; nambah dompet baru cuma bisa lewat halaman Dompet.
+  // form.kas cuma keupdate pas user beneran KLIK salah satu opsi, bukan tiap ngetik.
   const handleKasSelect = (kas) => {
     setForm(prev => ({ ...prev, kas }));
     setKasQuery(kas);
@@ -279,11 +274,8 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
   };
 
   const handleKasInput = (e) => {
-    const val = e.target.value;
-    setKasQuery(val);
-    setForm(prev => ({ ...prev, kas: val }));
+    setKasQuery(e.target.value);
     setKasOpen(true);
-    setError("");
   };
 
   // Handler dompet tujuan — pola sama persis dengan kas asal
@@ -362,24 +354,6 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
       if (showKas && !form.kas?.trim()) { setError("Pilih atau isi kas/wadah uangnya terlebih dahulu."); return; }
     }
     if (selProdukId && (!jumlahUnit || isNaN(jumlahUnit) || Number(jumlahUnit) <= 0)) { setError("Masukkan jumlah unit yang valid."); return; }
-
-    // Pengeluaran nggak boleh lebih besar dari total pemasukan yang ada (biar saldo
-    // gak minus). Pas edit pengeluaran yang udah ada, nominal lamanya dikeluarin dulu
-    // dari hitungan biar gak ke-double-count.
-    if (form.type === "pengeluaran") {
-      const totalPemasukan = allTx
-        .filter(tx => tx.type === "pemasukan")
-        .reduce((s, tx) => s + Number(tx.amount || 0), 0);
-      const totalPengeluaranLain = allTx
-        .filter(tx => tx.type === "pengeluaran" && tx.id !== editData?.id)
-        .reduce((s, tx) => s + Number(tx.amount || 0), 0);
-      const saldoTersedia = totalPemasukan - totalPengeluaranLain;
-
-      if (Number(form.amount) > saldoTersedia) {
-        setError(`Pengeluaran nggak boleh lebih besar dari saldo yang tersedia (${formatRupiah(Math.max(saldoTersedia, 0))}).`);
-        return;
-      }
-    }
 
     // Kalau kas yang diketik cocok (case-insensitive) sama yang udah ada, pakai casing yang lama
     // biar nggak nyipta variasi baru (misal ketik "bca" padahal udah ada "BCA").
@@ -623,8 +597,8 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
             </div>
           )}
 
-          {/* Kas / Wadah Uang — dipakai di kedua mode. Bisa ketik manual (bikin nama dompet
-              baru langsung) ATAU pilih dari dropdown dompet yang udah pernah dipakai. */}
+          {/* Kas / Wadah Uang — cuma tampil di mode UMKM. Sengaja BUKAN combobox-bisa-bikin-baru:
+              ngetik cuma buat nyari di antara dompet yang udah didaftarin di halaman Dompet. */}
           {showKas && (
             <div className="txform__field">
               <label className="txform__label">{isTransferFlow ? "Dari Dompet" : form.type === "pemasukan" ? "Uang Masuk ke Kas" : "Uang Keluar dari Kas"}</label>
@@ -633,7 +607,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
                   ref={kasInputRef}
                   className={"txform__input txform__input--" + accent}
                   type="text"
-                  placeholder="Ketik nama dompet atau pilih dari daftar..."
+                  placeholder="Cari dompet..."
                   value={kasQuery}
                   onChange={handleKasInput}
                   onFocus={() => setKasOpen(true)}
@@ -648,10 +622,13 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
                         onMouseDown={() => handleKasSelect(k)}
                       >
                         <span></span> {k}
+                        {!KAS_PRESET.includes(k) && (
+                          <span className="txform__cat-used">Pernah dipakai</span>
+                        )}
                       </div>
                     )) : (
                       <div className="txform__cat-empty">
-                        Belum ada dompet tersimpan. Ketik nama dompet (misal "BCA" atau "GoPay") buat langsung dipakai.
+                        Nggak ada dompet yang cocok. Tambah dompet baru dulu di halaman Dompet.
                       </div>
                     )}
                   </div>
@@ -683,6 +660,9 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
                         onMouseDown={() => handleKasTujuanSelect(k)}
                       >
                         <span></span> {k}
+                        {!KAS_PRESET.includes(k) && (
+                          <span className="txform__cat-used">Pernah dipakai</span>
+                        )}
                       </div>
                     )) : (
                       <div className="txform__cat-empty">

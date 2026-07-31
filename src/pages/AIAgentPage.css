@@ -1,6 +1,6 @@
 .aipage {
   padding: 2rem;
-  max-width: 900px;
+  max-width: 1400px;
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
@@ -110,7 +110,8 @@
   flex-shrink: 0;
 }
 
-/* Chat wrap */
+/* Chat wrap — full-bleed, no boxed card. Only the API-key setup screen
+   (rendered inside when there's no key yet) keeps its own card styling. */
 .aipage__chat-wrap {
   flex: 1;
   overflow-y: auto;

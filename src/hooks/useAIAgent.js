@@ -21,15 +21,21 @@ export function useAIAgent(mode, summary, userId, financeContext = "") {
   // balik ke browser; yang kita tau cuma "sudah ada atau belum".
   const [hasApiKey, setHasApiKey]           = useState(false);
   const [checkingApiKey, setCheckingApiKey] = useState(true);
-  // Data profil (profesi, deskripsi, tujuan keuangan, dll) buat dikasih tau ke AI,
-  // diambil dari fetch /api/profile yang SAMA kayak dipake buat cek hasApiKey —
-  // bukan dari localStorage terpisah yang nggak pernah keisi.
+  // Profil asli (nama, profesi, deskripsi, pendapatan, tanggungan, tujuan) —
+  // disimpan di Supabase lewat /api/profile, BUKAN localStorage. Diambil di
+  // sini juga (bukan cuma buat cek hasApiKey) biar bisa dikirim ke AI sebagai
+  // konteks personalisasi.
   const [profileData, setProfileData] = useState(null);
 
   useEffect(() => {
     if (!userId) { setCheckingApiKey(false); return; }
     apiFetch("/api/profile")
-      .then(r => { if (r.success) { setHasApiKey(!!r.data?.hasApiKey); setProfileData(r.data); } })
+      .then(r => {
+        if (r.success) {
+          setHasApiKey(!!r.data?.hasApiKey);
+          setProfileData(r.data || null);
+        }
+      })
       .finally(() => setCheckingApiKey(false));
   }, [userId]);
 
@@ -137,7 +143,7 @@ export function useAIAgent(mode, summary, userId, financeContext = "") {
 
   return {
     messages, loading, error,
-    apiKey: hasApiKey, checkingApiKey,
+    apiKey: hasApiKey, checkingApiKey, profileData,
     saveApiKey, clearApiKey, sendMessage, clearChat,
   };
 }

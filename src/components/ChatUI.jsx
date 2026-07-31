@@ -26,37 +26,21 @@ const isRawToolCall = (msg) => {
 };
 
 export default function ChatUI({ messages, loading, onSend, accent, suggestions = [] }) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [input, setInput] = useState("");
-  const [userPhoto, setUserPhoto]       = useState(null);
-  const [userDisplayName, setUserDisplayName] = useState("");
   const [isListening, setIsListening] = useState(false);
   const bottomRef = useRef(null);
   const recognitionRef = useRef(null);
+
+  // Foto & nama diambil dari profil asli (Supabase, lewat AuthContext —
+  // sumber yang sama dipakai Sidebar & PageHeader), bukan localStorage.
+  const userPhoto       = profile?.photo || null;
+  const userDisplayName = profile?.displayName || user?.name || "";
 
   const SpeechRecognitionAPI =
     typeof window !== "undefined" &&
     (window.SpeechRecognition || window.webkitSpeechRecognition);
   const voiceSupported = !!SpeechRecognitionAPI;
-
-  // Load foto & nama dari profil — ambil dari server (/api/profile), BUKAN dari
-  // localStorage. Field ini sebelumnya kebaca dari localStorage lewat getProfile()/
-  // getPhoto(), tapi nggak ada satupun tempat yang nulis ke situ (ProfilePage.jsx
-  // nyimpennya ke server doang), jadi selalu kosong. Sekarang fetch langsung.
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    const token = localStorage.getItem("finsight_token");
-    fetch("/api/profile", { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
-      .then(r => {
-        if (cancelled || !r.success) return;
-        setUserDisplayName(r.data?.display_name || user.name || "");
-        setUserPhoto(r.data?.avatar_url || null);
-      })
-      .catch(() => { if (!cancelled) setUserDisplayName(user.name || ""); });
-    return () => { cancelled = true; };
-  }, [user]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });

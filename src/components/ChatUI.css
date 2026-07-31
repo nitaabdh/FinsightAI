@@ -82,7 +82,6 @@
 
 /* Bubble */
 .chat__bubble {
-  max-width: 75%;
   padding: 0.75rem 1rem;
   border-radius: var(--radius-lg);
   font-size: 14px;
@@ -90,26 +89,23 @@
 }
 
 .chat__bubble--user {
+  max-width: 75%;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   color: var(--text-primary);
   border-bottom-right-radius: 4px;
 }
 
+/* Assistant balasan ngalir sebagai teks biasa (kayak chat pada umumnya),
+   bukan kotak warna solid — cuma ngambil lebar penuh baris. */
 .chat__bubble--assistant {
-  border: 1px solid var(--border);
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0.1rem 0;
   color: var(--text-primary);
-  border-bottom-left-radius: 4px;
-}
-
-.chat__bubble--assistant.chat__bubble--umkm {
-  background: var(--accent-umkm-dim);
-  border-color: var(--accent-umkm-dim);
-}
-
-.chat__bubble--assistant.chat__bubble--personal {
-  background: var(--success-dim);
-  border-color: var(--success-dim);
+  background: transparent;
+  border: none;
 }
 
 /* Tool chips */
