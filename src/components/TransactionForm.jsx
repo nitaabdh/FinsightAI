@@ -68,7 +68,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
     category:    editData?.category    || "",
     description: editData?.description || "",
     date:        editData?.date        || new Date().toISOString().slice(0, 10),
-    ...(showKas ? { kas: editData?.kas || "Kas Tunai", kasTujuan: editData?.kasTujuan || "" } : {}),
+    ...(showKas ? { kas: editData?.kas || "", kasTujuan: editData?.kasTujuan || "" } : {}),
   });
   const [error, setError] = useState("");
 
@@ -78,7 +78,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
   const [usedCategories, setUsedCategories] = useState([]);
 
   // Smart kas/wadah state (mirip pola kategori)
-  const [kasQuery, setKasQuery] = useState(editData?.kas || (showKas ? "Kas Tunai" : ""));
+  const [kasQuery, setKasQuery] = useState(editData?.kas || "");
   const [kasOpen,  setKasOpen]  = useState(false);
   const [usedKas,  setUsedKas]  = useState([]);
 
@@ -339,7 +339,7 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
 
   const [submitted, setSubmitted] = useState(false); // guard biar onAdd/onEdit nggak ke-fire dobel pas diklik cepat
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (submitted) return;
     if (!form.amount || isNaN(form.amount) || Number(form.amount) <= 0) { setError("Masukkan nominal yang valid."); return; }
 
@@ -384,9 +384,18 @@ export default function TransactionForm({ mode, onAdd, onEdit, onClose, editData
         : {}),
     };
 
+    // PENTING: tunggu beneran sampe kesimpen (await), baru tutup form. Kalau gagal,
+    // form TETEP KEBUKA dan nampilin pesan error-nya — daripada nutup diem-diem
+    // padahal gagal, bikin user ngira "nggak ada respon" tanpa tau kenapa.
     setSubmitted(true);
-    if (isEdit) { onEdit({ ...editData, ...data }); } else { onAdd(data); }
-    onClose();
+    setError("");
+    try {
+      if (isEdit) { await onEdit({ ...editData, ...data }); } else { await onAdd(data); }
+      onClose();
+    } catch (err) {
+      setSubmitted(false);
+      setError(err?.message || "Gagal menyimpan, coba lagi ya.");
+    }
   };
 
   return (

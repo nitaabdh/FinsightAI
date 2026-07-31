@@ -39,14 +39,10 @@
 
 .dompet__grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
 }
-
-@media (max-width: 760px) {
-  .dompet__grid { grid-template-columns: 1fr 1fr; }
-  .dompet__field--wide { grid-column: 1 / -1; }
-}
+.dompet__field--wide { grid-column: 1 / -1; }
 
 .dompet__field { display: flex; flex-direction: column; gap: 0.4rem; }
 

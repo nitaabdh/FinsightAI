@@ -324,7 +324,7 @@ export default function Dompet({ mode = "umkm" }) {
                   <select className="dompet__input" value={transferForm.kasAsal}
                     onChange={(e) => { setTransferForm(p => ({ ...p, kasAsal: e.target.value })); setTransferError(""); }}>
                     <option value="">Pilih dompet...</option>
-                    {(arahTransfer === "setor" ? [...list, ...dompetDariTransaksi] : (otherDompetList || [])).map(d => (
+                    {[...list, ...dompetDariTransaksi].map(d => (
                       <option key={d.nama} value={d.nama}>{d.nama}</option>
                     ))}
                   </select>
@@ -334,7 +334,7 @@ export default function Dompet({ mode = "umkm" }) {
                   <select className="dompet__input" value={transferForm.kasTujuan}
                     onChange={(e) => { setTransferForm(p => ({ ...p, kasTujuan: e.target.value })); setTransferError(""); }}>
                     <option value="">Pilih dompet...</option>
-                    {(arahTransfer === "setor" ? (otherDompetList || []) : [...list, ...dompetDariTransaksi]).map(d => (
+                    {(otherDompetList || []).map(d => (
                       <option key={d.nama} value={d.nama}>{d.nama}</option>
                     ))}
                   </select>
