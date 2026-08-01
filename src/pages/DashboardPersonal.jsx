@@ -444,17 +444,20 @@ export default function DashboardPersonal() {
               Lihat semua target →
             </button>
           </div>
+        </div>
 
-          {/* Cicilan Aktif */}
-          <div className="dp2__card-section">
-            <div className="dp2__section-header">
-              <span className="dp2__section-title"><CreditCard size={14} /> Cicilan Aktif</span>
-              {totalCicilanBulan > 0 && <span className="dp2__debt-total">{formatRupiah(totalCicilanBulan)}/bln</span>}
-            </div>
-            {activeDebts.length === 0 ? (
-              <p className="dp2__empty">Belum ada utang/cicilan aktif</p>
-            ) : (
-              activeDebts.map(d => {
+        {/* ── CICILAN AKTIF (sendiri, full width) — biar nggak nyisain kolom
+             kosong di samping kalau digabung 3 sejajar sama Income & Target ── */}
+        <div className="dp2__card-section">
+          <div className="dp2__section-header">
+            <span className="dp2__section-title"><CreditCard size={14} /> Cicilan Aktif</span>
+            {totalCicilanBulan > 0 && <span className="dp2__debt-total">{formatRupiah(totalCicilanBulan)}/bln</span>}
+          </div>
+          {activeDebts.length === 0 ? (
+            <p className="dp2__empty">Belum ada utang/cicilan aktif</p>
+          ) : (
+            <div className="dp2__debt-grid stagger-list">
+              {activeDebts.map(d => {
                 const persen = d.totalUtang ? Math.min((d.terbayar / d.totalUtang) * 100, 100) : null;
                 return (
                   <div key={d.id} className="dp2__debt-item">
@@ -475,12 +478,12 @@ export default function DashboardPersonal() {
                     </div>
                   </div>
                 );
-              })
-            )}
-            <button className="dp2__see-all" onClick={() => navigate("/dashboard/personal/target?tab=utang")}>
-              Lihat semua cicilan →
-            </button>
-          </div>
+              })}
+            </div>
+          )}
+          <button className="dp2__see-all" onClick={() => navigate("/dashboard/personal/target?tab=utang")}>
+            Lihat semua cicilan →
+          </button>
         </div>
 
         {/* ── ACARA MENDATANG (sendiri, full width) ── */}

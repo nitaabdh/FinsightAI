@@ -664,6 +664,11 @@
 .dp2__target-info { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); }
 
 .dp2__debt-total { font-family: var(--font-display); font-size: 12px; font-weight: 700; color: var(--warning); }
+.dp2__debt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
 .dp2__debt-item {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
