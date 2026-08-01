@@ -390,6 +390,11 @@
   box-shadow: 0 0 0 3px var(--accent-personal-dim);
 }
 
+.targetpage__field input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .targetpage__error { font-size: 12px; color: var(--danger); }
 
 .targetpage__submit {

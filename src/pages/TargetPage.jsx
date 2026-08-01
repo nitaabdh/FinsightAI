@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import PageHeader from "../components/PageHeader";
 import RupiahInput from "../components/RupiahInput";
-import { formatRupiah } from "../utils/storage";
+import { formatRupiah, getTransactions, computeKasStats } from "../utils/storage";
 import "./TargetPage.css";
 import "./DashboardSkeleton.css";
 
@@ -18,8 +18,6 @@ const apiFetch = async (url, options = {}) => {
   });
   return res.json();
 };
-
-const PENEMPATAN_CUSTOM = "__custom__";
 
 const QUICK_AMOUNTS = [50000, 100000, 200000, 500000, 1000000];
 
@@ -76,6 +74,16 @@ export default function TargetPage() {
   const [walletOptions, setWalletOptions] = useState([]);
   const hasWallets = walletOptions.length > 0;
 
+  // Saldo REAL per dompet (dihitung dari transaksi personal) — dipakai buat
+  // "Sudah Terkumpul" di target, biar selalu nyambung sama saldo dompet
+  // penempatannya yang sebenarnya, bukan angka yang diketik manual dan bisa meleset.
+  const [kasStats, setKasStats] = useState([]);
+  const getSaldoDompet = (nama) => {
+    if (!nama) return 0;
+    const stat = kasStats.find(k => k.nama.toLowerCase().trim() === nama.toLowerCase().trim());
+    return stat ? Math.max(0, stat.saldo) : 0;
+  };
+
   // Form state dengan field baru
   const [form, setForm] = useState({
     nama: "", target: "", terkumpul: "", deadline: "", penempatan: "",
@@ -98,12 +106,14 @@ export default function TargetPage() {
       apiFetch("/api/targets"),
       apiFetch("/api/debts"),
       apiFetch("/api/umkm?table=dompet"),
-    ]).then(([targetRes, debtRes, dompetRes]) => {
+      getTransactions(user.id, "personal"),
+    ]).then(([targetRes, debtRes, dompetRes, tx]) => {
       if (targetRes.success) setTargets(targetRes.data);
       if (debtRes.success)   setDebts(debtRes.data);
 
       const dompetTerdaftar = dompetRes.success ? dompetRes.data.map(d => d.nama) : [];
       setWalletOptions([...new Set(dompetTerdaftar)]);
+      setKasStats(computeKasStats(tx));
     }).finally(() => setLoading(false));
   }, [user]);
 
@@ -112,18 +122,11 @@ export default function TargetPage() {
     setError("");
   };
 
-  // Handler khusus untuk dropdown penempatan tabungan.
-  // Kalau user pilih "Lainnya (ketik sendiri)", buka input teks bebas
-  // dan kosongkan dulu nilai form.penempatan supaya user mulai dari kosong.
+  // Pilih dompet penempatan → "Sudah Terkumpul" otomatis ngikutin saldo real
+  // dompet itu (dari transaksi personal), bukan diketik manual lagi.
   const handlePenempatanSelect = (e) => {
     const val = e.target.value;
-    if (val === PENEMPATAN_CUSTOM) {
-      setCustomPenempatan(true);
-      setForm((p) => ({ ...p, penempatan: "" }));
-    } else {
-      setCustomPenempatan(false);
-      setForm((p) => ({ ...p, penempatan: val }));
-    }
+    setForm((p) => ({ ...p, penempatan: val, terkumpul: val ? String(getSaldoDompet(val)) : "" }));
     setError("");
   };
 
@@ -131,6 +134,7 @@ export default function TargetPage() {
   if (targetSubmitting) return;
   if (!form.nama) { setError("Nama target wajib diisi."); return; }
   if (!form.target || Number(form.target) <= 0) { setError("Nominal target harus lebih dari 0."); return; }
+  if (!form.penempatan) { setError("Pilih dompet penempatan tabungan dulu — dompetnya harus sudah terdaftar di halaman Dompet."); return; }
   setTargetSubmitting(true);
   try {
     if (editingId) {
@@ -170,11 +174,13 @@ export default function TargetPage() {
 };
 
   const openEditTarget = (t) => {
+    const isLegacyCustom = !!(t.penempatan && !walletOptions.includes(t.penempatan));
     setForm({
-      nama: t.nama, target: String(t.target), terkumpul: String(t.terkumpul),
+      nama: t.nama, target: String(t.target),
+      terkumpul: isLegacyCustom || !t.penempatan ? String(t.terkumpul) : String(getSaldoDompet(t.penempatan)),
       deadline: t.deadline || "", penempatan: t.penempatan || "",
     });
-    setCustomPenempatan(!!(t.penempatan && !walletOptions.includes(t.penempatan)));
+    setCustomPenempatan(isLegacyCustom);
     setEditingId(t.id);
     setError("");
     setShowForm(true);
@@ -611,40 +617,63 @@ export default function TargetPage() {
                   <RupiahInput placeholder="Contoh: 5.000.000" value={form.target}
                     onChange={v => { setForm(p => ({ ...p, target: v })); setError(""); }} />
                 </div>
-                <div className="targetpage__field">
-                  <label>Sudah Terkumpul (Rp)</label>
-                  <RupiahInput placeholder="0 jika belum ada" value={form.terkumpul}
-                    onChange={v => { setForm(p => ({ ...p, terkumpul: v })); setError(""); }} />
-                </div>
 
-                {/* Penempatan tabungan — bisa pilih dari daftar atau ketik sendiri */}
+                {/* Penempatan tabungan — WAJIB dompet yang beneran udah terdaftar di
+                    halaman Dompet, karena "Sudah Terkumpul" di bawah ini otomatis
+                    ngikutin saldo real dompet ini. Nggak bisa ketik nama bebas lagi. */}
                 <div className="targetpage__field">
-                  <label>Penempatan Tabungan <span style={{fontWeight:400, color:"var(--text-muted)", fontSize:"11px"}}>(opsional)</span></label>
-
-                  {!customPenempatan ? (
-                    <select name="penempatan" value={form.penempatan} onChange={handlePenempatanSelect}>
-                      <option value="">-- Pilih tempat menabung --</option>
-                      {walletOptions.map((o) => <option key={o} value={o}>{o}</option>)}
-                      <option value={PENEMPATAN_CUSTOM}>Lainnya (ketik sendiri)</option>
-                    </select>
-                  ) : (
-                    <div className="targetpage__custom-penempatan-wrap">
-                      <input
-                        autoFocus
-                        name="penempatan"
-                        placeholder="Misal: Bank Syariah Indonesia"
-                        value={form.penempatan}
-                        onChange={handleChange}
-                      />
+                  <label>Penempatan Tabungan</label>
+                  {!hasWallets ? (
+                    <p className="targetpage__error" style={{ margin: 0 }}>
+                      Belum ada dompet terdaftar.{" "}
                       <button
                         type="button"
                         className="targetpage__custom-penempatan-back"
-                        onClick={() => { setCustomPenempatan(false); setForm((p) => ({ ...p, penempatan: "" })); }}
-                        title="Kembali ke daftar pilihan"
+                        style={{ display: "inline" }}
+                        onClick={() => navigate("/dashboard/personal/dompet")}
                       >
-                        ↺ Pilih dari daftar
+                        Tambah dompet dulu di halaman Dompet
+                      </button>
+                    </p>
+                  ) : !customPenempatan ? (
+                    <select name="penempatan" value={form.penempatan} onChange={handlePenempatanSelect}>
+                      <option value="">-- Pilih tempat menabung --</option>
+                      {walletOptions.map((o) => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  ) : (
+                    // Target lama (penempatannya dompet custom, dari sebelum aturan ini
+                    // berlaku) — biarin tetap kebaca, tapi arahkan ganti ke dompet terdaftar.
+                    <div className="targetpage__custom-penempatan-wrap">
+                      <input value={form.penempatan} disabled />
+                      <button
+                        type="button"
+                        className="targetpage__custom-penempatan-back"
+                        onClick={() => { setCustomPenempatan(false); setForm((p) => ({ ...p, penempatan: "", terkumpul: "" })); }}
+                        title="Ganti ke dompet yang terdaftar"
+                      >
+                        ↺ Pilih dompet terdaftar
                       </button>
                     </div>
+                  )}
+                </div>
+
+                <div className="targetpage__field">
+                  <label>Sudah Terkumpul (Rp)</label>
+                  {!customPenempatan && form.penempatan ? (
+                    <>
+                      <RupiahInput value={form.terkumpul} disabled />
+                      <span className="targetpage__label-opt">Otomatis dari saldo dompet "{form.penempatan}" saat ini.</span>
+                    </>
+                  ) : (
+                    <>
+                      <RupiahInput placeholder="0 jika belum ada" value={form.terkumpul}
+                        onChange={v => { setForm(p => ({ ...p, terkumpul: v })); setError(""); }} />
+                      <span className="targetpage__label-opt">
+                        {customPenempatan
+                          ? "Dompet ini belum terdaftar, jadi diisi manual — ganti ke dompet terdaftar biar otomatis."
+                          : "Pilih dompet penempatan dulu supaya nilai ini otomatis."}
+                      </span>
+                    </>
                   )}
                 </div>
 
